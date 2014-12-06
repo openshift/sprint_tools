@@ -1,0 +1,24 @@
+#https://trello.com/1/appKey/generate
+#https://trello.com/1/connect?key=<appKey>&name=OpenShift&response_type=token&scope=read,write,account
+#https://trello.com/1/connect?key=<appKey>&name=OpenShift&response_type=token&scope=read,write,account&expiration=never
+---
+:consumer_key: <consumer_key>
+:consumer_secret: <consumer_secret>
+:oauth_token: <oauth_token>
+:oauth_token_secret: <oauth_secret>
+:teams:
+  :team1:
+    :team1_board1: <team1_board1_id>
+    :team1_board2: <team1_board2_id>
+  :team2:
+    :team2_board: <team2_board_id>
+:roadmap_id: <roadmap_id>
+:public_roadmap_id: <public_roadmap_id>
+:documentation_id: <documentation_board_id>
+:docs_planning_id: <documentation planning board id>
+:organization_id: <organication short name>
+:organization_name: <organization display name>
+:sprint_length_in_weeks: 3
+:sprint_start_day: monday
+:sprint_end_day: friday
+:logo: <logo url>

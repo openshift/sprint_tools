@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title><%= trello.organization_name %> Sprints Overview</title>
+<script type='text/javascript' src='https://ajax.googleapis.com/ajax/libs/jquery/1.8.1/jquery.min.js?ver=3.8.1'></script>
+<link href="https://netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css" type="text/css" rel="stylesheet" media="screen">
+<script src="https://netdna.bootstrapcdn.com/bootstrap/3.1.1/js/bootstrap.min.js"></script>
+<link href='https://fonts.googleapis.com/css?family=Open+Sans:400,300,600,800,700' rel='stylesheet' type='text/css'>
+<link href="stylesheets/trello.css" rel="stylesheet" type="text/css">
+<link rel="shortcut icon" href="favicon.ico" type="image/x-icon" />
+<meta name="viewport" content="width=device-width">
+<style type="text/css">
+
+.table>tbody>tr.in-progress>th {
+  background-color: #94cc75;
+  border-top: 1px solid #94cc75;
+}
+.table>tbody>tr.next>th {
+  background-color: #c4e3b3;
+  border-top: 1px solid #c4e3b3;
+}
+.table>tbody>tr.backlog>th {
+  background-color: #dbedfe;
+  border-top: 1px solid #dbedfe;
+}
+.table.table-rows>tbody>tr>th,
+.table.table-rows>tbody>tr>td {
+  padding: 15px; 
+}
+
+
+</style>
+
+</head>
+
+<body>
+  <div class="navbar navbar-default navbar-fixed-top" role="navigation">
+      <div class="container">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <div class="brand" style="background: transparent url('<%=trello.logo%>') no-repeat left -5px; background-size: 200px auto">
+          </div>
+        </div>
+        <div class="navbar-collapse collapse">
+          <ul class="nav navbar-nav">
+              <% LINKS.each do |page_name, page_title|
+                if page_name != (options.offset > 0 ? 'previous_sprints_overview' : 'sprints_overview') %>
+                  <li><a href='<%=page_name%>.html'><%=page_title%></a></li>
+                <%else%>
+                  <li><a class="active" href='<%=page_name%>.html'><%=page_title%></a></li>
+                <%end
+                end%>
+          </ul>
+        </div><!--/.nav-collapse -->
+      </div>
+    </div>
+
+  <div class="container">
+
+    <h2 class="visible-xs"><%= trello.organization_name %> Sprints Overview</h2>
+
+<%
+      sprint_data = {}
+      trello.teams.keys.map{ |team_name| team_name.to_s }.each do |team_name|
+        sprint_data[team_name] = {}
+        trello.team_boards(team_name).each do |board|
+          board.lists(:filter => [:all]).target.each do |list|
+            list_name = list.name
+            sprint_id = nil
+            if list_name =~ /^Sprint (\d+)/
+              sprint_id = $1.to_i
+            elsif (list_name == 'Backlog')
+              sprint_id = 9999999
+            elsif (list_name == 'Next')
+              sprint_id = 9999998
+            elsif (list_name == 'In Progress' || list_name == 'Complete' || list_name == 'Docs Underway' || list_name == 'Accepted')
+              sprint_id = 9999997
+            end
+            if sprint_id
+              cards = trello.list_cards(list)
+              unless cards.empty?
+                sprint_data[team_name][sprint_id] = [] unless sprint_data[team_name][sprint_id]
+                if list_name == 'Backlog'
+                  sprint_data[team_name][sprint_id] += cards.first(5)
+                else
+                  sprint_data[team_name][sprint_id] += cards
+                end
+              end
+            end
+          end
+        end
+      end
+      sprint_data.each do |team_name, sprint_map|
+        sprints = []
+        sprint_map.each do |sprint_id, cards|
+          sprints << {sprint_id => cards}
+        end
+        sprints = sprints.sort_by { |sprint| sprint.keys.first }
+        if options.offset
+          sprints = sprints.last(options.sprints + options.offset).first(options.sprints)
+        else
+          sprints = sprints.last(options.sprints)
+        end
+%>
+<h3 style="text-transform:uppercase"><%=team_name%></h3>
+<div class="table-responsive">
+<table class="table table-condensed table-rows">
+
+<%
+        sprint_begin = nil
+        sprint_end = nil
+        sprints.each do |sprint|
+          sprint_num = sprint.keys.first
+          sprint.values.first.each do |card|
+            if card.name =~ /^Sprint (\d+)/
+              sprint_end = card.due.to_date
+              unless sprint_begin
+                sprint_begin = sprint_end
+                trello.sprint_length_in_weeks.times{sprint_begin = sprint_begin.previous(trello.sprint_start_day.to_sym)}
+              end
+            end
+          end
+          sprint_dates = nil
+          sprint_name = nil
+          if sprint_num == 9999999
+            sprint_name = "Backlog (Top 10)"
+            sprint_backlog = "backlog"
+          elsif sprint_num == 9999998
+            sprint_name = "Next"
+            sprint_next = "next"
+          elsif sprint_num == 9999997
+            sprint_name = "In Progress"
+            sprint_dates = "(#{sprint_begin} - #{sprint_end})"
+            sprint_in_progress = "in-progress"
+          else
+            sprint_name = "Sprint #{sprint_num}"
+            sprint_dates = "(#{sprint_begin} - #{sprint_end})"
+          end
+%>
+<tr class="<%=sprint_backlog%> <%=sprint_in_progress%> <%=sprint_next%>">
+
+<th><%=sprint_name%><div class="sprint-date"><%=sprint_dates%></div></th>
+<%
+          sprint_begin = sprint_end.next(trello.sprint_start_day)
+
+%>
+
+
+<td>
+<%
+          sprint.values.first.each do |card|
+            unless card.name =~ /^Sprint (\d+)/
+%>
+<a href='<%=card.url%>'><%=card.name%></a><br/>
+<%
+            end
+          end
+%>
+</td>
+
+</tr>
+<%
+        end
+%>
+</table>
+</div>
+
+
+ </section>
+<%
+      end
+%>
+
+
+
+  </div><!-- /container -->
+</body>
+</html>
+

@@ -1,0 +1,119 @@
+html {
+  -webkit-text-size-adjust: 100%;
+}
+body {
+  background-color: #fafafa;
+  font-family: "Open Sans",sans-serif;
+  min-height: 2000px;
+  padding: 60px 0 100px;
+}
+.brand {
+  width: 275px;
+  height: 50px;
+  margin-left: 15px;
+}
+.navbar-default {
+  background-color: #e8e8e8;
+  border-color: #ccc;
+}
+.navbar-default .navbar-nav>li>a:hover, .navbar-default .navbar-nav>li>a:focus {
+  color: #ea0011;
+}
+.navbar-default .navbar-nav>li>a.active:hover {
+  color: inherit;
+}
+.table th {
+  background-color: #ddd;
+}
+.table.table-normal>tbody>tr>td {
+  border-top: none;
+  border-bottom: 1px solid #ddd;
+}
+.table.table-columns {
+  border: 1px solid #bbb;
+  border-top: 2px solid #bbb;
+  border-bottom: 1px solid #ddd;
+}
+.table.table-columns td {
+  border-right: 1px solid #bbb;
+}
+table.table.table-rows {
+  border: 1px solid #ddd;
+  border-top: none;
+  border-collapse: initial;
+}
+
+section {
+  margin-bottom: 50px;
+}
+h2 {font-size: 26px;}
+h3 {font-size: 21px;}
+b {padding-right: 10px;}
+p {margin: 0 0 15px;}
+.sprint-date {
+  font-weight: 400;
+  font-size: 12px
+}
+
+pre {
+  border:none;
+  background-color: transparent;
+  padding: 0;
+  margin:0 0 15px;
+  font-family: "Open Sans",sans-serif;
+}
+
+.nav li a.active,
+.navbar-default .navbar-nav>li>a.active:hover {
+  position: relative;
+  background: #fafafa;
+  color: #333;
+}
+
+.nav li a.active:after, .nav li a.active:before {
+  top: 100%;
+  left: 50%;
+  border: solid transparent;
+  content: " ";
+  height: 0;
+  width: 0;
+  position: absolute;
+  pointer-events: none;
+  display: none;
+}
+
+.nav li a.active:after {
+  border-color: rgba(136, 183, 213, 0);
+  border-top-color: #fafafa;
+  border-width: 8px;
+  margin-left: -8px;
+}
+.nav li a.active:before {
+  border-color: rgba(194, 225, 245, 0);
+  border-top-color: #bbb;
+  border-width: 9px;
+  margin-left: -9px;
+}
+
+.navbar-collapse.in {overflow-y: inherit;}
+
+/* Responsive
+ //---------------  */
+
+@media (min-width: 768px) {
+  .table.table-normal td:nth-child(1) {width: 360px;  }
+  body {padding-top: 120px;}
+  .brand {
+  margin-left: 0;
+  }
+  .nav li a.active:after, .nav li a.active:before { 
+    display: block;
+  }
+}
+@media (min-width: 992px) {
+  .table.table-normal td:nth-child(1) {width: 570px;  }
+  body {padding-top: 80px;}
+}
+@media (min-width: 1200px) {
+  .table.table-normal td:nth-child(1) {width: 780px;  }
+}

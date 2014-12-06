@@ -1,0 +1,19 @@
+---
+:not_qe_ready:
+  :title:     User Stories Requiring Test Cases
+  :friendly:  Create Test Cases for User Stories
+  :function:  :not_qe_ready
+  :day:       4
+  :sort_key:  :short_id
+
+:not_approved:
+  :title:     Test Cases Needing Development Approval
+  :friendly:  Review and approve QE test cases
+  :function:  :not_approved
+  :day:       5
+
+:dcut:
+  :title:     User Stories to be Completed by DCUT
+  :friendly:  Complete all stories for DCUT
+  :function:  :not_dcut_complete
+  :day:       9

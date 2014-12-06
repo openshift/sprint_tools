@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title><%= trello.organization_name %> Roadmap Overview</title>
+<script type='text/javascript' src='https://ajax.googleapis.com/ajax/libs/jquery/1.8.1/jquery.min.js?ver=3.8.1'></script>
+<link href="https://netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css" type="text/css" rel="stylesheet" media="screen">
+<script src="https://netdna.bootstrapcdn.com/bootstrap/3.1.1/js/bootstrap.min.js"></script>
+<link href='https://fonts.googleapis.com/css?family=Open+Sans:400,300,600,800,700' rel='stylesheet' type='text/css'>
+<link href="stylesheets/trello.css" rel="stylesheet" type="text/css">
+<link rel="shortcut icon" href="favicon.ico" type="image/x-icon" />
+<meta name="viewport" content="width=device-width">
+</head>
+
+<body>
+  <div class="navbar navbar-default navbar-fixed-top" role="navigation">
+      <div class="container">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <div class="brand" style="background: transparent url('<%=trello.logo%>') no-repeat left -5px; background-size: 200px auto">
+          </div>
+        </div>
+        <div class="navbar-collapse collapse">
+          <ul class="nav navbar-nav">
+              <% LINKS.each do |page_name, page_title|
+                if page_name != 'roadmap_overview' %>
+                  <li><a href='<%=page_name%>.html'><%=page_title%></a></li>
+                <%else%>
+                  <li><a class="active" href='<%=page_name%>.html'><%=page_title%></a></li>
+                <%end
+                end%>
+          </ul>
+        </div><!--/.nav-collapse -->
+      </div>
+    </div>
+
+  <div class="container">
+    <h2 class="visible-xs"><%= trello.organization_name %> Roadmap Overview</h2>
+<%
+      tag_to_epics = trello.tag_to_epics
+      tag_to_epics.each do |tag, epic_cards|
+        primary_epic_card = epic_cards.first
+        secondary_epic_card = epic_cards[1]
+%>
+<section>
+<h3><a href='<%=primary_epic_card.url%>'><%=primary_epic_card.name%></a></h3>
+<% if secondary_epic_card %>
+Corresponding Private Roadmap Board Epic: <a href='<%=secondary_epic_card.url%>'><%=secondary_epic_card.name%></a></br>
+<% end %>
+<pre><%=primary_epic_card.desc%></pre>
+<div class="table-responsive">
+<table class="table table-normal table-condensed">
+  <tr><th>Scenario</th><th>Sizing</th><th>List</th><th>Board</th></tr>
+<%
+        complete_sizing_total = 0
+        remaining_sizing_total = 0
+        epic_cards.each do |epic_card|
+          stories_checklist = trello.checklist(epic_card, EPIC_REFERENCED_STORIES_NAME)
+          stories_checklist.items.each do |item|
+            name = item.name.strip
+            url = nil
+            list = "Epic Backlog"
+            sizing = ''
+            board = 'Roadmap'
+            if name =~ /\[(.*)\]\((https?:\/\/trello\.com\/[^\)]+)\) \(([^\)]+)\) \(([^\)]+)\)/
+              name = $1.strip
+              url = $2
+              list = $3
+              board = $4
+            end
+            if name =~ /\((\d+|\?)\)(.*)/
+              sizing = $1
+              name = $2
+
+              if list && sizing != '?'
+                sizing_i = sizing.to_i
+                if (list.match('^Sprint \d+') || list == 'Accepted' || list == 'Complete')
+                  complete_sizing_total += sizing_i
+                else
+                  remaining_sizing_total += sizing_i
+                end
+              end
+            end
+%>
+<tr>
+<%
+            if url
+%>
+<td><a href='<%=url%>'><%=name%></a></td>
+<%
+            else
+%>
+<td><a href='<%=epic_card.url%>'><%=name%></a></td>
+<%
+            end
+%>
+<td><%=sizing%></td><td><%=list%></td><td><%=board%></td></tr>
+<%
+          end
+        end
+%>
+</table>
+</div><!-- table-responsive -->
+<i>Complete: <%=complete_sizing_total%></i><br />
+<i>Remaining: <%=remaining_sizing_total%></i><br />
+ </section>
+<%
+      end
+%>
+
+
+
+  </div><!-- /container -->
+</body>
+</html>

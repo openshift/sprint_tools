@@ -1,0 +1,12 @@
+---
+:dev:
+  :reports:
+  - :not_approved
+  - :dcut
+  :to: <dev email list address>
+:qe:
+  :reports:
+  - :not_qe_ready
+  - :not_approved
+  :to: <qe email list address>
+  :nag: false

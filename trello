@@ -1,0 +1,504 @@
+#!/usr/bin/env ruby
+
+$LOAD_PATH.unshift(File.dirname(__FILE__) + '/lib') unless $LOAD_PATH.include?(File.dirname(__FILE__) + '/lib')
+
+require 'config'
+require 'trello_helper'
+require 'output_helper'
+require 'reports'
+require 'report'
+require 'erb'
+require 'pp'
+require 'yaml'
+require 'commander/import'
+
+Encoding.default_external = "UTF-8"
+
+name="#{__FILE__}"
+
+program :name, "Trello Utilities"
+program :version, "1.0.0"
+program :description, "An assortment of Trello utilities"
+
+# This loads the conf files and creates new objects based on the specified classes
+def load_conf(klass,args,single = false)
+  if single
+    klass.new(args)
+  else
+    Hash[*args.map do |key,val|
+      [key,klass.new(val)]
+    end.flatten]
+  end
+end
+
+$tag_to_label_color = {
+  'documentation' => 'green',
+  'tc-approved' => 'yellow',
+  'no-qe' => 'orange',
+  'security' => 'red',
+  'devcut' => 'purple'
+}
+
+LINKS = {'roadmap_overview' => 'Roadmap Overview',
+         'sprints_overview' => 'Sprints Overview',
+         'previous_sprints_overview' => 'Previous Sprints Overview',
+         'sprint_schedule' => 'Sprint Schedule'}
+
+EPIC_REFERENCED_STORIES_NAME = "Scenarios"
+FUTURE_EPIC_REFERENCED_STORIES_NAME = "Future Scenarios"
+FUTURE_TAG = '[future]'
+
+trello = load_conf(TrelloHelper, CONFIG.trello, true)
+
+command :list do |c|
+  c.syntax = "#{name} list"
+
+  c.option "--list LIST_NAME", "Restrict to a particular list"
+  c.option "--team TEAM_NAME (#{trello.teams.keys.join('|')})", "Restrict to a team"
+  c.option "--card-ref SCOPE_TEAM_ID", "Get a single card Ex: #{trello.teams.values.first.keys.first}_1"
+
+  c.description = "An assortment of Trello queries"
+  c.action do |args, options|
+    puts "Organization: #{trello.org.name}"
+    if options.card_ref
+      card = trello.card_by_ref(options.card_ref)
+      if card
+        trello.print_card(card)
+      else
+        puts "#{options.card_ref} is an invalid format!"
+        exit 1
+      end
+    else
+      if options.team
+        boards = trello.team_boards(options.team)
+      else
+        boards = trello.org_boards
+      end
+
+      boards.each do |board|
+        puts "\nBoard Name: #{board.name}"
+        lists = board.lists.target
+        if options.list
+          lists = []
+          lists.each do |list|
+            if list.name == options.list
+              lists = [list]
+              break
+            end
+          end
+        end
+        lists.each do |list|
+          trello.print_list(list)
+        end
+      end
+    end
+  end
+end
+
+command :sprint_identifier do |c|
+  c.syntax = "#{name} sprint-identifier"
+
+  c.description = "Print the sprint identifier"
+  c.action do |args, options|
+    $sprint = Sprint.new({:trello => trello})
+    if $sprint.sprint_card.name =~ /^Sprint (\d+)/
+      print "2.0.#{$1}"
+    else
+      print "unknown"
+    end
+  end
+end
+
+command :report do |c|
+  c.syntax = "#{name} report"
+
+  c.option "--report-type NAME" , "Available report types: %s" % CONFIG.reports.keys.join(', ')
+  c.option "--send-email" , "Send email?"
+
+  c.description = "An assortment of Trello reporting utilities"
+  c.action do |args, options|
+    options.report_type ||= choose("Report to run?",*CONFIG.reports.keys)
+    options.report_type = options.report_type.to_sym
+    if options.date
+      $date = Date.parse(options.date)
+    end
+
+    heading "Generating Status Report" do
+      # Read Rally configuration file
+      _progress "Logging into Trello" do
+        $sprint = Sprint.new({:trello => trello})
+      end
+
+      # Generate queries
+      _progress "Generating queries" do
+        $report_types = load_conf(UserStoryReport,CONFIG.queries)
+      end
+
+      # Generate reports
+      _progress "Building available reports" do
+        $reports = load_conf(Report,CONFIG.reports)
+      end
+    end
+
+    report = $reports[options.report_type]
+    report.options = options.__hash__
+
+    _table(
+      "Running Report With Options",
+      report.options.marshal_dump,
+      { :capitalize => true, :sort => 0, :separator => ':' }
+    )
+
+    report.send_email
+
+  end
+end
+
+command :generate_roadmap_overview do |c|
+  c.syntax = "#{name} generate_roadmap_overview"
+
+  c.option "--out OUT_FILE", "The file to output Ex: /tmp/roadmap_overview.html"
+
+  c.description = "Generate the overview of the roadmap board"
+  c.action do |args, options|
+    options.out ||= '/tmp/roadmap_overview.html'
+    erb = ERB.new(File.open('templates/roadmap_overview.erb', "rb").read)
+    File.open(options.out, 'w') {|f| f.write(erb.result(binding)) }
+  end
+end
+
+command :generate_sprints_overview do |c|
+  c.syntax = "#{name} generate_sprints_overview"
+
+  c.option "--out OUT_FILE", "The file to output Ex: /tmp/sprints_overview.html"
+  c.option "--sprints NUM", "The number of sprints to show"
+  c.option "--offset NUM", "The number of sprints to offset from the latest"
+
+  c.description = "Generate the sprints overview"
+  c.action do |args, options|
+    options.out ||= '/tmp/sprints_overview.html'
+    options.sprints = options.sprints ? options.sprints.to_i : 8
+    options.offset = options.offset ? options.offset.to_i : 0
+
+    erb = ERB.new(File.open('templates/sprints_overview.erb', "rb").read)
+    File.open(options.out, 'w') {|f| f.write(erb.result(binding)) }
+  end
+end
+
+command :generate_sprint_schedule do |c|
+  c.syntax = "#{name} generate_sprint_schedule"
+
+  c.option "--out OUT_FILE", "The file to output Ex: /tmp/sprint_schedule.html"
+  c.option "--sprints NUM", "The number of sprints to show"
+
+  c.description = "Generate the sprint schedule"
+  c.action do |args, options|
+    options.out ||= '/tmp/sprint_schedule.html'
+    options.sprints = options.sprints ? options.sprints.to_i : 8
+
+    $sprint = Sprint.new({:trello => trello})
+
+    erb = ERB.new(File.open('templates/sprint_schedule.erb', "rb").read)
+    File.open(options.out, 'w') {|f| f.write(erb.result(binding)) }
+  end
+end
+
+command :comment do |c|
+  c.syntax = "#{name} comment"
+
+  c.option "--card-ref SCOPE_TEAM_ID", "Get a single card Ex: #{trello.teams.values.first.keys.first}_1"
+
+  c.description = "Adds a comment to a trello card"
+  c.action do |args, options|
+    comment = args[0]
+    card = trello.card_by_ref(options.card_ref)
+    if card
+      card.add_comment(comment)
+    else
+      puts "#{options.card_ref} is an invalid format!"
+      exit 1
+    end
+  end
+
+end
+
+command :update do |c|
+  c.syntax = "#{name} update"
+
+  c.option "--add-task-checklists", "Add task checklists to stories"
+  c.option "--add-bug-checklists", "Add checklists to stories"
+  c.option "--add-doc-tasks", "Add documentation tasks to documentation labeled stories"
+  c.option "--add-doc-checklists", "Add documentation team tasks"
+  c.option "--add-doc-cards", "Add documentation cards for documentation labeled dev cards (requires --add-doc-checklists)"
+  c.option "--update-bug-tasks", "Update closed/verified bug tasks"
+  c.option "--update-roadmap", "Update the roadmap board with progress from teams"
+
+  c.description = "An assortment of Trello modification utilities"
+  c.action do |args, options|
+    doc_descriptions = []
+    if options.update_roadmap
+      tag_to_epics = trello.tag_to_epics
+      trello.roadmap_boards.each do |roadmap_board|
+        epic_list = trello.epic_list(roadmap_board)
+        tag_to_epic = {}
+
+        epic_list.cards.each do |epic_card|
+          tags = []
+          epic_card.name.scan(/\[[^\]]+\]/).each do |tag|
+            if tag != '[future]'
+              tag_to_epic[tag] = epic_card
+              tags << tag
+            end
+          end
+
+          trello.clear_checklist_refs(epic_card, EPIC_REFERENCED_STORIES_NAME, tags)
+          trello.clear_checklist_refs(epic_card, FUTURE_EPIC_REFERENCED_STORIES_NAME, [FUTURE_TAG])
+        end
+        puts 'Tags:'
+        puts tag_to_epic.keys.pretty_inspect
+
+        (1..2).each do |accepted_pass|
+          trello.boards.each do |board_id, board|
+            if roadmap_board.prefs['permissionLevel'] == 'org' || roadmap_board.prefs['permissionLevel'] == board.prefs['permissionLevel']
+              puts "\nBoard Name: #{board.name}"
+              all_lists = board.lists(:filter => [:all]).target
+              new_list = nil
+              backlog_list = nil
+              next_list = nil
+              in_progress_list = nil
+              docs_underway_list = nil
+              complete_list = nil
+              accepted_list = nil
+              previous_sprint_lists = []
+              other_lists = []
+              all_lists.each do |l|
+                case l.name
+                when 'New'
+                  new_list = l
+                when 'Backlog'
+                  backlog_list = l
+                when 'Next'
+                  next_list = l
+                when 'In Progress'
+                  in_progress_list = l
+                when 'Complete'
+                  complete_list = l
+                when 'Docs Underway'
+                  docs_underway_list = l
+                when 'Accepted'
+                  accepted_list = l
+                when /^Sprint \d+/
+                  previous_sprint_lists << l
+                else
+                  other_lists << l
+                end
+              end
+              i = 0
+              lists = []
+              [accepted_list, complete_list, in_progress_list, next_list, backlog_list, new_list].each do |l|
+                if !l.nil?
+                  lists[i] = l
+                  i += 1
+                end
+              end
+
+              previous_sprint_lists = previous_sprint_lists.sort_by { |l| l.name.match('^Sprint (\d+)')[1].to_i }
+              lists += previous_sprint_lists
+              lists += other_lists
+              lists.each do |list|
+                accepted = (list.name.match('^Sprint \d+') || list.name == 'Accepted') ? true : false
+                next if (accepted && accepted_pass == 1) || (!accepted && accepted_pass == 2)
+                cards = trello.list_cards(list)
+                if !cards.empty?
+                  puts "\n  List: #{list.name}  (#cards: #{cards.length})"
+                  cards.each_with_index do |card, index|
+                    card_tags = card.name.scan(/\[[^\]]+\]/)
+                    card_tags.each do |card_tag|
+                      epic = tag_to_epic[card_tag]
+                      if epic
+                        if (roadmap_board.prefs['permissionLevel'] == 'org' && tag_to_epics[card_tag].length == 1) || (roadmap_board.prefs['permissionLevel'] == board.prefs['permissionLevel'])
+                          stories_checklist = trello.checklist(epic, card_tags.include?(FUTURE_TAG) ? FUTURE_EPIC_REFERENCED_STORIES_NAME : EPIC_REFERENCED_STORIES_NAME)
+                          if stories_checklist
+                            puts "Adding #{card.url} to #{epic.name}"
+                            (1..3).each do |i|
+                              begin
+                                stories_checklist.add_item("[#{card.name}](#{card.url}) (#{list.name}) (#{board.name})", accepted, 'bottom')
+                                break
+                              rescue => e
+                                puts "Error adding checklist: #{e.message}"
+                                raise if i == 3
+                              end
+                            end
+                          end
+                        end
+                      end
+                    end
+                  end
+                end
+              end
+            end
+          end
+        end
+      end
+    end
+    if options.add_doc_checklists
+      lists = trello.documentation_board.lists(:filter => [:open]).target
+      lists.each do |list|
+        cards = trello.list_cards(list)
+        if !cards.empty?
+          puts "\n  List: #{list.name}  (#cards #{cards.length})"
+          cards.each_with_index do |card, index|
+            if !(card.name =~ /^Sprint \d+/ && !card.due.nil?)
+              doc_descriptions << card.desc if options.add_doc_cards
+              checklists = []
+              checklists << 'Tasks'
+
+              card.checklists.target.each do |checklist|
+                checklists.delete(checklist.name)
+                break if checklists.empty?
+              end if !checklists.empty?
+
+              if !checklists.empty?
+                puts "Adding #{checklists.pretty_inspect.chomp} to #{card.name}"
+                checklists.each do |checklist_name|
+                  checklist = Trello::Checklist.create({:name => checklist_name, :board_id => trello.documentation_id})
+                  card.add_checklist(checklist)
+                end
+              end
+            end
+            tasks_checklist = trello.checklist(card, 'Tasks')
+            if tasks_checklist
+              urh_reminder = "Update Revision History"
+              found = false
+              tasks_checklist.items.each do |item|
+                if item.name.include? urh_reminder
+                  found = true
+                  break
+                end
+              end
+              unless found
+                puts "Adding revision history reminder: #{card.name}"
+                tasks_checklist.add_item(urh_reminder, false, 'bottom')
+              end
+            end
+          end
+        end
+      end
+    end
+    if options.add_task_checklists || options.add_bug_checklists || options.update_bug_tasks || options.add_doc_tasks || options.add_doc_cards
+      bugzilla = nil
+      if options.update_bug_tasks
+        require 'bugzilla_helper'
+        bugzilla = load_conf(BugzillaHelper, CONFIG.bugzilla, true)
+      end
+      if options.add_doc_cards && options.add_doc_checklists
+        lists = trello.docs_planning_board.lists(:filter => [:open]).target
+        lists.each do |list|
+          cards = trello.list_cards(list)
+          if !cards.empty?
+            cards.each_with_index do |card, index|
+              doc_descriptions << card.desc if options.add_doc_cards
+            end
+          end
+        end
+      end
+      trello.boards.each do |board_id, board|
+        puts "\nBoard Name: #{board.name}"
+        lists = board.lists(:filter => [:open]).target
+        lists.each do |list|
+          if list.name == 'In Progress' || list.name == 'Complete' || list.name == 'Docs Underway'
+            cards = trello.list_cards(list)
+            if !cards.empty?
+              puts "\n  List: #{list.name}  (#cards #{cards.length})"
+              cards.each_with_index do |card, index|
+                if options.add_task_checklists || options.add_bug_checklists || options.add_doc_cards
+                  if !(card.name =~ /^Sprint \d+/ && !card.due.nil?)
+                    checklists = []
+                    checklists << 'Tasks' if options.add_task_checklists
+                    checklists << 'Bugs' if options.add_bug_checklists && !card.labels.map{|x| x.name }.include?('no-qe')
+
+                    if options.add_doc_cards && card.labels.map{|x| x.name }.include?('documentation') && doc_descriptions.any?
+                      found = false
+                      doc_descriptions.each do |desc|
+                        if desc.include?(card.short_url)
+                          found = true
+                          break
+                        end
+                      end
+                      unless found
+                        name = card.name
+                        if card.name =~ /\((\d+|\?)\)(.*)/
+                          name = $2.strip
+                        end
+                        c = Trello::Card.create(:name => "Document: #{name}", :desc => "Corresponding Development Card: #{card.short_url}", :list_id => trello.documentation_next_list.id)
+                      end
+                    end
+
+                    card.checklists.target.each do |checklist|
+                      checklists.delete(checklist.name)
+                      break if checklists.empty?
+                    end if !checklists.empty?
+
+                    if checklists.any?
+                      puts "Adding #{checklists.pretty_inspect.chomp} to #{card.name}"
+                      checklists.each do |checklist_name|
+                        checklist = Trello::Checklist.create({:name => checklist_name, :board_id => board.id})
+                        card.add_checklist(checklist)
+                      end
+                    end
+                  end
+                end
+                if options.update_bug_tasks
+                  ['Bugs', 'Tasks'].each do |cl|
+                    bugs_checklist = trello.checklist(card, cl)
+                    if bugs_checklist
+                      bugs_checklist.items.each do |item|
+                        item_name = item.name.strip
+                        if item_name =~ /(https?:\/\/bugzilla\.redhat\.com\/[^\?]+\?id=\d+)/
+                          bug_url = $1
+                          status = bugzilla.bug_status_by_url(bug_url)
+                          if status == 'VERIFIED' || status == 'CLOSED'
+                            if item.state == 'incomplete'
+                              puts "Marking complete: #{item_name}"
+                              bugs_checklist.add_item(item_name, true, 'bottom')
+                              bugs_checklist.delete_checklist_item(item.id)
+                            end
+                          elsif status == 'OPEN' || status == 'ASSIGNED'
+                            if item.state == 'complete'
+                              puts "Marking incomplete: #{item_name}"
+                              bugs_checklist.add_item(item_name, false, 'top')
+                              bugs_checklist.delete_checklist_item(item.id)
+                            end
+                          end
+                        end
+                      end
+                    end
+                  end
+                end
+                if options.add_doc_tasks
+                  if card.labels.map{|label| label.name }.include?("documentation")
+                    tasks_checklist = trello.checklist(card, 'Tasks')
+                    if tasks_checklist
+                      doc_reminder = "Update this card (in the description or in a comment) with details about what needs to be documented.  For subjects that have corresponding engineering owned documentation, a pointer to that documentation should suffice."
+                      found = false
+                      tasks_checklist.items.each do |item|
+                        if item.name.include? doc_reminder
+                          found = true
+                          break
+                        end
+                      end
+                      unless found
+                        puts "Adding documentation reminder: #{card.name}"
+                        tasks_checklist.add_item(doc_reminder, false, 'bottom')
+                      end
+                    end
+                  end
+                end
+              end
+            end
+          end
+        end
+      end
+    end
+  end
+end

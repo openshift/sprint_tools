@@ -1,0 +1,22 @@
+---
+:mail_type: :sendmail
+:msg_opts:
+  :from: "Sprint Status Report <noreply@redhat.com>"
+:delivery_opts:
+  # Specify things like address, port, credentials, etc
+  #  Format isn't really documented, but here are the default options:
+  #   https://github.com/mikel/mail/blob/master/lib/mail/mail.rb#L71
+  :smtp:
+    #:address=>"localhost"
+    #:port=>25
+    #:domain=>"localhost.localdomain"
+    #:user_name=>nil
+    #:password=>nil
+    #:authentication=>nil
+    #:enable_starttls_auto=>true
+    #:openssl_verify_mode=>nil
+    #:ssl=>nil
+    #:tls=>nil
+  :sendmail:
+    #:location=>"/usr/sbin/sendmail"
+    #:arguments=>"-i -t"
