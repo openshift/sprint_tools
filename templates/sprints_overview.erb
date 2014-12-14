@@ -96,6 +96,8 @@
         end
       end
       sprint_data.each do |team_name, sprint_map|
+        team_total_sizing = 0
+        previous_sprints_count = 0
         sprints = []
         sprint_map.each do |sprint_id, cards|
           sprints << {sprint_id => cards}
@@ -116,12 +118,18 @@
         sprint_end = nil
         sprints.each do |sprint|
           sprint_num = sprint.keys.first
+          previous_sprints_count += 1 if sprint_num < 9999990
           sprint.values.first.each do |card|
             if card.name =~ /^Sprint (\d+)/
               sprint_end = card.due.to_date
               unless sprint_begin
                 sprint_begin = sprint_end
                 trello.sprint_length_in_weeks.times{sprint_begin = sprint_begin.previous(trello.sprint_start_day.to_sym)}
+              end
+            elsif sprint_num < 9999990 && card.name =~ /\((\d+|\?)\)(.*)/
+              sizing = $1
+              if sizing != '?'
+                team_total_sizing += sizing.to_i
               end
             end
           end
@@ -168,10 +176,15 @@
         end
 %>
 </table>
+
+<i>Velocity: <%=team_total_sizing/previous_sprints_count%> / sprint</i><br />
+
 </div>
 
 
  </section>
+ <br />
+ <br />
 <%
       end
 %>

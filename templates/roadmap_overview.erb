@@ -41,6 +41,8 @@
   <div class="container">
     <h2 class="visible-xs"><%= trello.organization_name %> Roadmap Overview</h2>
 <%
+      cross_epic_complete_sizing_total = 0
+      cross_epic_remaining_sizing_total = 0
       tag_to_epics = trello.tag_to_epics
       tag_to_epics.each do |tag, epic_cards|
         primary_epic_card = epic_cards.first
@@ -102,6 +104,8 @@ Corresponding Private Roadmap Board Epic: <a href='<%=secondary_epic_card.url%>'
 <%
           end
         end
+cross_epic_complete_sizing_total += complete_sizing_total
+cross_epic_remaining_sizing_total += remaining_sizing_total
 %>
 </table>
 </div><!-- table-responsive -->
@@ -113,6 +117,8 @@ Corresponding Private Roadmap Board Epic: <a href='<%=secondary_epic_card.url%>'
 %>
 
 
+<strong>Total Complete: <%=cross_epic_complete_sizing_total%></strong><br />
+<strong>Total Remaining: <%=cross_epic_remaining_sizing_total%></strong><br />
 
   </div><!-- /container -->
 </body>
