@@ -43,6 +43,7 @@
 <%
       cross_epic_complete_sizing_total = 0
       cross_epic_remaining_sizing_total = 0
+      cross_epic_card_names = {}
       tag_to_epics = trello.tag_to_epics
       tag_to_epics.each do |tag, epic_cards|
         primary_epic_card = epic_cards.first
@@ -82,9 +83,12 @@ Corresponding Private Roadmap Board Epic: <a href='<%=secondary_epic_card.url%>'
                 sizing_i = sizing.to_i
                 if (list.match('^Sprint \d+') || list == 'Accepted' || list == 'Complete')
                   complete_sizing_total += sizing_i
+                  cross_epic_complete_sizing_total += sizing_i unless cross_epic_card_names[item.name]
                 else
                   remaining_sizing_total += sizing_i
+                  cross_epic_remaining_sizing_total += sizing_i unless cross_epic_card_names[item.name]
                 end
+                cross_epic_card_names[item.name] = true
               end
             end
 %>
@@ -104,8 +108,6 @@ Corresponding Private Roadmap Board Epic: <a href='<%=secondary_epic_card.url%>'
 <%
           end
         end
-cross_epic_complete_sizing_total += complete_sizing_total
-cross_epic_remaining_sizing_total += remaining_sizing_total
 %>
 </table>
 </div><!-- table-responsive -->
