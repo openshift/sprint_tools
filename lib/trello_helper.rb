@@ -79,7 +79,9 @@ class TrelloHelper
   end
 
   def roadmap_board
-    @roadmap_board = Trello::Board.find(roadmap_id) unless @roadmap_board
+    if roadmap_id
+      @roadmap_board = Trello::Board.find(roadmap_id) unless @roadmap_board
+    end
     @roadmap_board
   end
 
@@ -91,11 +93,11 @@ class TrelloHelper
   end
 
   def roadmap_boards
-    rbs = nil
+    rbs = []
     if public_roadmap_board
-      rbs = [public_roadmap_board, roadmap_board]
+      rbs << public_roadmap_board
     else
-      rbs = [roadmap_board]
+      rbs << roadmap_board
     end
     rbs
   end
