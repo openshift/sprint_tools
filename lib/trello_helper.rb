@@ -6,7 +6,8 @@ class TrelloHelper
                 :documentation_id, :organization_id, :roadmap_board, :roadmap_id,
                 :public_roadmap_id, :public_roadmap_board, :documentation_board,
                 :documentation_next_list, :docs_planning_id, :organization_name,
-                :sprint_length_in_weeks, :sprint_start_day, :sprint_end_day, :logo
+                :sprint_length_in_weeks, :sprint_start_day, :sprint_end_day, :logo,
+                :docs_new_list_name
 
   attr_accessor :boards
 
@@ -131,8 +132,9 @@ class TrelloHelper
 
   def documentation_next_list
     unless @documentation_next_list
+      new_list_name = docs_new_list_name || 'Next Sprint'
       docs_planning_board.lists.each do |l|
-        if l.name == 'Next Sprint'
+        if l.name == new_list_name
           @documentation_next_list = l
           break
         end
