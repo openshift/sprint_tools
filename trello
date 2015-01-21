@@ -341,7 +341,7 @@ command :update do |c|
         end
       end
     end
-    if options.add_doc_checklists
+    if options.add_doc_checklists || options.add_doc_cards
       lists = trello.documentation_board.lists(:filter => [:open]).target
       lists.each do |list|
         cards = trello.list_cards(list)
@@ -350,35 +350,39 @@ command :update do |c|
           cards.each_with_index do |card, index|
             if !(card.name =~ /^Sprint \d+/ && !card.due.nil?)
               doc_descriptions << card.desc if options.add_doc_cards
-              checklists = []
-              checklists << 'Tasks'
+              if options.add_doc_checklists
+                checklists = []
+                checklists << 'Tasks'
 
-              card.checklists.target.each do |checklist|
-                checklists.delete(checklist.name)
-                break if checklists.empty?
-              end if !checklists.empty?
+                card.checklists.target.each do |checklist|
+                  checklists.delete(checklist.name)
+                  break if checklists.empty?
+                end if !checklists.empty?
 
-              if !checklists.empty?
-                puts "Adding #{checklists.pretty_inspect.chomp} to #{card.name}"
-                checklists.each do |checklist_name|
-                  checklist = Trello::Checklist.create({:name => checklist_name, :board_id => trello.documentation_id})
-                  card.add_checklist(checklist)
+                if !checklists.empty?
+                  puts "Adding #{checklists.pretty_inspect.chomp} to #{card.name}"
+                  checklists.each do |checklist_name|
+                    checklist = Trello::Checklist.create({:name => checklist_name, :board_id => trello.documentation_id})
+                    card.add_checklist(checklist)
+                  end
                 end
               end
             end
-            tasks_checklist = trello.checklist(card, 'Tasks')
-            if tasks_checklist
-              urh_reminder = "Update Revision History"
-              found = false
-              tasks_checklist.items.each do |item|
-                if item.name.include? urh_reminder
-                  found = true
-                  break
+            if options.add_doc_checklists
+              tasks_checklist = trello.checklist(card, 'Tasks')
+              if tasks_checklist
+                urh_reminder = "Update Revision History"
+                found = false
+                tasks_checklist.items.each do |item|
+                  if item.name.include? urh_reminder
+                    found = true
+                    break
+                  end
                 end
-              end
-              unless found
-                puts "Adding revision history reminder: #{card.name}"
-                tasks_checklist.add_item(urh_reminder, false, 'bottom')
+                unless found
+                  puts "Adding revision history reminder: #{card.name}"
+                  tasks_checklist.add_item(urh_reminder, false, 'bottom')
+                end
               end
             end
           end
@@ -391,13 +395,13 @@ command :update do |c|
         require 'bugzilla_helper'
         bugzilla = load_conf(BugzillaHelper, CONFIG.bugzilla, true)
       end
-      if options.add_doc_cards && options.add_doc_checklists
+      if options.add_doc_cards && (trello.documentation_board.id != trello.docs_planning_board.id)
         lists = trello.docs_planning_board.lists(:filter => [:open]).target
         lists.each do |list|
           cards = trello.list_cards(list)
           if !cards.empty?
             cards.each_with_index do |card, index|
-              doc_descriptions << card.desc if options.add_doc_cards
+              doc_descriptions << card.desc
             end
           end
         end
