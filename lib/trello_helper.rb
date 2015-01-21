@@ -73,7 +73,7 @@ class TrelloHelper
       if docs_planning_id
         @docs_planning_board = Trello::Board.find(docs_planning_id)
       else
-        @docs_planning_board = Trello::Board.find(documentation_id)
+        @docs_planning_board = documentation_board
       end
     end
     @docs_planning_board
