@@ -339,6 +339,7 @@ command :update do |c|
             trello.clear_checklist_refs(epic, FUTURE_EPIC_REFERENCED_STORIES_NAME, [FUTURE_TAG])
           end
 
+          puts ''
           epic_stories.each do |epic_story|
             epic = epic_story[0]
             card = epic_story[1]
