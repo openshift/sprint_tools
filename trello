@@ -448,11 +448,12 @@ command :update do |c|
               cards.each_with_index do |card, index|
                 if options.add_task_checklists || options.add_bug_checklists || options.add_doc_cards
                   if !(card.name =~ /^Sprint \d+/ && !card.due.nil?)
+                    labels = trello.card_labels(card)
                     checklists = []
                     checklists << 'Tasks' if options.add_task_checklists
-                    checklists << 'Bugs' if options.add_bug_checklists && !card.labels.map{|x| x.name }.include?('no-qe')
+                    checklists << 'Bugs' if options.add_bug_checklists && !labels.map{|x| x.name }.include?('no-qe')
 
-                    if options.add_doc_cards && card.labels.map{|x| x.name }.include?('documentation') && doc_descriptions.any?
+                    if options.add_doc_cards && labels.map{|x| x.name }.include?('documentation') && doc_descriptions.any?
                       found = false
                       doc_descriptions.each do |desc|
                         if desc.include?(card.short_url)
@@ -511,7 +512,7 @@ command :update do |c|
                   end
                 end
                 if options.add_doc_tasks
-                  if card.labels.map{|label| label.name }.include?("documentation")
+                  if trello.card_labels(card).labels.map{|label| label.name }.include?("documentation")
                     tasks_checklist = trello.checklist(card, 'Tasks')
                     if tasks_checklist
                       doc_reminder = "Update this card (in the description or in a comment) with details about what needs to be documented.  For subjects that have corresponding engineering owned documentation, a pointer to that documentation should suffice."
