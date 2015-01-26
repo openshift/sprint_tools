@@ -181,6 +181,18 @@ class TrelloHelper
     end
   end
 
+  def card_labels(card)
+    (1..3).each do |i|
+      begin
+        labels = card.labels
+        return labels
+      rescue => e
+        puts "Error getting labels: #{e.message}"
+        raise if i == 3
+      end
+    end
+  end
+
   def list_checklists(card)
     (1..3).each do |i|
       begin
