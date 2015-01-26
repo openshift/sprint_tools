@@ -385,7 +385,7 @@ command :update do |c|
                 checklists = []
                 checklists << 'Tasks'
 
-                card.checklists.target.each do |checklist|
+                trello.list_checklists(card).each do |checklist|
                   checklists.delete(checklist.name)
                   break if checklists.empty?
                 end if !checklists.empty?
@@ -469,7 +469,7 @@ command :update do |c|
                       end
                     end
 
-                    card.checklists.target.each do |checklist|
+                    trello.list_checklists(card).each do |checklist|
                       checklists.delete(checklist.name)
                       break if checklists.empty?
                     end if !checklists.empty?
