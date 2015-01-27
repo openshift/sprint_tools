@@ -116,7 +116,7 @@ class Sprint
 
     @stories = []
     trello.boards.each do |board_id, board|
-      lists = board.lists.target
+      lists = trello.target(board.lists)
       lists.each do |list|
         if list.name == 'In Progress' || list.name == 'Complete' || list.name == 'Docs Underway' || list.name == 'Accepted'
           cards = trello.list_cards(list)

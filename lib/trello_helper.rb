@@ -55,7 +55,7 @@ class TrelloHelper
   def boards
     return @boards if @boards
     @boards = {}
-    org.boards.target.each do |board|
+    org_boards.each do |board|
       if board_ids.include?(board.id)
         @boards[board.id] = board
       end
@@ -181,6 +181,18 @@ class TrelloHelper
     end
   end
 
+  def target(ref, name='target')
+    (1..3).each do |i|
+      begin
+        t = ref.target
+        return t
+      rescue => e
+        puts "Error getting #{target}: #{e.message}"
+        raise if i == 3
+      end
+    end
+  end
+
   def card_labels(card)
     (1..3).each do |i|
       begin
@@ -194,27 +206,11 @@ class TrelloHelper
   end
 
   def list_checklists(card)
-    (1..3).each do |i|
-      begin
-        checklists = card.checklists.target
-        return checklists
-      rescue => e
-        puts "Error getting checklists: #{e.message}"
-        raise if i == 3
-      end
-    end
+    target(card.checklists, 'checklists')
   end
 
   def list_cards(list)
-    (1..3).each do |i|
-      begin
-        cards = list.cards.target
-        return cards
-      rescue => e
-        puts "Error getting list cards: #{e.message}"
-        raise if i == 3
-      end
-    end
+    target(list.cards, 'cards')
   end
 
   def print_card(card, num=nil)
@@ -254,7 +250,7 @@ class TrelloHelper
   end
 
   def org_boards
-    org.boards.target
+    target(org.boards)
   end
 
   def board(board_id)
