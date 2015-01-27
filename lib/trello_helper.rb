@@ -206,11 +206,27 @@ class TrelloHelper
   end
 
   def list_checklists(card)
-    target(card.checklists, 'checklists')
+    (1..3).each do |i|
+      begin
+        checklists = target(card.checklists, 'checklists')
+        return checklists
+      rescue => e
+        puts "Error getting checklists: #{e.message}"
+        raise if i == 3
+      end
+    end
   end
 
   def list_cards(list)
-    target(list.cards, 'cards')
+    (1..3).each do |i|
+      begin
+        cards = target(list.cards, 'cards')
+        return cards
+      rescue => e
+        puts "Error getting list cards: #{e.message}"
+        raise if i == 3
+      end
+    end
   end
 
   def print_card(card, num=nil)
