@@ -177,7 +177,7 @@
 %>
 </table>
 
-<i>Velocity: <%=team_total_sizing/previous_sprints_count%> / sprint</i><br />
+<i>Velocity: <%=(previous_sprints_count > 0) ? team_total_sizing/previous_sprints_count : '0'%> / sprint</i><br />
 
 </div>
 
