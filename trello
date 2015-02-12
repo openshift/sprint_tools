@@ -240,7 +240,7 @@ command :update do |c|
   c.option "--add-bug-checklists", "Add checklists to stories"
   c.option "--add-doc-tasks", "Add documentation tasks to documentation labeled stories"
   c.option "--add-doc-checklists", "Add documentation team tasks"
-  c.option "--add-doc-cards", "Add documentation cards for documentation labeled dev cards (requires --add-doc-checklists)"
+  c.option "--add-doc-cards", "Add documentation cards for documentation labeled dev cards"
   c.option "--update-bug-tasks", "Update closed/verified bug tasks"
   c.option "--update-roadmap", "Update the roadmap board with progress from teams"
 
