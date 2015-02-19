@@ -1,0 +1,3 @@
+---
+:host: <ldap_host>
+:base_dn: <base_dn>

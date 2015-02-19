@@ -71,6 +71,13 @@ Commands
             Get a single card Ex: team1_board1_1
 
 
+**list_invalid_users**
+
+    DESCRIPTION:
+        List the potentially invalid users
+
+
+
 **report**
 
     DESCRIPTION:

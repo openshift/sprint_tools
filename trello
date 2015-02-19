@@ -10,6 +10,7 @@ require 'report'
 require 'erb'
 require 'pp'
 require 'yaml'
+require 'i18n'
 require 'commander/import'
 
 Encoding.default_external = "UTF-8"
@@ -107,7 +108,7 @@ command :list do |c|
 end
 
 command :sprint_identifier do |c|
-  c.syntax = "#{name} sprint-identifier"
+  c.syntax = "#{name} sprint_identifier"
 
   c.description = "Print the sprint identifier"
   c.action do |args, options|
@@ -117,6 +118,26 @@ command :sprint_identifier do |c|
     else
       print "unknown"
     end
+  end
+end
+
+command :list_invalid_users do |c|
+  c.syntax = "#{name} list_invalid_users"
+
+  c.description = "List the potentially invalid users"
+  c.action do |args, options|
+    require 'ldap_helper'
+    ldap = load_conf(LdapHelper, CONFIG.ldap, true)
+    puts "Potential Invalid Organization Users:"
+    valid_user_names = {}
+    invalid_user_names = ldap.print_invalid_members(trello.org.members, valid_user_names, invalid_user_names)
+    puts "\n\nPotential Invalid Board Users:"
+    trello.org_boards.each do |board|
+      puts "\n#{board.name}:"
+      ldap.print_invalid_members(trello.org.members, valid_user_names, invalid_user_names.clone)
+    end
+    puts "\n\nValid Logins:"
+    puts valid_user_names.keys
   end
 end
 
