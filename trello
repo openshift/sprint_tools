@@ -133,8 +133,10 @@ command :list_invalid_users do |c|
     invalid_user_names = ldap.print_invalid_members(trello.org.members, valid_user_names, invalid_user_names)
     puts "\n\nPotential Invalid Board Users:"
     trello.org_boards.each do |board|
-      puts "\n#{board.name}:"
-      ldap.print_invalid_members(board.members, valid_user_names, invalid_user_names.clone)
+      unless board.closed?
+        puts "\n#{board.name}:"
+        ldap.print_invalid_members(board.members, valid_user_names, invalid_user_names.clone)
+      end
     end
     puts "\n\nValid Logins:"
     puts valid_user_names.keys
