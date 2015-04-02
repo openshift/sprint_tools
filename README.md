@@ -115,7 +115,7 @@ Commands
         --update-bug-tasks
             Update closed/verified bug tasks
         --update-roadmap
-            Update the roadmap board with progress from teams
+            Update the roadmap board with progress from teams.  Note: Existing checklist items will be removed with matching [tag]s.
 
 
 

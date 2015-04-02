@@ -265,7 +265,7 @@ command :update do |c|
   c.option "--add-doc-checklists", "Add documentation team tasks"
   c.option "--add-doc-cards", "Add documentation cards for documentation labeled dev cards"
   c.option "--update-bug-tasks", "Update closed/verified bug tasks"
-  c.option "--update-roadmap", "Update the roadmap board with progress from teams"
+  c.option "--update-roadmap", "Update the roadmap board with progress from teams.  Note: Existing checklist items will be removed with matching [tag]s."
 
   c.description = "An assortment of Trello modification utilities"
   c.action do |args, options|
