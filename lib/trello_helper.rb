@@ -106,12 +106,14 @@ class TrelloHelper
   def tag_to_epics
     tag_to_epics = {}
     roadmap_boards.each do |roadmap_board|
-      epic_list = epic_list(roadmap_board)
-      epic_list.cards.each do |epic_card|
-        epic_card.name.scan(/\[[^\]]+\]/).each do |tag|
-          if tag != '[future]'
-            tag_to_epics[tag] = [] unless tag_to_epics[tag]
-            tag_to_epics[tag] << epic_card
+      epic_lists = epic_lists(roadmap_board)
+      epic_lists.each do |epic_list|
+        epic_list.cards.each do |epic_card|
+          epic_card.name.scan(/\[[^\]]+\]/).each do |tag|
+            if tag != '[future]'
+              tag_to_epics[tag] = [] unless tag_to_epics[tag]
+              tag_to_epics[tag] << epic_card
+            end
           end
         end
       end
@@ -119,12 +121,11 @@ class TrelloHelper
     tag_to_epics
   end
 
-  def epic_list(board)
-    list = nil
+  def epic_lists(board)
+    list = []
     board.lists.each do |l|
-      if l.name == 'Epic Backlog'
-        list = l
-        break
+      if l.name == 'Epic Backlog' or l.name == 'Top 5 Priorities' or l.name == 'New'
+        list.push(l)
       end
     end
     list

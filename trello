@@ -273,19 +273,19 @@ command :update do |c|
     if options.update_roadmap
       tag_to_epics = trello.tag_to_epics
       trello.roadmap_boards.each do |roadmap_board|
-        epic_list = trello.epic_list(roadmap_board)
+        epic_lists = trello.epic_lists(roadmap_board)
         tag_to_epic = {}
-
-        epic_list.cards.each do |epic_card|
-          epic_card.name.scan(/\[[^\]]+\]/).each do |tag|
-            if tag != FUTURE_TAG
-              tag_to_epic[tag] = epic_card
+        epic_lists.each do |epic_list|
+          epic_list.cards.each do |epic_card|
+            epic_card.name.scan(/\[[^\]]+\]/).each do |tag|
+              if tag != FUTURE_TAG
+                tag_to_epic[tag] = epic_card
+              end
             end
           end
         end
         puts 'Tags:'
         puts tag_to_epic.keys.pretty_inspect
-
         epic_stories_by_epic = {}
         (1..2).each do |accepted_pass|
           trello.boards.each do |board_id, board|
@@ -359,9 +359,11 @@ command :update do |c|
             end
           end
         end
-        epic_list.cards.each do |epic_card|
-          unless epic_stories_by_epic[epic_card.id]
-            clear_epic_refs(epic_card, trello)
+        epic_lists.each do |epic_list|
+          epic_list.cards.each do |epic_card|
+            unless epic_stories_by_epic[epic_card.id]
+              clear_epic_refs(epic_card, trello)
+            end
           end
         end
         epic_stories_by_epic.each_value do |epic_stories|
