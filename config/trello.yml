@@ -19,6 +19,7 @@
 :docs_new_list_name: New
 :organization_id: <organication short name>
 :organization_name: <organization display name>
+:roadmap_board_list: 'Epic Backlog, New'
 :sprint_length_in_weeks: 3
 :sprint_start_day: monday
 :sprint_end_day: friday

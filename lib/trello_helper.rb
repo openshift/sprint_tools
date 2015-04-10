@@ -7,7 +7,7 @@ class TrelloHelper
                 :public_roadmap_id, :public_roadmap_board, :documentation_board,
                 :documentation_next_list, :docs_planning_id, :organization_name,
                 :sprint_length_in_weeks, :sprint_start_day, :sprint_end_day, :logo,
-                :docs_new_list_name
+                :docs_new_list_name, :roadmap_board_list
 
   attr_accessor :boards
 
@@ -123,8 +123,10 @@ class TrelloHelper
 
   def epic_lists(board)
     list = []
+    target_boards = roadmap_board_list.split(',').map(&:strip) || 'Epic Backlog'
+    p target_boards
     board.lists.each do |l|
-      if l.name == 'Epic Backlog' or l.name == 'Top 5 Priorities' or l.name == 'New'
+      if target_boards.include?(l.name)
         list.push(l)
       end
     end
