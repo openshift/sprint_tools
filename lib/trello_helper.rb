@@ -122,15 +122,15 @@ class TrelloHelper
   end
 
   def epic_lists(board)
-    list = []
-    target_boards = roadmap_board_list.split(',').map(&:strip) || 'Epic Backlog'
-    p target_boards
+    lists = []
+    #target_boards = roadmap_board_list.split(',').map(&:strip) || 'Epic Backlog'
+    target_boards = roadmap_board_list || ['Epic Backlog']
     board.lists.each do |l|
       if target_boards.include?(l.name)
-        list.push(l)
+        lists.push(l)
       end
     end
-    list
+    lists
   end
 
   def documentation_next_list
