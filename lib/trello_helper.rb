@@ -7,7 +7,7 @@ class TrelloHelper
                 :public_roadmap_id, :public_roadmap_board, :documentation_board,
                 :documentation_next_list, :docs_planning_id, :organization_name,
                 :sprint_length_in_weeks, :sprint_start_day, :sprint_end_day, :logo,
-                :docs_new_list_name
+                :docs_new_list_name, :roadmap_board_lists
 
   attr_accessor :boards
 
@@ -106,12 +106,14 @@ class TrelloHelper
   def tag_to_epics
     tag_to_epics = {}
     roadmap_boards.each do |roadmap_board|
-      epic_list = epic_list(roadmap_board)
-      epic_list.cards.each do |epic_card|
-        epic_card.name.scan(/\[[^\]]+\]/).each do |tag|
-          if tag != '[future]'
-            tag_to_epics[tag] = [] unless tag_to_epics[tag]
-            tag_to_epics[tag] << epic_card
+      epic_lists = epic_lists(roadmap_board)
+      epic_lists.each do |epic_list|
+        epic_list.cards.each do |epic_card|
+          epic_card.name.scan(/\[[^\]]+\]/).each do |tag|
+            if tag != '[future]'
+              tag_to_epics[tag] = [] unless tag_to_epics[tag]
+              tag_to_epics[tag] << epic_card
+            end
           end
         end
       end
@@ -119,15 +121,15 @@ class TrelloHelper
     tag_to_epics
   end
 
-  def epic_list(board)
-    list = nil
+  def epic_lists(board)
+    lists = []
+    target_boards = roadmap_board_lists || ['Epic Backlog']
     board.lists.each do |l|
-      if l.name == 'Epic Backlog'
-        list = l
-        break
+      if target_boards.include?(l.name)
+        lists.push(l)
       end
     end
-    list
+    lists
   end
 
   def documentation_next_list
