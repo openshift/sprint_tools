@@ -19,7 +19,7 @@
 :docs_new_list_name: New
 :organization_id: <organication short name>
 :organization_name: <organization display name>
-:roadmap_board_list:
+:roadmap_board_lists:
  - 'New'
  - 'Epic Backlog'
 :sprint_length_in_weeks: 3
