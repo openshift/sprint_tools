@@ -165,15 +165,12 @@ class TrelloHelper
       cl.items.each do |item|
         tags.each do |tag|
           if item.name.include?(tag) || item.name =~ /\[.*\]\(https?:\/\/trello\.com\/[^\)]+\) \([^\)]+\) \([^\)]+\)/
-            (1..DEFAULT_RETRIES).each do |i|
-              begin
+            begin
+              trello_do('checklist') do
                 cl.delete_checklist_item(item.id)
-                break
-              rescue => e
-                puts "Error deleting checklist: #{e.message}"
-                sleep DEFAULT_RETRY_SLEEP
-                # Ignore
               end
+            rescue => e
+              puts "Error deleting checklist: #{e.message}"
             end
             break
           end
@@ -188,42 +185,23 @@ class TrelloHelper
   end
 
   def target(ref, name='target')
-    (1..DEFAULT_RETRIES).each do |i|
-      begin
-        t = ref.target
-        return t
-      rescue => e
-        puts "Error getting #{target}: #{e.message}"
-        raise if i == DEFAULT_RETRIES
-        sleep DEFAULT_RETRY_SLEEP
-      end
+    trello_do(name) do
+      t = ref.target
+      return t
     end
   end
 
   def card_labels(card)
-    (1..DEFAULT_RETRIES).each do |i|
-      begin
-        labels = card.labels
-        return labels
-      rescue => e
-        puts "Error getting labels: #{e.message}"
-        raise if i == DEFAULT_RETRIES
-        sleep DEFAULT_RETRY_SLEEP
-      end
+    trello_do('labels') do
+      labels = card.labels
+      return labels
     end
   end
 
   def list_checklists(card)
     checklists = nil
-    (1..DEFAULT_RETRIES).each do |i|
-      begin
-        checklists = card.checklists
-        break
-      rescue => e
-        puts "Error getting checklists: #{e.message}"
-        raise if i == DEFAULT_RETRIES
-        sleep DEFAULT_RETRY_SLEEP
-      end
+    trello_do('checklists') do
+      checklists = card.checklists
     end
     checklists = target(checklists, 'checklists') if checklists
     checklists
@@ -231,15 +209,8 @@ class TrelloHelper
 
   def list_cards(list)
     cards = nil
-    (1..DEFAULT_RETRIES).each do |i|
-      begin
-        cards = list.cards
-        break
-      rescue => e
-        puts "Error getting list cards: #{e.message}"
-        raise if i == DEFAULT_RETRIES
-        sleep DEFAULT_RETRY_SLEEP
-      end
+    trello_do('cards') do
+      cards = list.cards
     end
     cards = target(cards, 'cards') if cards
     cards
@@ -291,6 +262,23 @@ class TrelloHelper
 
   def member(member_name)
     Trello::Member.find(member_name)
+  end
+
+  private
+
+  def trello_do(type, retries=DEFAULT_RETRIES)
+    i = 0
+    while true
+      begin
+        yield
+        break
+      rescue Exception => e
+        puts "Error with #{type}: #{e.message}"
+        raise if i >= retries
+        sleep DEFAULT_RETRY_SLEEP
+        i += 1
+      end
+    end
   end
 
 end
