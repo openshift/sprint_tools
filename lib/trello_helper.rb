@@ -11,6 +11,9 @@ class TrelloHelper
 
   attr_accessor :boards
 
+  DEFAULT_RETRIES = 3
+  DEFAULT_RETRY_SLEEP = 10
+
   def initialize(opts)
     opts.each do |k,v|
       send("#{k}=",v)
@@ -162,12 +165,13 @@ class TrelloHelper
       cl.items.each do |item|
         tags.each do |tag|
           if item.name.include?(tag) || item.name =~ /\[.*\]\(https?:\/\/trello\.com\/[^\)]+\) \([^\)]+\) \([^\)]+\)/
-            (1..3).each do |i|
+            (1..DEFAULT_RETRIES).each do |i|
               begin
                 cl.delete_checklist_item(item.id)
                 break
               rescue => e
                 puts "Error deleting checklist: #{e.message}"
+                sleep DEFAULT_RETRY_SLEEP
                 # Ignore
               end
             end
@@ -184,38 +188,41 @@ class TrelloHelper
   end
 
   def target(ref, name='target')
-    (1..3).each do |i|
+    (1..DEFAULT_RETRIES).each do |i|
       begin
         t = ref.target
         return t
       rescue => e
         puts "Error getting #{target}: #{e.message}"
-        raise if i == 3
+        raise if i == DEFAULT_RETRIES
+        sleep DEFAULT_RETRY_SLEEP
       end
     end
   end
 
   def card_labels(card)
-    (1..3).each do |i|
+    (1..DEFAULT_RETRIES).each do |i|
       begin
         labels = card.labels
         return labels
       rescue => e
         puts "Error getting labels: #{e.message}"
-        raise if i == 3
+        raise if i == DEFAULT_RETRIES
+        sleep DEFAULT_RETRY_SLEEP
       end
     end
   end
 
   def list_checklists(card)
     checklists = nil
-    (1..3).each do |i|
+    (1..DEFAULT_RETRIES).each do |i|
       begin
         checklists = card.checklists
         break
       rescue => e
         puts "Error getting checklists: #{e.message}"
-        raise if i == 3
+        raise if i == DEFAULT_RETRIES
+        sleep DEFAULT_RETRY_SLEEP
       end
     end
     checklists = target(checklists, 'checklists') if checklists
@@ -224,13 +231,14 @@ class TrelloHelper
 
   def list_cards(list)
     cards = nil
-    (1..3).each do |i|
+    (1..DEFAULT_RETRIES).each do |i|
       begin
         cards = list.cards
         break
       rescue => e
         puts "Error getting list cards: #{e.message}"
-        raise if i == 3
+        raise if i == DEFAULT_RETRIES
+        sleep DEFAULT_RETRY_SLEEP
       end
     end
     cards = target(cards, 'cards') if cards
