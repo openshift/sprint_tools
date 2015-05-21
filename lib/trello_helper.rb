@@ -98,11 +98,8 @@ class TrelloHelper
 
   def roadmap_boards
     rbs = []
-    if public_roadmap_board
-      rbs << public_roadmap_board
-    else
-      rbs << roadmap_board
-    end
+    rbs << public_roadmap_board if public_roadmap_board
+    rbs << roadmap_board if roadmap_board
     rbs
   end
 
