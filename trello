@@ -389,6 +389,7 @@ command :update do |c|
                   rescue => e
                     puts "Error adding checklist: #{e.message}"
                     raise if i == 3
+                    sleep 10
                   end
                 end
               end
