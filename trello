@@ -39,8 +39,8 @@ def clear_epic_refs(epic_card, trello)
       tags << tag
     end
   end
-  trello.clear_checklist_refs(epic_card, EPIC_REFERENCED_STORIES_NAME, tags)
   trello.clear_checklist_refs(epic_card, FUTURE_EPIC_REFERENCED_STORIES_NAME, [FUTURE_TAG])
+  trello.clear_checklist_refs(epic_card, EPIC_REFERENCED_STORIES_NAME, tags)
 end
 
 $tag_to_label_color = {
