@@ -103,6 +103,10 @@ class TrelloHelper
     rbs
   end
 
+  def to_markdown(text)
+    Kramdown::Document.new(text).to_html
+  end
+
   def tag_to_epics
     tag_to_epics = {}
     roadmap_boards.each do |roadmap_board|
