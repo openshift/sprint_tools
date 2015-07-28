@@ -54,7 +54,7 @@
 <% if secondary_epic_card %>
 Corresponding Private Roadmap Board Epic: <a href='<%=secondary_epic_card.url%>'><%=secondary_epic_card.name%></a></br>
 <% end %>
-<pre><%=primary_epic_card.desc%></pre>
+<%=trello.markdown_to_html(primary_epic_card.desc)%>
 <div class="table-responsive">
 <table class="table table-normal table-condensed">
   <tr><th>Scenario</th><th>Sizing</th><th>List</th><th>Board</th></tr>
@@ -114,6 +114,10 @@ Corresponding Private Roadmap Board Epic: <a href='<%=secondary_epic_card.url%>'
 <i>Complete: <%=complete_sizing_total%></i><br />
 <i>Remaining: <%=remaining_sizing_total%></i><br />
  </section>
+<br/>
+<br/>
+<br/>
+<br/>
 <%
       end
 %>
