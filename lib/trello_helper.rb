@@ -261,6 +261,10 @@ class TrelloHelper
     Trello::Member.find(member_name)
   end
 
+  def markdown_to_html(text)
+    Kramdown::Document.new(text).to_html
+  end
+
   private
 
   def trello_do(type, retries=DEFAULT_RETRIES)
