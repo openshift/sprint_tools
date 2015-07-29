@@ -253,7 +253,10 @@ class TrelloHelper
   end
 
   def org
-    @org ||= Trello::Organization.find(organization_id)
+    trello_do('org') do
+      @org ||= Trello::Organization.find(organization_id)
+      return @org
+    end
   end
 
   def org_boards
