@@ -45,7 +45,7 @@ class Sprint
   def sprint_card
     return @sprint_card if @sprint_card
     board = trello.board(trello.board_ids.first)
-    board.lists.each do |list|
+    trello.board_lists(board).each do |list|
       if list.name == 'In Progress'
         @sprint_card = list.cards.sort_by { |card| card.pos }.first
         return @sprint_card
@@ -116,7 +116,7 @@ class Sprint
 
     @stories = []
     trello.boards.each do |board_id, board|
-      lists = trello.target(board.lists)
+      lists = trello.target(trello.board_lists(board))
       lists.each do |list|
         if list.name == 'In Progress' || list.name == 'Complete' || list.name == 'Docs Underway' || list.name == 'Accepted'
           cards = trello.list_cards(list)
