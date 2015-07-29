@@ -114,7 +114,7 @@ command :sprint_identifier do |c|
   c.action do |args, options|
     $sprint = Sprint.new({:trello => trello})
     if $sprint.sprint_card.name =~ /^Sprint (\d+)/
-      print "2.0.#{$1}"
+      print "#{$1}"
     else
       print "unknown"
     end
