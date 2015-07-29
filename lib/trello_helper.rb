@@ -121,10 +121,17 @@ class TrelloHelper
     tag_to_epics
   end
 
+  def board_lists(board, filter={})
+    trello_do('lists') do
+      lists = board.lists(filter)
+      return lists
+    end
+  end
+
   def epic_lists(board)
     lists = []
     target_boards = roadmap_board_lists || ['Epic Backlog']
-    board.lists.each do |l|
+    board_lists(board).each do |l|
       if target_boards.include?(l.name)
         lists.push(l)
       end
@@ -135,7 +142,7 @@ class TrelloHelper
   def documentation_next_list
     unless @documentation_next_list
       new_list_name = docs_new_list_name || 'Next Sprint'
-      docs_planning_board.lists.each do |l|
+      board_lists(docs_planning_board).each do |l|
         if l.name == new_list_name
           @documentation_next_list = l
           break

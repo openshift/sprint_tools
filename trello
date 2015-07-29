@@ -89,7 +89,7 @@ command :list do |c|
 
       boards.each do |board|
         puts "\nBoard Name: #{board.name}"
-        lists = trello.target(board.lists)
+        lists = trello.target(trello.board_lists(board))
         if options.list
           lists = []
           lists.each do |list|
@@ -291,7 +291,7 @@ command :update do |c|
           trello.boards.each do |board_id, board|
             if roadmap_board.prefs['permissionLevel'] == 'org' || roadmap_board.prefs['permissionLevel'] == board.prefs['permissionLevel']
               puts "\nBoard Name: #{board.name}"
-              all_lists = trello.target(board.lists(:filter => [:all]))
+              all_lists = trello.target(trello.board_lists(board, :filter => [:all]))
               new_list = nil
               backlog_list = nil
               next_list = nil
@@ -399,7 +399,7 @@ command :update do |c|
       end
     end
     if options.add_doc_checklists || options.add_doc_cards
-      lists = trello.target(trello.documentation_board.lists(:filter => [:open]))
+      lists = trello.target(trello.board_lists(documentation_board, :filter => [:open]))
       lists.each do |list|
         cards = trello.list_cards(list)
         if !cards.empty?
@@ -453,7 +453,7 @@ command :update do |c|
         bugzilla = load_conf(BugzillaHelper, CONFIG.bugzilla, true)
       end
       if options.add_doc_cards && (trello.documentation_board.id != trello.docs_planning_board.id)
-        lists = trello.target(trello.docs_planning_board.lists(:filter => [:open]))
+        lists = trello.target(trello.board_lists(trello.docs_planning_board, :filter => [:open]))
         lists.each do |list|
           cards = trello.list_cards(list)
           if !cards.empty?
@@ -465,7 +465,7 @@ command :update do |c|
       end
       trello.boards.each do |board_id, board|
         puts "\nBoard Name: #{board.name}"
-        lists = trello.target(board.lists(:filter => [:open]))
+        lists = trello.target(trello.board_lists(board, :filter => [:open]))
         lists.each do |list|
           if list.name == 'In Progress' || list.name == 'Complete' || list.name == 'Docs Underway'
             cards = trello.list_cards(list)
