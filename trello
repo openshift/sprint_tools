@@ -399,7 +399,7 @@ command :update do |c|
       end
     end
     if options.add_doc_checklists || options.add_doc_cards
-      lists = trello.target(trello.board_lists(documentation_board, :filter => [:open]))
+      lists = trello.target(trello.board_lists(trello.documentation_board, :filter => [:open]))
       lists.each do |list|
         cards = trello.list_cards(list)
         if !cards.empty?
