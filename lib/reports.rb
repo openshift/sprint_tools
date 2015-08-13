@@ -23,13 +23,13 @@ module SprintReport
   end
 
   def offenders
-    data.map{|x| x.members.map{|member| member.email} }.flatten.uniq
+    data.map{|x| members(x).map{|member| member.email}}.flatten.uniq
   end
 
   def rows(user = nil)
     _data = data
     if user
-      _data = data.select{|x| x.members.map{|member| member.email}.include?(user)}
+      _data = data.select{|x| members(x).map{|member| member.email}.include?(user)}
     end
     _data.map do |row|
       # Get data for each column
@@ -61,6 +61,22 @@ module SprintReport
 
   def due_date
     sprint.start + day.days
+  end
+
+  private
+
+  def members(x, retries=3)
+    i = 0
+    while true
+      begin
+        return x.members
+      rescue Exception => e
+        puts "Error getting members: #{e.message}"
+        raise if i >= retries
+        sleep 10
+        i += 1
+      end
+    end
   end
 
   class Column
