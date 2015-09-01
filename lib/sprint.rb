@@ -118,7 +118,7 @@ class Sprint
     trello.boards.each do |board_id, board|
       lists = trello.target(trello.board_lists(board))
       lists.each do |list|
-        if list.name == 'In Progress' || list.name == 'Complete' || list.name == 'Docs Underway' || list.name == 'Accepted'
+        if list.name == 'In Progress' || list.name == 'Complete' || list.name == 'Accepted'
           cards = trello.list_cards(list)
           cards = cards.delete_if {|card| card.name =~ /^Sprint \d+/ && !card.due.nil?}
           @stories += cards
