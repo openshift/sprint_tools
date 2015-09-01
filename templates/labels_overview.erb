@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title><%= trello.organization_name %> Labels Overview</title>
+<script type='text/javascript' src='https://ajax.googleapis.com/ajax/libs/jquery/1.8.1/jquery.min.js?ver=3.8.1'></script>
+<link href="https://netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css" type="text/css" rel="stylesheet" media="screen">
+<script src="https://netdna.bootstrapcdn.com/bootstrap/3.1.1/js/bootstrap.min.js"></script>
+<link href='https://fonts.googleapis.com/css?family=Open+Sans:400,300,600,800,700' rel='stylesheet' type='text/css'>
+<link href="stylesheets/trello.css" rel="stylesheet" type="text/css">
+<link rel="shortcut icon" href="favicon.ico" type="image/x-icon" />
+<meta name="viewport" content="width=device-width">
+<style type="text/css">
+
+.table>tbody>tr.in-progress>th {
+  background-color: #94cc75;
+  border-top: 1px solid #94cc75;
+}
+.table>tbody>tr.next>th {
+  background-color: #c4e3b3;
+  border-top: 1px solid #c4e3b3;
+}
+.table>tbody>tr.backlog>th {
+  background-color: #dbedfe;
+  border-top: 1px solid #dbedfe;
+}
+.table.table-rows>tbody>tr>th,
+.table.table-rows>tbody>tr>td {
+  padding: 15px; 
+}
+
+
+</style>
+
+</head>
+
+<body>
+  <div class="navbar navbar-default navbar-fixed-top" role="navigation">
+      <div class="container">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <div class="brand" style="background: transparent url('<%=trello.logo%>') no-repeat left -5px; background-size: 200px auto">
+          </div>
+        </div>
+        <div class="navbar-collapse collapse">
+          <ul class="nav navbar-nav">
+              <% LINKS.each do |page_name, page_title|
+                if page_name != 'labels_overview' %>
+                  <li><a href='<%=page_name%>.html'><%=page_title%></a></li>
+                <%else%>
+                  <li><a class="active" href='<%=page_name%>.html'><%=page_title%></a></li>
+                <%end
+                end%>
+          </ul>
+        </div><!--/.nav-collapse -->
+      </div>
+    </div>
+
+  <div class="container">
+
+    <h2 class="visible-xs"><%= trello.organization_name %> Labels Overview</h2>
+
+<%
+      label_data = {}
+      trello.teams.keys.map{ |team_name| team_name.to_s }.each do |team_name|
+        trello.team_boards(team_name).each do |board|
+          trello.target(trello.board_lists(board)).each do |list|
+            list_name = list.name
+            if (list_name == 'In Progress' || list_name == 'Complete' || list_name == 'Accepted')
+              cards = trello.list_cards(list)
+              cards.each do |card|
+                trello.card_labels(card).each do |label|
+                  if ['documentation', 'security'].include?(label.name)
+                    label_data[label.name] = [] unless label_data[label.name]
+                    label_data[label.name] << [card, board]
+                  end
+                end
+              end
+            end
+          end
+        end
+      end
+
+%>
+<%
+      label_data.each do |label_name, card_boards|
+%>
+<h3 style="text-transform:uppercase"><%=label_name%></h3>
+<div class="table-responsive">
+<table class="table table-normal table-condensed">
+  <tr><th>Card</th><th>Board</th></tr>
+<%
+        card_boards.each do |card_board|
+          board = card_board[1]
+          card = card_board[0]
+%>
+<tr>
+<td><a href='<%=card.url%>'><%=card.name%></a></td>
+<td><a href='<%=board.url%>'><%=board.name%></a></td>
+</tr>
+<%
+        end
+%>
+</table>
+<%
+      end
+%>
+</div>
+
+
+  </div><!-- /container -->
+</body>
+</html>
+

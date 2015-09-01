@@ -54,6 +54,7 @@ $tag_to_label_color = {
 LINKS = {'roadmap_overview' => 'Roadmap Overview',
          'sprints_overview' => 'Sprints Overview',
          'previous_sprints_overview' => 'Previous Sprints Overview',
+         'labels_overview' => 'Labels Overview',
          'sprint_schedule' => 'Sprint Schedule'}
 
 EPIC_REFERENCED_STORIES_NAME = "Scenarios"
@@ -237,6 +238,22 @@ command :generate_sprint_schedule do |c|
   end
 end
 
+command :generate_labels_overview do |c|
+  c.syntax = "#{name} generate_labels_overview"
+
+  c.option "--out OUT_FILE", "The file to output Ex: /tmp/labels_overview.html"
+
+  c.description = "Generate the labels overview"
+  c.action do |args, options|
+    options.out ||= '/tmp/labels_overview.html'
+
+    $sprint = Sprint.new({:trello => trello})
+
+    erb = ERB.new(File.open('templates/labels_overview.erb', "rb").read)
+    File.open(options.out, 'w') {|f| f.write(erb.result(binding)) }
+  end
+end
+
 command :comment do |c|
   c.syntax = "#{name} comment"
 
@@ -296,7 +313,6 @@ command :update do |c|
               backlog_list = nil
               next_list = nil
               in_progress_list = nil
-              docs_underway_list = nil
               complete_list = nil
               accepted_list = nil
               previous_sprint_lists = []
@@ -313,8 +329,6 @@ command :update do |c|
                   in_progress_list = l
                 when 'Complete'
                   complete_list = l
-                when 'Docs Underway'
-                  docs_underway_list = l
                 when 'Accepted'
                   accepted_list = l
                 when /^Sprint \d+/
@@ -467,7 +481,7 @@ command :update do |c|
         puts "\nBoard Name: #{board.name}"
         lists = trello.target(trello.board_lists(board, :filter => [:open]))
         lists.each do |list|
-          if list.name == 'In Progress' || list.name == 'Complete' || list.name == 'Docs Underway'
+          if list.name == 'In Progress' || list.name == 'Complete'
             cards = trello.list_cards(list)
             if !cards.empty?
               puts "\n  List: #{list.name}  (#cards #{cards.length})"
