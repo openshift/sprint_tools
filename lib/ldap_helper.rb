@@ -39,7 +39,7 @@ class LdapHelper
     users = []
     ldap = ldap_connect
     ldap.bind do
-      ldap.search(base_dn, LDAP::LDAP_SCOPE_SUBTREE, "(cn=#{givenName}#{perfect_match ? ' ' : '*'}#{sn})", ATTRS) do |entry|
+      ldap.search(base_dn, LDAP::LDAP_SCOPE_SUBTREE, "(|(&(givenName=#{givenName}#{perfect_match ? '' : '*'})(sn=#{sn}))(cn=#{givenName}#{perfect_match ? ' ' : '*'}#{sn}))", ATTRS) do |entry|
         users << entry
       end
     end
