@@ -122,6 +122,16 @@ command :sprint_identifier do |c|
   end
 end
 
+command :days_left_in_sprint do |c|
+  c.syntax = "#{name} days_left_in_sprint"
+
+  c.description = "Print the number of days left in the sprint"
+  c.action do |args, options|
+    $sprint = Sprint.new({:trello => trello})
+    print ($sprint.sprint_card.due.to_time - Time.new).to_i / (60*60*24)
+  end
+end
+
 command :list_invalid_users do |c|
   c.syntax = "#{name} list_invalid_users"
 
