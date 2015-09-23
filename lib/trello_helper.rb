@@ -204,8 +204,18 @@ class TrelloHelper
 
   def board_labels(board)
     trello_do('board_labels') do
-      labels = board.labels
+      labels = board.labels(false)
       return labels
+    end
+  end
+
+  def create_label(name, color, board_id)
+    Trello::Label.create(:name => name, :color => color, :board_id => board_id)
+  end
+
+  def update_label(label)
+    trello_do('update_label') do
+      label.save
     end
   end
 

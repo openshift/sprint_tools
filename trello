@@ -288,8 +288,41 @@ command :sync_labels do |c|
 
   c.description = "Sync the labels from the roadmap board to all the rest"
   c.action do |args, options|
-    labels = trello.board_labels(trello.roadmap_board)
-    pp labels
+    roadmap_labels = trello.board_labels(trello.roadmap_board)
+    roadmap_labels_by_name = {}
+    roadmap_labels.each do |label|
+      roadmap_labels_by_name[label.name] = label.color
+    end
+    boards = [trello.public_roadmap_board] + trello.boards.values
+    boards.each do |board|
+      puts "\nBoard Name: #{board.name}"
+      board_labels = trello.target(trello.board_labels(board))
+      board_labels_by_name = {}
+      board_labels.each do |board_label|
+        board_labels_by_name[board_label.name] = board_label
+      end
+      roadmap_labels_by_name.each do |label_name, label_color|
+        board_label = board_labels_by_name[label_name]
+        if !board_label || (label_name != board_label.name)
+
+          if board_label
+            puts "Updating label #{label_color} to #{label_name}"
+            board_label.name = label_name
+            trello.update_label(board_label)
+          else
+            puts "Setting label #{label_color} to #{label_name}"
+            trello.create_label(label_name, label_color, board.id)
+          end
+        end
+      end
+      board_labels = trello.target(trello.board_labels(board))
+      board_labels.each do |board_label|
+        unless roadmap_labels_by_name.has_key?(board_label.name)
+          puts "Deleting label #{board_label.name}"
+          board_label.delete
+        end
+      end
+    end
   end
 end
 
