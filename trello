@@ -283,13 +283,22 @@ command :comment do |c|
 
 end
 
+command :sync_labels do |c|
+  c.syntax = "#{name} sync_labels"
+
+  c.description = "Sync the labels from the roadmap board to all the rest"
+  c.action do |args, options|
+    labels = trello.board_labels(trello.roadmap_board)
+    pp labels
+  end
+end
+
 command :update do |c|
   c.syntax = "#{name} update"
 
   c.option "--add-task-checklists", "Add task checklists to stories"
   c.option "--add-bug-checklists", "Add checklists to stories"
   c.option "--add-doc-tasks", "Add documentation tasks to documentation labeled stories"
-  c.option "--add-doc-checklists", "Add documentation team tasks"
   c.option "--add-doc-cards", "Add documentation cards for documentation labeled dev cards"
   c.option "--update-bug-tasks", "Update closed/verified bug tasks"
   c.option "--update-roadmap", "Update the roadmap board with progress from teams.  Note: Existing checklist items will be removed with matching [tag]s."
@@ -422,7 +431,7 @@ command :update do |c|
         end
       end
     end
-    if options.add_doc_checklists || options.add_doc_cards
+    if options.add_doc_cards
       lists = trello.target(trello.board_lists(trello.documentation_board, :filter => [:open]))
       lists.each do |list|
         cards = trello.list_cards(list)
@@ -431,40 +440,6 @@ command :update do |c|
           cards.each_with_index do |card, index|
             if !(card.name =~ /^Sprint \d+/ && !card.due.nil?)
               doc_descriptions << card.desc if options.add_doc_cards
-              if options.add_doc_checklists
-                checklists = []
-                checklists << 'Tasks'
-
-                trello.list_checklists(card).each do |checklist|
-                  checklists.delete(checklist.name)
-                  break if checklists.empty?
-                end if !checklists.empty?
-
-                if !checklists.empty?
-                  puts "Adding #{checklists.pretty_inspect.chomp} to #{card.name}"
-                  checklists.each do |checklist_name|
-                    checklist = Trello::Checklist.create({:name => checklist_name, :board_id => trello.documentation_id})
-                    card.add_checklist(checklist)
-                  end
-                end
-              end
-            end
-            if options.add_doc_checklists
-              tasks_checklist = trello.checklist(card, 'Tasks')
-              if tasks_checklist
-                urh_reminder = "Update Revision History"
-                found = false
-                tasks_checklist.items.each do |item|
-                  if item.name.include? urh_reminder
-                    found = true
-                    break
-                  end
-                end
-                unless found
-                  puts "Adding revision history reminder: #{card.name}"
-                  tasks_checklist.add_item(urh_reminder, false, 'bottom')
-                end
-              end
             end
           end
         end

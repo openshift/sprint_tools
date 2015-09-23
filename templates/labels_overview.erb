@@ -73,10 +73,13 @@
             if (list_name == 'In Progress' || list_name == 'Complete' || list_name == 'Accepted')
               cards = trello.list_cards(list)
               cards.each do |card|
-                trello.card_labels(card).each do |label|
-                  if ['documentation', 'security'].include?(label.name)
-                    label_data[label.name] = [] unless label_data[label.name]
-                    label_data[label.name] << [card, board]
+                labels = trello.card_labels(card)
+                label_names = labels.map{ |label| label.name }
+                label_names.each do |label_name|
+                  if ['documentation', 'security'].include?(label_name)
+                    break if label_name == 'documentation' && label_names.include?('docs-ack')
+                    label_data[label_name] = [] unless label_data[label_name]
+                    label_data[label_name] << [card, board]
                   end
                 end
               end

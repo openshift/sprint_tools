@@ -196,8 +196,15 @@ class TrelloHelper
   end
 
   def card_labels(card)
-    trello_do('labels') do
+    trello_do('card_labels') do
       labels = card.labels
+      return labels
+    end
+  end
+
+  def board_labels(board)
+    trello_do('board_labels') do
+      labels = board.labels
       return labels
     end
   end

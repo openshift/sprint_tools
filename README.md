@@ -108,8 +108,6 @@ Commands
             Add checklists to stories
         --add-doc-tasks
             Add documentation tasks to documentation labeled stories
-        --add-doc-checklists
-            Add documentation team tasks
         --add-doc-cards
             Add documentation cards for documentation labeled dev cards
         --update-bug-tasks
@@ -122,7 +120,7 @@ Commands
 Detailed Run Example
 ===
     ./trello update --update-roadmap --trace
-    ./trello update --add-task-checklists --add-bug-checklists --update-bug-tasks --add-doc-tasks --add-doc-checklists --add-doc-cards --trace
+    ./trello update --add-task-checklists --add-bug-checklists --update-bug-tasks --add-doc-tasks --add-doc-cards --trace
     ./trello generate_roadmap_overview --out /tmp/roadmap_overview.html --trace
     cp /tmp/roadmap_overview.html /var/www/html/roadmap_overview.html
     ./trello generate_sprints_overview --out /tmp/sprints_overview.html --sprints 8 --trace
