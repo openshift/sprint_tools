@@ -109,8 +109,14 @@ class TrelloHelper
       epic_lists = epic_lists(roadmap_board)
       epic_lists.each do |epic_list|
         epic_list.cards.each do |epic_card|
+          card_labels(epic_card).each do |label|
+            if label.name.start_with? 'epic-'
+              tag_to_epics[label.name] = [] unless tag_to_epics[label.name]
+              tag_to_epics[label.name] << epic_card
+            end
+          end
           epic_card.name.scan(/\[[^\]]+\]/).each do |tag|
-            if tag != '[future]'
+            if tag != '[future]' && !tag_to_epics["epic-#{tag[1..-2]}"]
               tag_to_epics[tag] = [] unless tag_to_epics[tag]
               tag_to_epics[tag] << epic_card
             end
@@ -162,26 +168,22 @@ class TrelloHelper
     return nil
   end
 
-  def clear_checklist_refs(card, checklist_name, tags)
+  def clear_checklist_refs(card, checklist_name)
     cl = checklist(card, checklist_name)
 
     if cl
       cl.items.each do |item|
-        tags.each do |tag|
-          if item.name.include?(tag) || item.name =~ /\[.*\]\(https?:\/\/trello\.com\/[^\)]+\) \([^\)]+\) \([^\)]+\)/
-            begin
-              trello_do('checklist') do
-                cl.delete_checklist_item(item.id)
-              end
-            rescue => e
-              puts "Error deleting checklist: #{e.message}"
+        if item.name =~ /\[.*\]\(https?:\/\/trello\.com\/[^\)]+\) \([^\)]+\) \([^\)]+\)/
+          begin
+            trello_do('checklist') do
+              cl.delete_checklist_item(item.id)
             end
-            break
+          rescue => e
+            puts "Error deleting checklist: #{e.message}"
           end
         end
       end
-    end
-    unless cl
+    else
       puts "Adding #{checklist_name} to #{card.name}"
       cl = Trello::Checklist.create({:name => checklist_name, :board_id => roadmap_id})
       card.add_checklist(cl)

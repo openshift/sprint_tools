@@ -115,10 +115,18 @@ Commands
         --update-roadmap
             Update the roadmap board with progress from teams.  Note: Existing checklist items will be removed with matching [tag]s.
 
+**sync_labels**
+
+  DESCRIPTION:
+
+    Sync the labels from the roadmap board to all the rest
+
+
 
 
 Detailed Run Example
 ===
+    ./trello sync-labels --trace
     ./trello update --update-roadmap --trace
     ./trello update --add-task-checklists --add-bug-checklists --update-bug-tasks --add-doc-tasks --add-doc-cards --trace
     ./trello generate_roadmap_overview --out /tmp/roadmap_overview.html --trace

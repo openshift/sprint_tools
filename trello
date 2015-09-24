@@ -33,14 +33,8 @@ def load_conf(klass,args,single = false)
 end
 
 def clear_epic_refs(epic_card, trello)
-  tags = []
-  epic_card.name.scan(/\[[^\]]+\]/).each do |tag|
-    if tag != FUTURE_TAG
-      tags << tag
-    end
-  end
-  trello.clear_checklist_refs(epic_card, FUTURE_EPIC_REFERENCED_STORIES_NAME, [FUTURE_TAG])
-  trello.clear_checklist_refs(epic_card, EPIC_REFERENCED_STORIES_NAME, tags)
+  trello.clear_checklist_refs(epic_card, FUTURE_EPIC_REFERENCED_STORIES_NAME)
+  trello.clear_checklist_refs(epic_card, EPIC_REFERENCED_STORIES_NAME)
 end
 
 $tag_to_label_color = {
@@ -293,7 +287,47 @@ command :sync_labels do |c|
     roadmap_labels.each do |label|
       roadmap_labels_by_name[label.name] = label.color
     end
-    boards = [trello.public_roadmap_board] + trello.boards.values
+    unless roadmap_labels.empty?
+      boards = [trello.public_roadmap_board] + trello.boards.values
+      boards.each do |board|
+        puts "\nBoard Name: #{board.name}"
+        board_labels = trello.target(trello.board_labels(board))
+        board_labels_by_name = {}
+        board_labels.each do |board_label|
+          board_labels_by_name[board_label.name] = board_label
+        end
+        roadmap_labels_by_name.each do |label_name, label_color|
+          board_label = board_labels_by_name[label_name]
+          if !board_label || (label_name != board_label.name)
+
+            if board_label
+              puts "Updating label #{label_color} to #{label_name}"
+              board_label.name = label_name
+              trello.update_label(board_label)
+            else
+              puts "Setting label #{label_color} to #{label_name}"
+              trello.create_label(label_name, label_color, board.id)
+            end
+          end
+        end
+        board_labels = trello.target(trello.board_labels(board))
+        board_labels.each do |board_label|
+          unless roadmap_labels_by_name.has_key?(board_label.name)
+            puts "Deleting label #{board_label.name}"
+            board_label.delete
+          end
+        end
+      end
+    end
+  end
+end
+
+command :convert_markers_to_labels do |c|
+  c.syntax = "#{name} sync_labels"
+
+  c.description = "Convert [] markers on cards to epic- and future labels that exist"
+  c.action do |args, options|
+    boards = trello.boards.values
     boards.each do |board|
       puts "\nBoard Name: #{board.name}"
       board_labels = trello.target(trello.board_labels(board))
@@ -301,25 +335,35 @@ command :sync_labels do |c|
       board_labels.each do |board_label|
         board_labels_by_name[board_label.name] = board_label
       end
-      roadmap_labels_by_name.each do |label_name, label_color|
-        board_label = board_labels_by_name[label_name]
-        if !board_label || (label_name != board_label.name)
-
-          if board_label
-            puts "Updating label #{label_color} to #{label_name}"
-            board_label.name = label_name
-            trello.update_label(board_label)
-          else
-            puts "Setting label #{label_color} to #{label_name}"
-            trello.create_label(label_name, label_color, board.id)
+      lists = trello.target(trello.board_lists(board, :filter => [:all]))
+      lists.each do |list|
+        cards = trello.list_cards(list)
+        unless cards.empty?
+          puts "\n  List: #{list.name}  (#cards: #{cards.length})"
+          cards.each_with_index do |card, index|
+            card_name = card.name
+            card_tags = card_name.scan(/\[[^\]]+\]/)
+            card_tags.each do |card_tag|
+              if card_tag == FUTURE_TAG
+                epic_label_name = 'future'
+              else
+                epic_label_name = "epic-#{card_tag[1..-2]}"
+              end
+              if board_labels_by_name.has_key? epic_label_name
+                unless trello.card_labels(card).map{|c| c.name }.include?(epic_label_name)
+                  epic_label = board_labels_by_name[epic_label_name]
+                  puts "Adding #{epic_label.name} to #{card.name} (#{card.url})"
+                  card.add_label(epic_label)
+                end
+                card_name = card_name.sub "#{card_tag} ", ''
+                card_name = card_name.sub " #{card_tag}", ''
+                card_name = card_name.sub card_tag, ''
+                card.name = card_name
+                puts "New card name #{card.name}"
+                card.save
+              end
+            end
           end
-        end
-      end
-      board_labels = trello.target(trello.board_labels(board))
-      board_labels.each do |board_label|
-        unless roadmap_labels_by_name.has_key?(board_label.name)
-          puts "Deleting label #{board_label.name}"
-          board_label.delete
         end
       end
     end
@@ -334,7 +378,7 @@ command :update do |c|
   c.option "--add-doc-tasks", "Add documentation tasks to documentation labeled stories"
   c.option "--add-doc-cards", "Add documentation cards for documentation labeled dev cards"
   c.option "--update-bug-tasks", "Update closed/verified bug tasks"
-  c.option "--update-roadmap", "Update the roadmap board with progress from teams.  Note: Existing checklist items will be removed with matching [tag]s."
+  c.option "--update-roadmap", "Update the roadmap board with progress from teams.  Note: Existing checklist items will be removed."
 
   c.description = "An assortment of Trello modification utilities"
   c.action do |args, options|
@@ -346,8 +390,13 @@ command :update do |c|
         tag_to_epic = {}
         epic_lists.each do |epic_list|
           epic_list.cards.each do |epic_card|
+            trello.card_labels(epic_card).each do |label|
+              if label.name.start_with? 'epic-'
+                tag_to_epic[label.name] = epic_card
+              end
+            end
             epic_card.name.scan(/\[[^\]]+\]/).each do |tag|
-              if tag != FUTURE_TAG
+              if tag != FUTURE_TAG && !tag_to_epic["epic-#{tag[1..-2]}"]
                 tag_to_epic[tag] = epic_card
               end
             end
@@ -408,8 +457,21 @@ command :update do |c|
                 if !cards.empty?
                   puts "\n  List: #{list.name}  (#cards: #{cards.length})"
                   cards.each_with_index do |card, index|
-                    card_tags = card.name.scan(/\[[^\]]+\]/)
-                    future = card_tags.include?(FUTURE_TAG) ? FUTURE_EPIC_REFERENCED_STORIES_NAME : EPIC_REFERENCED_STORIES_NAME
+                    card_tags = []
+                    card_labels = trello.card_labels(card)
+                    card_labels.each do |label|
+                      if label.name.start_with? 'epic-'
+                        card_tags << label.name
+                      end
+                    end
+                    marker_card_tags = card.name.scan(/\[[^\]]+\]/)
+                    future = marker_card_tags.include?(FUTURE_TAG) ? FUTURE_EPIC_REFERENCED_STORIES_NAME : EPIC_REFERENCED_STORIES_NAME
+                    card_tags += marker_card_tags if card_tags.empty?
+
+                    if !future
+                      future = card_labels.map{|c| c.name }.include?('future')
+                    end
+
                     card_tags.each do |card_tag|
                       epic = tag_to_epic[card_tag]
                       if epic
@@ -509,9 +571,9 @@ command :update do |c|
                     labels = trello.card_labels(card)
                     checklists = []
                     checklists << 'Tasks' if options.add_task_checklists
-                    checklists << 'Bugs' if options.add_bug_checklists && !labels.map{|x| x.name }.include?('no-qe')
+                    checklists << 'Bugs' if options.add_bug_checklists && !labels.map{|c| c.name }.include?('no-qe')
 
-                    if options.add_doc_cards && labels.map{|x| x.name }.include?('documentation') && doc_descriptions.any?
+                    if options.add_doc_cards && labels.map{|c| c.name }.include?('documentation') && doc_descriptions.any?
                       found = false
                       doc_descriptions.each do |desc|
                         if desc.include?(card.short_url)
