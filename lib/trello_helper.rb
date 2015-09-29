@@ -229,6 +229,13 @@ class TrelloHelper
     end
   end
 
+  def card_list(card)
+    trello_do('card_list') do
+      list = card.list
+      return list
+    end
+  end
+
   def board_labels(board)
     trello_do('board_labels') do
       labels = board.labels(false)
@@ -318,8 +325,6 @@ class TrelloHelper
   def markdown_to_html(text)
     Kramdown::Document.new(text).to_html
   end
-
-  private
 
   def trello_do(type, retries=DEFAULT_RETRIES)
     i = 0

@@ -1,60 +1,36 @@
 class Sprint
-  def check_labels(x, target, retries=3)
-    i = 0
-    while true
-      begin
-        return x.labels.map{|x| x.name }.include?(target)
-      rescue Exception => e
-        puts "Error getting labels: #{e.message}"
-        raise if i >= retries
-        sleep 10
-        i += 1
-      end
-    end
+  def check_labels(card, target, retries=3)
+    trello.card_labels(card).map{|label| label.name }.include?(target)
   end
 
-  def list(x, retries=3)
-    i = 0
-    while true
-      begin
-        return x.list
-      rescue Exception => e
-        puts "Error getting list: #{e.message}"
-        raise if i >= retries
-        sleep 10
-        i += 1
-      end
-    end
-  end
-
-  def check_comments(x, target)
+  def check_comments(card, target)
     #TODO Trello doesn't have an api for comments yet
-    #x.comments.map{|x| x.body }.include?(target)
+    #card.comments.map{|card| card.body }.include?(target)
     true
   end
 
   def queries
     {
       :needs_qe => {
-        :function => lambda{ |x| !check_labels(x, 'no-qe') }
+        :function => lambda{ |card| !check_labels(card, 'no-qe') }
       },
       :qe_ready => {
         :parent => :needs_qe,
-        :function => lambda{ |x| check_comments(x, 'tcms') }
+        :function => lambda{ |card| check_comments(card, 'tcms') }
       },
       :approved => {
-        :function => lambda{ |x| check_labels(x, 'tc-approved') || check_labels(x, 'no-qe') }
+        :function => lambda{ |card| check_labels(card, 'tc-approved') || check_labels(card, 'no-qe') }
       },
       :accepted   => {
-        :function => lambda{ |x| list(x).name == 'Accepted' }
+        :function => lambda{ |card| trello.card_list(card).name == 'Accepted' }
       },
       :completed  => {
         :parent   => :not_accepted,
-        :function => lambda{ |x| list(x).name == 'Complete' }
+        :function => lambda{ |card| trello.card_list(card).name == 'Complete' }
       },
       :not_dcut_complete => {
         :parent   => :not_completed,
-        :function => lambda{ |x| check_labels(x, 'devcut')}
+        :function => lambda{ |card| check_labels(card, 'devcut')}
       }
     }
   end
