@@ -1,11 +1,9 @@
 class Sprint
   def check_labels(x, target, retries=3)
-    labels = nil
     i = 0
     while true
       begin
-        labels = x.labels
-        break
+        return x.labels.map{|x| x.name }.include?(target)
       rescue Exception => e
         puts "Error getting labels: #{e.message}"
         raise if i >= retries
@@ -13,7 +11,20 @@ class Sprint
         i += 1
       end
     end
-    labels.map{|x| x.name }.include?(target)
+  end
+
+  def list(x, retries=3)
+    i = 0
+    while true
+      begin
+        return x.list
+      rescue Exception => e
+        puts "Error getting list: #{e.message}"
+        raise if i >= retries
+        sleep 10
+        i += 1
+      end
+    end
   end
 
   def check_comments(x, target)
@@ -35,11 +46,11 @@ class Sprint
         :function => lambda{ |x| check_labels(x, 'tc-approved') || check_labels(x, 'no-qe') }
       },
       :accepted   => {
-        :function => lambda{ |x| x.list.name == 'Accepted' }
+        :function => lambda{ |x| list(x).name == 'Accepted' }
       },
       :completed  => {
         :parent   => :not_accepted,
-        :function => lambda{ |x| list = x.list.name == 'Complete' }
+        :function => lambda{ |x| list(x).name == 'Complete' }
       },
       :not_dcut_complete => {
         :parent   => :not_completed,
