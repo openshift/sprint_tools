@@ -115,7 +115,7 @@ class Sprint
     @results = {}
 
     @stories = []
-    trello.boards.each do |board_id, board|
+    trello.boards(true).each do |board_id, board|
       lists = trello.target(trello.board_lists(board))
       lists.each do |list|
         if list.name == 'In Progress' || list.name == 'Complete' || list.name == 'Accepted'
