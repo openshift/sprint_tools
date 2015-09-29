@@ -31,7 +31,7 @@ class TrelloHelper
     board_ids = []
     teams.each do |team, team_map|
       team_boards_map = team_boards_map(team_map)
-      unless for_sprint_report && team_boards_map[:exclude_from_sprint_report]
+      unless for_sprint_report && team_map[:exclude_from_sprint_report]
         team_boards_map.each do |b_name, b_id|
           board_ids << b_id
         end
