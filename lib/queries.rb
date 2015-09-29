@@ -1,5 +1,5 @@
 class Sprint
-  def check_labels(x, target)
+  def check_labels(x, target, retries=3)
     labels = nil
     i = 0
     while true
@@ -8,7 +8,7 @@ class Sprint
         break
       rescue Exception => e
         puts "Error getting labels: #{e.message}"
-        raise if i >= 3
+        raise if i >= retries
         sleep 10
         i += 1
       end

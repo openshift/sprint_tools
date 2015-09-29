@@ -87,8 +87,22 @@ module SprintReport
       end
     end
 
+    def send_attr(x, attr, retries=3)
+      i = 0
+      while true
+        begin
+          return x.send(attr)
+        rescue Exception => e
+          puts "Error sending attr: #{e.message}"
+          raise if i >= retries
+          sleep 10
+          i += 1
+        end
+      end
+    end
+
     def process(row)
-      value = row.is_a?(Hash) ? row[attr.to_sym] : row.send(attr)
+      value = row.is_a?(Hash) ? row[attr.to_sym] : send_attr(row, attr)
       if value.is_a?(Array)
         value.map! { |v| process_sub_attr(v) }
       else
@@ -98,7 +112,7 @@ module SprintReport
     end
 
     def process_sub_attr(value)
-      value = sub_attr ? value.send(sub_attr) : value
+      value = sub_attr ? send_attr(value, sub_attr) : value
       value
     end
 
