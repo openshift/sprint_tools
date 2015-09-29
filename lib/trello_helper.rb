@@ -70,15 +70,25 @@ class TrelloHelper
     end
   end
 
-  def boards(for_sprint_report=false)
+  def boards
     return @boards if @boards
     @boards = {}
     org_boards.each do |board|
-      if board_ids(for_sprint_report).include?(board.id)
+      if board_ids.include?(board.id)
         @boards[board.id] = board
       end
     end
     @boards
+  end
+
+  def boards_for_sprint_report
+    boards = {}
+    org_boards.each do |board|
+      if board_ids(for_sprint_report).include?(board.id)
+        boards[board.id] = board
+      end
+    end
+    boards
   end
 
   def documentation_board
