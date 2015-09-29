@@ -1,6 +1,19 @@
 class Sprint
   def check_labels(x, target)
-    x.labels.map{|x| x.name }.include?(target)
+    labels = nil
+    i = 0
+    while true
+      begin
+        labels = x.labels
+        break
+      rescue Exception => e
+        puts "Error getting labels: #{e.message}"
+        raise if i >= 3
+        sleep 10
+        i += 1
+      end
+    end
+    labels.map{|x| x.name }.include?(target)
   end
 
   def check_comments(x, target)
