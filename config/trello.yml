@@ -8,10 +8,12 @@
 :oauth_token_secret: <oauth_secret>
 :teams:
   :team1:
-    :team1_board1: <team1_board1_id>
-    :team1_board2: <team1_board2_id>
+    :boards:
+      :team1_board1: <team1_board1_id>
+      :team1_board2: <team1_board2_id>
   :team2:
-    :team2_board: <team2_board_id>
+    :boards:
+      :team2_board: <team2_board_id>
 :roadmap_id: <roadmap_id>
 :public_roadmap_id: <public_roadmap_id>
 :documentation_id: <documentation_board_id>

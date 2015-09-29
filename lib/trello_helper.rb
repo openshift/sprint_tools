@@ -27,39 +27,54 @@ class TrelloHelper
     end
   end
 
-  def board_ids
+  def board_ids(for_sprint_report=false)
     board_ids = []
-    teams.each do |team, team_boards_map|
-      team_boards_map.each do |b_name, b_id|
-        board_ids << b_id
+    teams.each do |team, team_map|
+      team_boards_map = team_boards_map(team_map)
+      unless for_sprint_report && team_boards_map[:exclude_from_sprint_report]
+        team_boards_map.each do |b_name, b_id|
+          board_ids << b_id
+        end
       end
     end
     return board_ids
   end
 
   def team_boards(team_name)
-    team_boards_map = teams[team_name.to_sym]
+    team_map = teams[team_name.to_sym]
     team_boards = []
+    team_boards_map = team_boards_map(team_map)
     team_boards_map.each do |board_name, board_id|
       team_boards << boards[board_id]
     end
     team_boards
   end
 
+  def team_boards_map(team_map)
+    team_boards_map = nil
+    if team_map.has_key?(:boards)
+      team_boards_map = team_map[:boards]
+    else
+      team_boards_map = team_map
+    end
+    return team_boards_map
+  end
+
   def team_board(board_name)
     board_name = board_name.to_sym
-    teams.each do |team_name, team_boards_map|
+    teams.each do |team_name, team_map|
+      team_boards_map = team_boards_map(team_map)
       team_boards_map.each do |b_name, b_id|
         return boards[b_id] if b_name == board_name
       end
     end
   end
 
-  def boards
+  def boards(for_sprint_report=false)
     return @boards if @boards
     @boards = {}
     org_boards.each do |board|
-      if board_ids.include?(board.id)
+      if board_ids(for_sprint_report).include?(board.id)
         @boards[board.id] = board
       end
     end
