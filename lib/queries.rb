@@ -1,5 +1,5 @@
 class Sprint
-  def check_labels(card, target, retries=3)
+  def check_labels(card, target)
     trello.card_labels(card).map{|label| label.name }.include?(target)
   end
 

@@ -8,7 +8,7 @@ module SprintReport
       send("#{k}=",v)
     end
 
-    @columns = headings.map{|x| Column.new(x)}
+    @columns = headings.map{|x| Column.new(x, self)}
     @data = []
   end
 
@@ -65,39 +65,24 @@ module SprintReport
 
   private
 
-  def members(x, retries=3)
-    i = 0
-    while true
-      begin
-        return x.members
-      rescue Exception => e
-        puts "Error getting members: #{e.message}"
-        raise if i >= retries
-        sleep 10
-        i += 1
-      end
+  def members(x)
+    sprint.trello.trello_do('members') do
+      return x.members
     end
   end
 
   class Column
-    attr_accessor :header, :attr, :fmt, :sub_attr
-    def initialize(opts)
+    attr_accessor :header, :attr, :fmt, :sub_attr, :report
+    def initialize(opts, report)
       opts.each do |k,v|
         send("#{k}=",v)
       end
+      @report = report
     end
 
-    def send_attr(x, attr, retries=3)
-      i = 0
-      while true
-        begin
-          return x.send(attr)
-        rescue Exception => e
-          puts "Error sending attr: #{e.message}"
-          raise if i >= retries
-          sleep 10
-          i += 1
-        end
+    def send_attr(x, attr)
+      report.sprint.trello.trello_do('send_attr') do
+        return x.send(attr)
       end
     end
 
