@@ -63,6 +63,7 @@ command :list do |c|
   c.option "--list LIST_NAME", "Restrict to a particular list"
   c.option "--team TEAM_NAME (#{trello.teams.keys.join('|')})", "Restrict to a team"
   c.option "--card-ref SCOPE_TEAM_ID", "Get a single card Ex: #{trello.teams.values.first.keys.first}_1"
+  c.option "--card-url URL", "Get a single card Ex: https://trello.com/c/6EhPEbM4"
 
   c.description = "An assortment of Trello queries"
   c.action do |args, options|
@@ -73,6 +74,14 @@ command :list do |c|
         trello.print_card(card)
       else
         puts "#{options.card_ref} is an invalid format!"
+        exit 1
+      end
+    elsif options.card_url
+      card = trello.card_by_url(options.card_url)
+      if card
+        trello.print_card(card)
+      else
+        puts "#{options.card_url} is an invalid format!"
         exit 1
       end
     else
@@ -261,12 +270,18 @@ end
 command :comment do |c|
   c.syntax = "#{name} comment"
 
-  c.option "--card-ref SCOPE_TEAM_ID", "Get a single card Ex: #{trello.teams.values.first.keys.first}_1"
+  c.option "--card-ref SCOPE_TEAM_ID", "Card to comment on by ref Ex: #{trello.teams.values.first.keys.first}_1"
+  c.option "--card-url URL", "Card to comment on by url Ex: https://trello.com/c/6EhPEbM4"
 
   c.description = "Adds a comment to a trello card"
   c.action do |args, options|
     comment = args[0]
-    card = trello.card_by_ref(options.card_ref)
+    card = nil
+    if options.card_ref
+      card = trello.card_by_ref(options.card_ref)
+    elsif  options.card_url
+      card = trello.card_by_url(options.card_url)
+    end
     if card
       card.add_comment(comment)
     else

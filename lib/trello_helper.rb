@@ -303,6 +303,19 @@ class TrelloHelper
     card
   end
 
+  def card_by_url(card_url)
+    card = nil
+    # https://trello.com/c/6EhPEbM4
+    if card_url =~ /^https?:\/\/trello\.com\/c\/([[:alnum:]]+)/
+      card_id = $1
+      begin
+        card = Trello::Card.find(card_id)
+      rescue
+      end
+    end
+    card
+  end
+
   def org
     trello_do('org') do
       @org ||= Trello::Organization.find(organization_id)
