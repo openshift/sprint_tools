@@ -133,7 +133,7 @@ class TrelloHelper
     roadmap_boards.each do |roadmap_board|
       epic_lists = epic_lists(roadmap_board)
       epic_lists.each do |epic_list|
-        epic_list.cards.each do |epic_card|
+        list_cards(epic_list).each do |epic_card|
           card_labels(epic_card).each do |label|
             if label.name.start_with? 'epic-'
               tag_to_epics[label.name] = [] unless tag_to_epics[label.name]
