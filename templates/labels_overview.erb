@@ -76,7 +76,7 @@
                 labels = trello.card_labels(card)
                 label_names = labels.map{ |label| label.name }
                 label_names.each do |label_name|
-                  if ['blocked', 'documentation', 'security'].include?(label_name)
+                  if ['blocked', 'documentation', 'perf', 'security'].include?(label_name)
                     break if label_name == 'documentation' && label_names.include?('docs-ack')
                     label_data[label_name] = [] unless label_data[label_name]
                     label_data[label_name] << [card, board]
