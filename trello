@@ -480,11 +480,11 @@ command :update do |c|
                       end
                     end
                     marker_card_tags = card.name.scan(/\[[^\]]+\]/)
-                    future = marker_card_tags.include?(FUTURE_TAG) ? FUTURE_EPIC_REFERENCED_STORIES_NAME : EPIC_REFERENCED_STORIES_NAME
+                    checklist_name = marker_card_tags.include?(FUTURE_TAG) ? FUTURE_EPIC_REFERENCED_STORIES_NAME : EPIC_REFERENCED_STORIES_NAME
                     card_tags += marker_card_tags if card_tags.empty?
 
-                    if !future
-                      future = card_labels.map{|c| c.name }.include?('future')
+                    unless checklist_name == FUTURE_EPIC_REFERENCED_STORIES_NAME
+                      checklist_name = card_labels.map{|c| c.name }.include?('future') ? FUTURE_EPIC_REFERENCED_STORIES_NAME : EPIC_REFERENCED_STORIES_NAME
                     end
 
                     card_tags.each do |card_tag|
@@ -492,7 +492,7 @@ command :update do |c|
                       if epic
                         if (roadmap_board.prefs['permissionLevel'] == 'org' && tag_to_epics[card_tag].length == 1) || (roadmap_board.prefs['permissionLevel'] == board.prefs['permissionLevel'])
                           epic_stories_by_epic[epic.id] = [] unless epic_stories_by_epic[epic.id]
-                          epic_stories_by_epic[epic.id] << [epic, card, list, board, future, accepted]
+                          epic_stories_by_epic[epic.id] << [epic, card, list, board, checklist_name, accepted]
                         end
                       end
                     end
@@ -519,10 +519,10 @@ command :update do |c|
               card = epic_story[1]
               list = epic_story[2]
               board = epic_story[3]
-              future = epic_story[4]
+              checklist_name = epic_story[4]
               accepted = epic_story[5]
 
-              stories_checklist = trello.checklist(epic, future)
+              stories_checklist = trello.checklist(epic, checklist_name)
               if stories_checklist
                 puts "Adding #{card.url}"
                 (1..3).each do |i|
