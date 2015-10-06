@@ -9,7 +9,7 @@ class TrelloHelper
                 :sprint_length_in_weeks, :sprint_start_day, :sprint_end_day, :logo,
                 :docs_new_list_name, :roadmap_board_lists
 
-  attr_accessor :boards
+  attr_accessor :boards, :cards_by_list, :labels_by_card
 
   DEFAULT_RETRIES = 3
   DEFAULT_RETRY_SLEEP = 10
@@ -25,6 +25,9 @@ class TrelloHelper
       config.oauth_token = @oauth_token
       config.oauth_token_secret = @oauth_token_secret
     end
+
+    @cards_by_list = {}
+    @labels_by_card = {}
   end
 
   def board_ids(for_sprint_report=false)
@@ -223,24 +226,29 @@ class TrelloHelper
   end
 
   def card_labels(card)
+    labels = @labels_by_card[card.id]
+    return labels if labels
     trello_do('card_labels') do
       labels = card.labels
-      return labels
     end
+    @labels_by_card[card.id] = labels if labels
+    labels
   end
 
   def card_list(card)
+    list = nil
     trello_do('card_list') do
       list = card.list
-      return list
     end
+    list
   end
 
   def board_labels(board)
+    labels = nil
     trello_do('board_labels') do
       labels = board.labels(false)
-      return labels
     end
+    labels
   end
 
   def create_label(name, color, board_id)
@@ -263,11 +271,15 @@ class TrelloHelper
   end
 
   def list_cards(list)
-    cards = nil
+    cards = @cards_by_list[list.id]
+    return cards if cards
     trello_do('cards') do
       cards = list.cards
     end
-    cards = target(cards, 'cards') if cards
+    if cards
+      cards = target(cards, 'cards')
+      @cards_by_list[list.id] = cards
+    end
     cards
   end
 
