@@ -311,17 +311,17 @@ command :sync_labels do |c|
         board_labels.each do |board_label|
           board_labels_by_name[board_label.name] = board_label
         end
+        raise "Duplicate labels found" unless board_labels_by_name.length == board_labels.length
         roadmap_label_colors_by_name.each do |label_name, label_color|
           board_label = board_labels_by_name[label_name]
           if !board_label || (label_color != board_label.color)
-
             if board_label
               puts "Updating label #{label_name} to #{label_color}"
               board_label.color = label_color
-              trello.update_label(board_label)
+              #trello.update_label(board_label)
             else
               puts "Setting label #{label_name} to #{label_color}"
-              trello.create_label(label_name, label_color, board.id)
+              #trello.create_label(label_name, label_color, board.id)
             end
           end
         end
@@ -329,7 +329,7 @@ command :sync_labels do |c|
         board_labels.each do |board_label|
           unless roadmap_label_colors_by_name.has_key?(board_label.name) && (roadmap_label_colors_by_name[board_label.name] == board_label.color)
             puts "Deleting label #{board_label.name}"
-            board_label.delete
+            #board_label.delete
           end
         end
       end

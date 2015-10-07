@@ -245,9 +245,11 @@ class TrelloHelper
 
   def board_labels(board)
     labels = nil
+    label_limit = 1000
     trello_do('board_labels') do
-      labels = board.labels(false)
+      labels = board.labels(:limit => label_limit)
     end
+    raise "Reached label API limit of 1000 entries" if labels.length >= label_limit
     labels
   end
 
