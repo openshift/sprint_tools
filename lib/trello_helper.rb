@@ -14,6 +14,12 @@ class TrelloHelper
   DEFAULT_RETRIES = 3
   DEFAULT_RETRY_SLEEP = 10
 
+  FUTURE_TAG = '[future]'
+  FUTURE_LABEL = 'future'
+
+  UNASSIGNED_RELEASE = "Unassigned Release"
+  FUTURE_RELEASE = "Future Release"
+
   def initialize(opts)
     opts.each do |k,v|
       send("#{k}=",v)
@@ -131,6 +137,15 @@ class TrelloHelper
     rbs
   end
 
+  def roadmap_label_colors_by_name
+    roadmap_labels = board_labels(roadmap_board)
+    roadmap_label_colors_by_name = {}
+    roadmap_labels.each do |label|
+      roadmap_label_colors_by_name[label.name] = label.color
+    end
+    roadmap_label_colors_by_name
+  end
+
   def tag_to_epics
     tag_to_epics = {}
     roadmap_boards.each do |roadmap_board|
@@ -144,7 +159,7 @@ class TrelloHelper
             end
           end
           epic_card.name.scan(/\[[^\]]+\]/).each do |tag|
-            if tag != '[future]' && !tag_to_epics["epic-#{tag[1..-2]}"]
+            if tag != FUTURE_TAG && !tag_to_epics["epic-#{tag[1..-2]}"]
               tag_to_epics[tag] = [] unless tag_to_epics[tag]
               tag_to_epics[tag] << epic_card
             end
@@ -196,10 +211,9 @@ class TrelloHelper
     return nil
   end
 
-  def clear_checklist_refs(card, checklist_name)
-    cl = checklist(card, checklist_name)
-
-    if cl
+  def clear_epic_refs(epic_card)
+    checklists = list_checklists(epic_card)
+    checklists.each do |cl|
       cl.items.each do |item|
         if item.name =~ /\[.*\]\(https?:\/\/trello\.com\/[^\)]+\) \([^\)]+\) \([^\)]+\)/
           begin
@@ -207,14 +221,48 @@ class TrelloHelper
               cl.delete_checklist_item(item.id)
             end
           rescue => e
-            puts "Error deleting checklist: #{e.message}"
+            puts "Error deleting checklist item: #{e.message}"
           end
         end
       end
-    else
+    end
+    create_checklist(epic_card, UNASSIGNED_RELEASE)
+    create_checklist(epic_card, FUTURE_RELEASE)
+  end
+
+  def create_checklist(card, checklist_name)
+    cl = checklist(card, checklist_name)
+    unless cl
       puts "Adding #{checklist_name} to #{card.name}"
-      cl = Trello::Checklist.create({:name => checklist_name, :board_id => roadmap_id})
+      cl = Trello::Checklist.create({:name => checklist_name, :board_id => card.board_id})
       card.add_checklist(cl)
+    end
+    cl
+  end
+
+  def rename_checklist(card, old_checklist_name, new_checklist_name)
+    cl = checklist(card, old_checklist_name)
+    if cl
+      puts "Renaming #{old_checklist_name} on #{new_checklist_name}"
+      cl.name = new_checklist_name
+      cl.save
+    end
+    cl
+  end
+
+  def delete_empty_epic_checklists(epic_card)
+    checklists = list_checklists(epic_card)
+    checklists.each do |cl|
+      next if [UNASSIGNED_RELEASE, FUTURE_RELEASE].include? cl.name
+      if cl.items.empty?
+        begin
+          trello_do('checklist') do
+            cl.delete
+          end
+        rescue => e
+          puts "Error deleting checklist: #{e.message}"
+        end
+      end
     end
   end
 
