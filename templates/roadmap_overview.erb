@@ -57,55 +57,57 @@ Corresponding Private Roadmap Board Epic: <a href='<%=secondary_epic_card.url%>'
 <%=trello.markdown_to_html(primary_epic_card.desc)%>
 <div class="table-responsive">
 <table class="table table-normal table-condensed">
-  <tr><th>Scenario</th><th>Sizing</th><th>List</th><th>Board</th></tr>
+  <tr><th>Scenario</th><th>Sizing</th><th>List</th><th>Release</th><th>Board</th></tr>
 <%
         complete_sizing_total = 0
         remaining_sizing_total = 0
         epic_cards.each do |epic_card|
-          stories_checklist = trello.checklist(epic_card, EPIC_REFERENCED_STORIES_NAME)
-          stories_checklist.items.each do |item|
-            name = item.name.strip
-            url = nil
-            list = "Epic Backlog"
-            sizing = ''
-            board = 'Roadmap'
-            if name =~ /\[(.*)\]\((https?:\/\/trello\.com\/[^\)]+)\) \(([^\)]+)\) \(([^\)]+)\)/
-              name = $1.strip
-              url = $2
-              list = $3
-              board = $4
-            end
-            if name =~ /\((\d+|\?)\)(.*)/
-              sizing = $1
-              name = $2
-
-              if list && sizing != '?'
-                sizing_i = sizing.to_i
-                if (list.match('^Sprint \d+') || list == 'Accepted' || list == 'Complete')
-                  complete_sizing_total += sizing_i
-                  cross_epic_complete_sizing_total += sizing_i unless cross_epic_card_names[item.name]
-                else
-                  remaining_sizing_total += sizing_i
-                  cross_epic_remaining_sizing_total += sizing_i unless cross_epic_card_names[item.name]
-                end
-                cross_epic_card_names[item.name] = true
+          epic_checklists = trello.list_checklists(epic_card)
+          epic_checklists.each do |checklist|
+            checklist.items.each do |item|
+              name = item.name.strip
+              url = nil
+              list = "Epic Backlog"
+              sizing = ''
+              board = 'Roadmap'
+              if name =~ /\[(.*)\]\((https?:\/\/trello\.com\/[^\)]+)\) \(([^\)]+)\) \(([^\)]+)\)/
+                name = $1.strip
+                url = $2
+                list = $3
+                board = $4
               end
-            end
+              if name =~ /\((\d+|\?)\)(.*)/
+                sizing = $1
+                name = $2
+
+                if list && sizing != '?'
+                  sizing_i = sizing.to_i
+                  if (list.match('^Sprint \d+') || list == 'Accepted' || list == 'Complete')
+                    complete_sizing_total += sizing_i
+                    cross_epic_complete_sizing_total += sizing_i unless cross_epic_card_names[item.name]
+                  else
+                    remaining_sizing_total += sizing_i
+                    cross_epic_remaining_sizing_total += sizing_i unless cross_epic_card_names[item.name]
+                  end
+                  cross_epic_card_names[item.name] = true
+                end
+              end
 %>
 <tr>
 <%
-            if url
+              if url
 %>
 <td><a href='<%=url%>'><%=name%></a></td>
 <%
-            else
+              else
 %>
 <td><a href='<%=epic_card.url%>'><%=name%></a></td>
 <%
-            end
+              end
 %>
-<td><%=sizing%></td><td><%=list%></td><td><%=board%></td></tr>
+<td><%=sizing%></td><td><%=list%></td><td><%=checklist.name%></td><td><%=board%></td></tr>
 <%
+            end
           end
         end
 %>

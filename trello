@@ -32,11 +32,6 @@ def load_conf(klass,args,single = false)
   end
 end
 
-def clear_epic_refs(epic_card, trello)
-  trello.clear_checklist_refs(epic_card, FUTURE_EPIC_REFERENCED_STORIES_NAME)
-  trello.clear_checklist_refs(epic_card, EPIC_REFERENCED_STORIES_NAME)
-end
-
 $tag_to_label_color = {
   'documentation' => 'green',
   'tc-approved' => 'yellow',
@@ -51,9 +46,7 @@ LINKS = {'roadmap_overview' => 'Roadmap Overview',
          'labels_overview' => 'Labels Overview',
          'sprint_schedule' => 'Sprint Schedule'}
 
-EPIC_REFERENCED_STORIES_NAME = "Scenarios"
-FUTURE_EPIC_REFERENCED_STORIES_NAME = "Future Scenarios"
-FUTURE_TAG = '[future]'
+RELEASE_LABEL_REGEX = /^(proposed|targeted|committed)-((\d+)(.(\d+))*)/
 
 trello = load_conf(TrelloHelper, CONFIG.trello, true)
 
@@ -297,12 +290,8 @@ command :sync_labels do |c|
 
   c.description = "Sync the labels from the roadmap board to all the rest"
   c.action do |args, options|
-    roadmap_labels = trello.board_labels(trello.roadmap_board)
-    roadmap_label_colors_by_name = {}
-    roadmap_labels.each do |label|
-      roadmap_label_colors_by_name[label.name] = label.color
-    end
-    unless roadmap_labels.empty?
+    roadmap_label_colors_by_name = trello.roadmap_label_colors_by_name
+    unless roadmap_label_colors_by_name.empty?
       boards = [trello.public_roadmap_board] + trello.boards.values
       boards.each do |board|
         puts "\nBoard Name: #{board.name}"
@@ -359,8 +348,8 @@ command :convert_markers_to_labels do |c|
             card_name = card.name
             card_tags = card_name.scan(/\[[^\]]+\]/)
             card_tags.each do |card_tag|
-              if card_tag == FUTURE_TAG
-                epic_label_name = 'future'
+              if card_tag == TrelloHelper::FUTURE_TAG
+                epic_label_name = TrelloHelper::FUTURE_LABEL
               else
                 epic_label_name = "epic-#{card_tag[1..-2]}"
               end
@@ -399,19 +388,30 @@ command :update do |c|
   c.action do |args, options|
     doc_descriptions = []
     if options.update_roadmap
+
+      releases = []
+      roadmap_label_colors_by_name = trello.roadmap_label_colors_by_name
+      roadmap_label_colors_by_name.each_key do |label_name|
+        if label_name =~ RELEASE_LABEL_REGEX
+          releases << label_name
+        end
+      end
+
       tag_to_epics = trello.tag_to_epics
       trello.roadmap_boards.each do |roadmap_board|
         epic_lists = trello.epic_lists(roadmap_board)
         tag_to_epic = {}
         epic_lists.each do |epic_list|
           epic_list.cards.each do |epic_card|
+            trello.rename_checklist(epic_card, "Scenarios", TrelloHelper::UNASSIGNED_RELEASE)
+            trello.rename_checklist(epic_card, "Future Scenarios", TrelloHelper::FUTURE_RELEASE)
             trello.card_labels(epic_card).each do |label|
               if label.name.start_with? 'epic-'
                 tag_to_epic[label.name] = epic_card
               end
             end
             epic_card.name.scan(/\[[^\]]+\]/).each do |tag|
-              if tag != FUTURE_TAG && !tag_to_epic["epic-#{tag[1..-2]}"]
+              if tag != TrelloHelper::FUTURE_TAG && !tag_to_epic["epic-#{tag[1..-2]}"]
                 tag_to_epic[tag] = epic_card
               end
             end
@@ -473,18 +473,22 @@ command :update do |c|
                   puts "\n  List: #{list.name}  (#cards: #{cards.length})"
                   cards.each_with_index do |card, index|
                     card_tags = []
+                    card_releases = []
                     card_labels = trello.card_labels(card)
                     card_labels.each do |label|
                       if label.name.start_with? 'epic-'
                         card_tags << label.name
+                      elsif releases.include? label.name
+                        card_releases << label.name
                       end
                     end
+
                     marker_card_tags = card.name.scan(/\[[^\]]+\]/)
-                    checklist_name = marker_card_tags.include?(FUTURE_TAG) ? FUTURE_EPIC_REFERENCED_STORIES_NAME : EPIC_REFERENCED_STORIES_NAME
+                    checklist_name = marker_card_tags.include?(TrelloHelper::FUTURE_TAG) ? TrelloHelper::FUTURE_RELEASE : TrelloHelper::UNASSIGNED_RELEASE
                     card_tags += marker_card_tags if card_tags.empty?
 
-                    unless checklist_name == FUTURE_EPIC_REFERENCED_STORIES_NAME
-                      checklist_name = card_labels.map{|c| c.name }.include?('future') ? FUTURE_EPIC_REFERENCED_STORIES_NAME : EPIC_REFERENCED_STORIES_NAME
+                    unless checklist_name == TrelloHelper::FUTURE_RELEASE
+                      checklist_name = card_labels.map{|c| c.name }.include?(TrelloHelper::FUTURE_LABEL) ? TrelloHelper::FUTURE_RELEASE : TrelloHelper::UNASSIGNED_RELEASE
                     end
 
                     card_tags.each do |card_tag|
@@ -492,7 +496,7 @@ command :update do |c|
                       if epic
                         if (roadmap_board.prefs['permissionLevel'] == 'org' && tag_to_epics[card_tag].length == 1) || (roadmap_board.prefs['permissionLevel'] == board.prefs['permissionLevel'])
                           epic_stories_by_epic[epic.id] = [] unless epic_stories_by_epic[epic.id]
-                          epic_stories_by_epic[epic.id] << [epic, card, list, board, checklist_name, accepted]
+                          epic_stories_by_epic[epic.id] << [epic, card, list, board, checklist_name, accepted, card_releases]
                         end
                       end
                     end
@@ -502,17 +506,18 @@ command :update do |c|
             end
           end
         end
+
         epic_lists.each do |epic_list|
           epic_list.cards.each do |epic_card|
             unless epic_stories_by_epic[epic_card.id]
-              clear_epic_refs(epic_card, trello)
+              trello.clear_epic_refs(epic_card)
             end
           end
         end
         epic_stories_by_epic.each_value do |epic_stories|
           first_epic_story = epic_stories.first
           if first_epic_story
-            clear_epic_refs(first_epic_story[0], trello)
+            trello.clear_epic_refs(first_epic_story[0])
             puts "\nAdding cards to #{first_epic_story[0].name}:"
             epic_stories.each do |epic_story|
               epic = epic_story[0]
@@ -521,22 +526,29 @@ command :update do |c|
               board = epic_story[3]
               checklist_name = epic_story[4]
               accepted = epic_story[5]
+              card_releases = epic_story[6]
 
-              stories_checklist = trello.checklist(epic, checklist_name)
-              if stories_checklist
-                puts "Adding #{card.url}"
-                (1..3).each do |i|
-                  begin
+              if card_releases.empty?
+                stories_checklist = trello.checklist(epic, checklist_name)
+                if stories_checklist
+                  puts "Adding #{card.url}"
+                  trello.trello_do('checklist') do 
                     stories_checklist.add_item("[#{card.name}](#{card.url}) (#{list.name}) (#{board.name})", accepted, 'bottom')
-                    break
-                  rescue => e
-                    puts "Error adding checklist: #{e.message}"
-                    raise if i == 3
-                    sleep 10
                   end
+                end
+              else
+                card_releases.each do |release|
+                  cl = trello.create_checklist(epic, release)
+                  cl.add_item("[#{card.name}](#{card.url}) (#{list.name}) (#{board.name})", accepted, 'bottom')
                 end
               end
             end
+          end
+        end
+        # Delete empty epic checklists
+        epic_lists.each do |epic_list|
+          epic_list.cards.each do |epic_card|
+            trello.delete_empty_epic_checklists(epic_card)
           end
         end
       end
