@@ -101,6 +101,12 @@
 
       releases.sort_by!{ |release| [release[1], release[2], release[3]] }
 
+      state_titles = {
+        'committed' => "Committed in plan to be delivered",
+        'targeted' => "Targeted to be delivered but not yet committed",
+        'proposed' => "Proposed to be delivered and awaiting approval",
+      }
+
       releases.each do |release|
         release_name = release[0]
         release_complete_sizing_total = 0
@@ -117,11 +123,11 @@
           state_complete_sizing_total = 0
           state_remaining_sizing_total = 0
 %>
-<h5 style="text-transform:uppercase"><%=state%></h5>
+<h5 style="text-transform:uppercase" title="<%=state_titles[state]%>"><%=state%></h5>
 <div class="container">
 <div class="table-responsive">
 <table class="table table-normal table-condensed">
-  <tr><th>Card</th><th>Sizing</th><th>Status</th><th>Epic(s)</th><th>Board</th></tr>
+  <tr><th title="Card Name">Scenario</th><th title="Sizing in Story Points">Sizing</th><th title="Planned, In Progress, or Complete">Status</th><th title="Associated Epics">Epic(s)</th><th title="Corresponding Board">Board</th></tr>
 <%
           release_cards.sort_by! {|release_card| release_card[1]}
           release_cards.each do |release_card|
