@@ -85,7 +85,7 @@ class LdapHelper
           puts "  #{login}: #{name}"
         end
       rescue Exception => e
-        puts "  #{login}: #{name} (Exception: #{e.message})"
+        $stderr.puts "  #{login}: #{name} (Exception: #{e.message})"
       end
     end
     return invalid_user_names

@@ -67,7 +67,7 @@ command :list do |c|
       if card
         trello.print_card(card)
       else
-        puts "#{options.card_ref} is an invalid format!"
+        $stderr.puts "#{options.card_ref} is an invalid format!"
         exit 1
       end
     elsif options.card_url
@@ -75,7 +75,7 @@ command :list do |c|
       if card
         trello.print_card(card)
       else
-        puts "#{options.card_url} is an invalid format!"
+        $stderr.puts "#{options.card_url} is an invalid format!"
         exit 1
       end
     else
@@ -295,7 +295,7 @@ command :comment do |c|
     if card
       card.add_comment(comment)
     else
-      puts "#{options.card_ref} is an invalid format!"
+      $stderr.puts "#{options.card_ref} is an invalid format!"
       exit 1
     end
   end
