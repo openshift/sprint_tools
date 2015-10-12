@@ -40,11 +40,11 @@ $tag_to_label_color = {
   'devcut' => 'purple'
 }
 
-LINKS = {'roadmap_overview' => 'Roadmap Overview',
-         'releases_overview' => 'Releases Overview',
-         'sprints_overview' => 'Sprints Overview',
-         'previous_sprints_overview' => 'Previous Sprints Overview',
-         'labels_overview' => 'Labels Overview',
+LINKS = {'roadmap_overview' => 'Roadmap',
+         'releases_overview' => 'Releases',
+         'sprints_overview' => 'Sprints',
+         'previous_sprints_overview' => 'Previous Sprints',
+         'labels_overview' => 'Labels',
          'sprint_schedule' => 'Sprint Schedule'}
 
 RELEASE_LABEL_REGEX = /^(proposed|targeted|committed)-((\d+)(.(\d+))*)/
