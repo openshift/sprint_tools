@@ -17,6 +17,12 @@ class TrelloHelper
   FUTURE_TAG = '[future]'
   FUTURE_LABEL = 'future'
 
+  RELEASE_STATE_ORDER = {
+    'committed' => 0,
+    'targeted' => 1,
+    'proposed' => 2
+  }
+
   UNASSIGNED_RELEASE = "Unassigned Release"
   FUTURE_RELEASE = "Future Release"
 
@@ -221,7 +227,7 @@ class TrelloHelper
               cl.delete_checklist_item(item.id)
             end
           rescue => e
-            puts "Error deleting checklist item: #{e.message}"
+            $stderr.puts "Error deleting checklist item: #{e.message}"
           end
         end
       end
@@ -260,7 +266,7 @@ class TrelloHelper
             cl.delete
           end
         rescue => e
-          puts "Error deleting checklist: #{e.message}"
+          $stderr.puts "Error deleting checklist: #{e.message}"
         end
       end
     end
@@ -408,7 +414,7 @@ class TrelloHelper
         yield
         break
       rescue Exception => e
-        puts "Error with #{type}: #{e.message}"
+        $stderr.puts "Error with #{type}: #{e.message}"
         raise if i >= retries
         sleep DEFAULT_RETRY_SLEEP
         i += 1

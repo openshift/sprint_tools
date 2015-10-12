@@ -490,30 +490,52 @@ command :update do |c|
                   puts "\n  List: #{list.name}  (#cards: #{cards.length})"
                   cards.each_with_index do |card, index|
                     card_tags = []
-                    card_releases = []
                     card_labels = trello.card_labels(card)
+                    card_release = nil
+                    card_releases = []
                     card_labels.each do |label|
                       if label.name.start_with? 'epic-'
                         card_tags << label.name
-                      elsif releases.include? label.name
-                        card_releases << label.name
+                      elsif releases.include?(label.name) && label.name =~ RELEASE_LABEL_REGEX
+                        state = $1
+                        release = $2
+                        major = $3.to_i
+                        minor = $5.to_i
+                        patch = $7.to_i
+                        card_releases << [label, state, release, major, minor, patch]
                       end
                     end
 
-                    marker_card_tags = card.name.scan(/\[[^\]]+\]/)
-                    checklist_name = marker_card_tags.include?(TrelloHelper::FUTURE_TAG) ? TrelloHelper::FUTURE_RELEASE : TrelloHelper::UNASSIGNED_RELEASE
-                    card_tags += marker_card_tags if card_tags.empty?
-
-                    unless checklist_name == TrelloHelper::FUTURE_RELEASE
-                      checklist_name = card_labels.map{|c| c.name }.include?(TrelloHelper::FUTURE_LABEL) ? TrelloHelper::FUTURE_RELEASE : TrelloHelper::UNASSIGNED_RELEASE
+                    unless card_releases.empty?
+                      if card_releases.length > 1
+                        card_releases.sort_by!{ |release| [release[3], release[4], release[5], TrelloHelper::RELEASE_STATE_ORDER[release[1]]] }
+                        first_release = card_releases.first
+                        previous_release = first_release[2]
+                        lowest_state_order = TrelloHelper::RELEASE_STATE_ORDER[first_release[1]]
+                        card_releases[1..-1].each do |release|
+                          state_order = TrelloHelper::RELEASE_STATE_ORDER[release[1]]
+                          if previous_release == release[2] || lowest_state_order <= state_order
+                            label = release[0]
+                            puts "Removing lower priority release #{label.name} from #{card.name} (#{card.url})"
+                            card.remove_label(label)
+                          end
+                          lowest_state_order = state_order if state_order < lowest_state_order
+                          previous_release = release[2]
+                        end
+                      end
+                      card_release = card_releases.first[0].name
                     end
+
+                    marker_card_tags = card.name.scan(/\[[^\]]+\]/)
+                    checklist_name = (marker_card_tags.include?(TrelloHelper::FUTURE_TAG) || card_labels.map{|c| c.name }.include?(TrelloHelper::FUTURE_LABEL)) ? TrelloHelper::FUTURE_RELEASE : TrelloHelper::UNASSIGNED_RELEASE
+                    card_tags += marker_card_tags if card_tags.empty?
 
                     card_tags.each do |card_tag|
                       epic = tag_to_epic[card_tag]
                       if epic
                         if (roadmap_board.prefs['permissionLevel'] == 'org' && tag_to_epics[card_tag].length == 1) || (roadmap_board.prefs['permissionLevel'] == board.prefs['permissionLevel'])
                           epic_stories_by_epic[epic.id] = [] unless epic_stories_by_epic[epic.id]
-                          epic_stories_by_epic[epic.id] << [epic, card, list, board, checklist_name, accepted, card_releases]
+                          epic_stories_by_epic[epic.id] << [epic, card, list, board, checklist_name, accepted, card_release]
                         end
                       end
                     end
@@ -523,6 +545,8 @@ command :update do |c|
             end
           end
         end
+        
+        exit 0
 
         epic_lists.each do |epic_list|
           epic_list.cards.each do |epic_card|
@@ -543,20 +567,18 @@ command :update do |c|
               board = epic_story[3]
               checklist_name = epic_story[4]
               accepted = epic_story[5]
-              card_releases = epic_story[6]
+              card_release = epic_story[6]
 
-              if card_releases.empty?
+              if card_release
+                 cl = trello.create_checklist(epic, card_release)
+                 cl.add_item("[#{card.name}](#{card.url}) (#{list.name}) (#{board.name})", accepted, 'bottom')
+              else
                 stories_checklist = trello.checklist(epic, checklist_name)
                 if stories_checklist
                   puts "Adding #{card.url}"
                   trello.trello_do('checklist') do 
                     stories_checklist.add_item("[#{card.name}](#{card.url}) (#{list.name}) (#{board.name})", accepted, 'bottom')
                   end
-                end
-              else
-                card_releases.each do |release|
-                  cl = trello.create_checklist(epic, release)
-                  cl.add_item("[#{card.name}](#{card.url}) (#{list.name}) (#{board.name})", accepted, 'bottom')
                 end
               end
             end

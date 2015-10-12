@@ -71,6 +71,7 @@
         trello.team_boards(team_name).each do |board|
           trello.target(trello.board_lists(board, :filter => [:all])).each do |list|
             list_name = list.name
+            status = 'Planned'
             if list_name == 'Accepted' || list_name =~ /^Sprint \d+/
               status = 'Complete'
             elsif list_name == 'In Progress' || list_name == 'Complete'
@@ -90,7 +91,6 @@
                   releases << [release, major, minor, patch] unless release_data[release]
                   release_data[release] = {} unless release_data[release]
                   release_data[release][state] = [] unless release_data[release][state]
-                  status = 'Planned'
                   release_data[release][state] << [card, status, board]
                 end
               end
@@ -99,7 +99,7 @@
         end
       end
 
-      releases.sort_by!{ |release| [release[3], release[2], release[1]] }.reverse!
+      releases.sort_by!{ |release| [release[1], release[2], release[3]] }
 
       releases.each do |release|
         release_name = release[0]
@@ -114,17 +114,26 @@
 <h5 style="text-transform:uppercase"><%=state%></h5>
 <div class="table-responsive">
 <table class="table table-normal table-condensed">
-  <tr><th>Card</th><th>Status</th><th>Board</th></tr>
+  <tr><th>Card</th><th>Status</th><th>Epic(s)</th><th>Board</th></tr>
 <%
           release_cards.sort_by! {|release_card| release_card[1]}
           release_cards.each do |release_card|
             card = release_card[0]
             status = release_card[1]
             board = release_card[2]
+            labels = trello.card_labels(card)
+            label_names = labels.map{ |label| label.name }
+            epic_names = []
+            label_names.each do |label_name|
+              if label_name.start_with? 'epic-'
+                epic_names << label_name[5..-1]
+              end
+            end
 %>
 <tr>
 <td><a href='<%=card.url%>'><%=card.name%></a></td>
 <td><%=status%></td>
+<td><%=epic_names.join(', ')%></td>
 <td><a href='<%=board.url%>'><%=board.name%></a></td>
 </tr>
 <%
