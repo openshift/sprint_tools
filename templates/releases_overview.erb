@@ -99,6 +99,8 @@
         end
       end
 
+      tag_to_epics = trello.tag_to_epics
+
       releases.sort_by!{ |release| [release[1], release[2], release[3]] }
 
       state_titles = {
@@ -136,10 +138,14 @@
             board = release_card[2]
             labels = trello.card_labels(card)
             label_names = labels.map{ |label| label.name }
-            epic_names = []
+            epics = []
             label_names.each do |label_name|
               if label_name.start_with? 'epic-'
-                epic_names << label_name[5..-1]
+                epic_card = nil
+                if tag_to_epics[label_name]
+                  epic_card = tag_to_epics[label_name].first
+                end
+                epics << [label_name[5..-1], epic_card ? epic_card.url : '']
               end
             end
             name = card.name.strip
@@ -158,7 +164,9 @@
 <td><a href='<%=card.url%>'><%=name%></a></td>
 <td><%=sizing%></td>
 <td><%=status%></td>
-<td><%=epic_names.join(', ')%></td>
+<td><%epics.each_with_index do |epic, index|%>
+<a href='<%=epic[1]%>'><%=epic[0]%></a><%=(index == epics.length - 1) ? '' : ', '%>
+<%end%></td>
 <td><a href='<%=board.url%>'><%=board.name%></a></td>
 </tr>
 <%
