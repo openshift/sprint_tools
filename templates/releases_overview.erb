@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<title><%= trello.organization_name %> Labels Overview</title>
+<title><%= trello.organization_name %> Releases Overview</title>
 <script type='text/javascript' src='https://ajax.googleapis.com/ajax/libs/jquery/1.8.1/jquery.min.js?ver=3.8.1'></script>
 <link href="https://netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css" type="text/css" rel="stylesheet" media="screen">
 <script src="https://netdna.bootstrapcdn.com/bootstrap/3.1.1/js/bootstrap.min.js"></script>
@@ -49,7 +49,7 @@
         <div class="navbar-collapse collapse">
           <ul class="nav navbar-nav">
               <% LINKS.each do |page_name, page_title|
-                if page_name != 'labels_overview' %>
+                if page_name != 'releases_overview' %>
                   <li><a href='<%=page_name%>.html'><%=page_title%></a></li>
                 <%else%>
                   <li><a class="active" href='<%=page_name%>.html'><%=page_title%></a></li>
@@ -62,25 +62,36 @@
 
   <div class="container">
 
-    <h2 class="visible-xs"><%= trello.organization_name %> Labels Overview</h2>
+    <h2 class="visible-xs"><%= trello.organization_name %> Releases Overview</h2>
 
 <%
-      label_data = {}
+      release_data = {}
+      releases = []
       trello.teams.keys.map{ |team_name| team_name.to_s }.each do |team_name|
         trello.team_boards(team_name).each do |board|
-          trello.target(trello.board_lists(board)).each do |list|
+          trello.target(trello.board_lists(board, :filter => [:all])).each do |list|
             list_name = list.name
-            if (list_name == 'In Progress' || list_name == 'Complete' || list_name == 'Accepted')
-              cards = trello.list_cards(list)
-              cards.each do |card|
-                labels = trello.card_labels(card)
-                label_names = labels.map{ |label| label.name }
-                label_names.each do |label_name|
-                  unless (label_name.starts_with?('epic-') || ['no-qe', 'future', 'devcut', 'tc-approved'].include?(label_name))
-                    break if label_name == 'documentation' && label_names.include?('docs-ack')
-                    label_data[label_name] = [] unless label_data[label_name]
-                    label_data[label_name] << [card, list_name, board]
-                  end
+            if list_name == 'Accepted' || list_name =~ /^Sprint \d+/
+              status = 'Complete'
+            elsif list_name == 'In Progress' || list_name == 'Complete'
+              status = 'In Progress'
+            end
+            cards = trello.list_cards(list)
+            cards.each do |card|
+              labels = trello.card_labels(card)
+              label_names = labels.map{ |label| label.name }
+              label_names.each do |label_name|
+                if label_name =~ RELEASE_LABEL_REGEX
+                  state = $1
+                  release = $2
+                  major = $3.to_i
+                  minor = $5.to_i
+                  patch = $7.to_i
+                  releases << [release, major, minor, patch] unless release_data[release]
+                  release_data[release] = {} unless release_data[release]
+                  release_data[release][state] = [] unless release_data[release][state]
+                  status = 'Planned'
+                  release_data[release][state] << [card, status, board]
                 end
               end
             end
@@ -88,30 +99,40 @@
         end
       end
 
+      releases.sort_by!{ |release| [release[3], release[2], release[1]] }.reverse!
+
+      releases.each do |release|
+        release_name = release[0]
 %>
+<h2 style="text-transform:uppercase"><%=release_name%></h2>
 <%
-      label_data.each do |label_name, label_cards|
+        states = release_data[release_name]
+        ['committed', 'targeted', 'proposed'].each do |state|
+          release_cards = states[state]
+          next unless release_cards
 %>
-<h3 style="text-transform:uppercase"><%=label_name%></h3>
+<h5 style="text-transform:uppercase"><%=state%></h5>
 <div class="table-responsive">
 <table class="table table-normal table-condensed">
-  <tr><th>Card</th><th>List</th><th>Board</th></tr>
+  <tr><th>Card</th><th>Status</th><th>Board</th></tr>
 <%
-        label_cards.each do |label_card|
-          card = label_card[0]
-          list_name = label_card[1]
-          board = label_card[2]
+          release_cards.sort_by! {|release_card| release_card[1]}
+          release_cards.each do |release_card|
+            card = release_card[0]
+            status = release_card[1]
+            board = release_card[2]
 %>
 <tr>
 <td><a href='<%=card.url%>'><%=card.name%></a></td>
-<td><%=list_name%></td>
+<td><%=status%></td>
 <td><a href='<%=board.url%>'><%=board.name%></a></td>
 </tr>
 <%
-        end
+          end
 %>
 </table>
 <%
+        end
       end
 %>
 </div>
