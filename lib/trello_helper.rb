@@ -9,7 +9,7 @@ class TrelloHelper
                 :sprint_length_in_weeks, :sprint_start_day, :sprint_end_day, :logo,
                 :docs_new_list_name, :roadmap_board_lists
 
-  attr_accessor :boards, :cards_by_list, :labels_by_card
+  attr_accessor :boards, :cards_by_list, :labels_by_card, :trello_login_to_email
 
   DEFAULT_RETRIES = 3
   DEFAULT_RETRY_SLEEP = 10
@@ -401,6 +401,24 @@ class TrelloHelper
 
   def member(member_name)
     Trello::Member.find(member_name)
+  end
+
+  def member_emails(members)
+    unless @trello_login_to_email
+      @trello_login_to_email = {}
+      trello_login_to_email_json = File.expand_path('~/trello_login_to_email.json')
+      if File.exist? trello_login_to_email_json
+        @trello_login_to_email = JSON.parse(File.read(trello_login_to_email_json))
+      end
+    end
+    member_emails = []
+    members.each do |member|
+      email = @trello_login_to_email[member.username]
+      if email
+        member_emails << email
+      end
+    end
+    member_emails
   end
 
   def markdown_to_html(text)

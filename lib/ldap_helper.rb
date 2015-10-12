@@ -46,6 +46,17 @@ class LdapHelper
     users
   end
 
+  def ldap_users_by_last_name(sn)
+    users = []
+    ldap = ldap_connect
+    ldap.bind do
+      ldap.search(base_dn, LDAP::LDAP_SCOPE_SUBTREE, "(sn=#{sn})", ATTRS) do |entry|
+        users << entry
+      end
+    end
+    users
+  end
+
   def print_invalid_members(members, valid_user_names, invalid_user_names=nil)
     invalid_user_names = {} unless invalid_user_names
     members.each do |member|
