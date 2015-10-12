@@ -113,8 +113,7 @@ Corresponding Private Roadmap Board Epic: <a href='<%=secondary_epic_card.url%>'
 %>
 </table>
 </div><!-- table-responsive -->
-<i>Complete: <%=complete_sizing_total%></i><br />
-<i>Remaining: <%=remaining_sizing_total%></i><br />
+<i>Completed: <%="#{complete_sizing_total} of #{complete_sizing_total + remaining_sizing_total}"%></i><br />
  </section>
 <br/>
 <br/>
@@ -125,8 +124,7 @@ Corresponding Private Roadmap Board Epic: <a href='<%=secondary_epic_card.url%>'
 %>
 
 
-<strong>Total Complete: <%=cross_epic_complete_sizing_total%></strong><br />
-<strong>Total Remaining: <%=cross_epic_remaining_sizing_total%></strong><br />
+<strong>Total Completed: <%="#{cross_epic_complete_sizing_total} of #{cross_epic_complete_sizing_total + cross_epic_remaining_sizing_total}"%></strong><br />
 
   </div><!-- /container -->
 </body>

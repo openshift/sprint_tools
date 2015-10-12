@@ -101,6 +101,9 @@
 
       releases.sort_by!{ |release| [release[1], release[2], release[3]] }
 
+      release_complete_sizing_total = 0
+      release_remaining_sizing_total = 0
+
       releases.each do |release|
         release_name = release[0]
 %>
@@ -111,12 +114,15 @@
         ['committed', 'targeted', 'proposed'].each do |state|
           release_cards = states[state]
           next unless release_cards
+
+          state_complete_sizing_total = 0
+          state_remaining_sizing_total = 0
 %>
 <h5 style="text-transform:uppercase"><%=state%></h5>
 <div class="container">
 <div class="table-responsive">
 <table class="table table-normal table-condensed">
-  <tr><th>Card</th><th>Status</th><th>Epic(s)</th><th>Board</th></tr>
+  <tr><th>Card</th><th>Sizing</th><th>Status</th><th>Epic(s)</th><th>Board</th></tr>
 <%
           release_cards.sort_by! {|release_card| release_card[1]}
           release_cards.each do |release_card|
@@ -131,23 +137,44 @@
                 epic_names << label_name[5..-1]
               end
             end
+            name = card.name.strip
+            sizing = ''
+            if name =~ /\((\d+|\?)\)(.*)/
+              sizing = $1
+              name = $2
+              if status == 'Complete'
+                state_complete_sizing_total += sizing.to_i
+              else
+                state_remaining_sizing_total += sizing.to_i
+              end
+            end
 %>
 <tr>
-<td><a href='<%=card.url%>'><%=card.name%></a></td>
+<td><a href='<%=card.url%>'><%=name%></a></td>
+<td><%=sizing%></td>
 <td><%=status%></td>
 <td><%=epic_names.join(', ')%></td>
 <td><a href='<%=board.url%>'><%=board.name%></a></td>
 </tr>
 <%
           end
+
+          release_complete_sizing_total += state_complete_sizing_total
+          release_remaining_sizing_total += state_remaining_sizing_total
 %>
 </table>
+<i>Completed (<%=state%>): <%="#{state_complete_sizing_total} of #{state_complete_sizing_total + state_remaining_sizing_total}"%></i><br />
+<br />
+<br />
 </div>
 </div>
 <%
         end
 %>
 </div>
+<strong>Total <%=release_name%> Completed: <%="#{release_complete_sizing_total} of #{release_complete_sizing_total + release_remaining_sizing_total}"%></strong><br />
+<br />
+<br />
 <%
 
       end
