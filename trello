@@ -545,8 +545,6 @@ command :update do |c|
             end
           end
         end
-        
-        exit 0
 
         epic_lists.each do |epic_list|
           epic_list.cards.each do |epic_card|
