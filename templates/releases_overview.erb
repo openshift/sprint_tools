@@ -101,11 +101,10 @@
 
       releases.sort_by!{ |release| [release[1], release[2], release[3]] }
 
-      release_complete_sizing_total = 0
-      release_remaining_sizing_total = 0
-
       releases.each do |release|
         release_name = release[0]
+        release_complete_sizing_total = 0
+        release_remaining_sizing_total = 0
 %>
 <h2 style="text-transform:uppercase"><%=release_name%></h2>
 <div class="container">
@@ -163,7 +162,7 @@
           release_remaining_sizing_total += state_remaining_sizing_total
 %>
 </table>
-<i>Completed (<%=state%>): <%="#{state_complete_sizing_total} of #{state_complete_sizing_total + state_remaining_sizing_total}"%></i><br />
+<i>Completed (<%=state%>) Points: <%="#{state_complete_sizing_total} of #{state_complete_sizing_total + state_remaining_sizing_total}"%></i><br />
 <br />
 <br />
 </div>
@@ -172,7 +171,7 @@
         end
 %>
 </div>
-<strong>Total <%=release_name%> Completed: <%="#{release_complete_sizing_total} of #{release_complete_sizing_total + release_remaining_sizing_total}"%></strong><br />
+<strong>Total <%=release_name%> Completed Points: <%="#{release_complete_sizing_total} of #{release_complete_sizing_total + release_remaining_sizing_total}"%></strong><br />
 <br />
 <br />
 <%
