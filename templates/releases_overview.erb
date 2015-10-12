@@ -105,6 +105,7 @@
         release_name = release[0]
 %>
 <h2 style="text-transform:uppercase"><%=release_name%></h2>
+<div class="container">
 <%
         states = release_data[release_name]
         ['committed', 'targeted', 'proposed'].each do |state|
@@ -112,6 +113,7 @@
           next unless release_cards
 %>
 <h5 style="text-transform:uppercase"><%=state%></h5>
+<div class="container">
 <div class="table-responsive">
 <table class="table table-normal table-condensed">
   <tr><th>Card</th><th>Status</th><th>Epic(s)</th><th>Board</th></tr>
@@ -140,11 +142,16 @@
           end
 %>
 </table>
+</div>
+</div>
 <%
         end
-      end
 %>
 </div>
+<%
+
+      end
+%>
 
 
   </div><!-- /container -->
