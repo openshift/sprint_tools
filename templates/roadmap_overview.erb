@@ -48,9 +48,18 @@
       tag_to_epics.each do |tag, epic_cards|
         primary_epic_card = epic_cards.first
         secondary_epic_card = epic_cards[1]
+        labels = trello.card_labels(primary_epic_card)
+        label_names = labels.map{ |label| label.name }
+        epic_name = ''
+        label_names.each do |label_name|
+          if label_name.start_with? 'epic-'
+            epic_name = "(#{label_name[5..-1]})"
+            break
+          end
+        end
 %>
 <section>
-<h3><a href='<%=primary_epic_card.url%>'><%=primary_epic_card.name%></a></h3>
+<h3><a href='<%=primary_epic_card.url%>'><%="#{primary_epic_card.name} #{epic_name}"%></a></h3>
 <% if secondary_epic_card %>
 Corresponding Private Roadmap Board Epic: <a href='<%=secondary_epic_card.url%>'><%=secondary_epic_card.name%></a></br>
 <% end %>
