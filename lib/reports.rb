@@ -63,12 +63,8 @@ module SprintReport
     sprint.start + day.days
   end
 
-  private
-
-  def members(x)
-    sprint.trello.trello_do('members') do
-      return x.members
-    end
+  def members(card)
+    sprint.trello.card_members(card)
   end
 
   class Column
@@ -80,16 +76,20 @@ module SprintReport
       @report = report
     end
 
-    def send_attr(x, attr)
-      report.sprint.trello.trello_do('send_attr') do
-        return x.send(attr)
+    def send_attr(card, attr)
+      if attr == 'members'
+        return report.members(card)
+      else
+        report.sprint.trello.trello_do('send_attr') do
+          return card.send(attr)
+        end
       end
     end
 
     def process(row)
       value = row.is_a?(Hash) ? row[attr.to_sym] : send_attr(row, attr)
       if value.is_a?(Array)
-        value.map! { |v| process_sub_attr(v) }
+        value = value.map { |v| process_sub_attr(v) }
       else
         value = process_sub_attr(value)
       end

@@ -9,7 +9,7 @@ class TrelloHelper
                 :sprint_length_in_weeks, :sprint_start_day, :sprint_end_day, :logo,
                 :docs_new_list_name, :roadmap_board_lists
 
-  attr_accessor :boards, :cards_by_list, :labels_by_card, :trello_login_to_email
+  attr_accessor :boards, :cards_by_list, :labels_by_card, :trello_login_to_email, :list_by_card, :members_by_card
 
   DEFAULT_RETRIES = 3
   DEFAULT_RETRY_SLEEP = 10
@@ -40,6 +40,8 @@ class TrelloHelper
 
     @cards_by_list = {}
     @labels_by_card = {}
+    @list_by_card = {}
+    @members_by_card = {}
   end
 
   def board_ids(for_sprint_report=false)
@@ -290,11 +292,23 @@ class TrelloHelper
   end
 
   def card_list(card)
-    list = nil
+    list = @list_by_card[card.id]
+    return list if list
     trello_do('card_list') do
       list = card.list
     end
+    @list_by_card[card.id] = list if list
     list
+  end
+
+  def card_members(card)
+    members = @members_by_card[card.id]
+    return members if members
+    trello_do('card_members') do
+      members = card.members
+    end
+    @members_by_card[card.id] = members if members
+    members
   end
 
   def board_labels(board)
