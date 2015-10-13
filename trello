@@ -169,6 +169,9 @@ command :generate_trello_login_to_email_json do |c|
         first_name = nil
         last_name = nil
         if name
+          if name.index('(')
+            name = name[0..name.index('(') - 1]
+          end
           names = name.strip.split(' ')
           first_name = I18n.transliterate(names.first)
           if first_name.end_with? '.'
@@ -191,6 +194,11 @@ command :generate_trello_login_to_email_json do |c|
               users = ldap.ldap_users_by_name(middle_name, last_name)
               if users.length == 1
                 valid_users[login] = users.first['mail'].first
+              else
+                users = ldap.ldap_users_by_name(first_name, "#{middle_name} #{last_name}")
+                if users.length == 1
+                  valid_users[login] = users.first['mail'].first
+                end
               end
             end
             if !valid_users[login]

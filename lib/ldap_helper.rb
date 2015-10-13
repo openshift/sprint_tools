@@ -90,6 +90,9 @@ class LdapHelper
             if !ldap_users_by_name(middle_name, last_name).empty?
               valid_user_names[login + '(imperfect match)'] = true
               next
+            elsif !ldap_users_by_name(first_name, "#{middle_name} #{last_name}").empty?
+              valid_github_user_names[login + '(imperfect match)'] = true
+              next
             end
           end
           invalid_user_names[login] = true
