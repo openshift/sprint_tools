@@ -672,13 +672,15 @@ command :update do |c|
               card_release = epic_story[6]
 
               if card_release
-                 cl = trello.create_checklist(epic, card_release)
-                 cl.add_item("[#{card.name}](#{card.url}) (#{list.name}) (#{board.name})", accepted, 'bottom')
+                cl = trello.create_checklist(epic, card_release)
+                trello.trello_do('add_checklist_item') do
+                  cl.add_item("[#{card.name}](#{card.url}) (#{list.name}) (#{board.name})", accepted, 'bottom')
+                end
               else
                 stories_checklist = trello.checklist(epic, checklist_name)
                 if stories_checklist
                   puts "Adding #{card.url}"
-                  trello.trello_do('checklist') do 
+                  trello.trello_do('add_checklist_item') do
                     stories_checklist.add_item("[#{card.name}](#{card.url}) (#{list.name}) (#{board.name})", accepted, 'bottom')
                   end
                 end
