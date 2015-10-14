@@ -9,7 +9,7 @@ class TrelloHelper
                 :sprint_length_in_weeks, :sprint_start_day, :sprint_end_day, :logo,
                 :docs_new_list_name, :roadmap_board_lists
 
-  attr_accessor :boards, :cards_by_list, :labels_by_card, :trello_login_to_email, :list_by_card, :members_by_card
+  attr_accessor :boards, :trello_login_to_email, :cards_by_list, :labels_by_card, :list_by_card, :members_by_card, :checklists_by_card
 
   DEFAULT_RETRIES = 3
   DEFAULT_RETRY_SLEEP = 10
@@ -42,6 +42,7 @@ class TrelloHelper
     @labels_by_card = {}
     @list_by_card = {}
     @members_by_card = {}
+    @checklists_by_card = {}
   end
 
   def board_ids(for_sprint_report=false)
@@ -244,6 +245,7 @@ class TrelloHelper
       puts "Adding #{checklist_name} to #{card.name}"
       cl = Trello::Checklist.create({:name => checklist_name, :board_id => card.board_id})
       card.add_checklist(cl)
+      @checklists_by_card.delete(card.id)
     end
     cl
   end
@@ -266,6 +268,7 @@ class TrelloHelper
         begin
           trello_do('checklist') do
             cl.delete
+            @checklists_by_card.delete(epic_card.id)
           end
         rescue => e
           $stderr.puts "Error deleting checklist: #{e.message}"
@@ -332,11 +335,15 @@ class TrelloHelper
   end
 
   def list_checklists(card)
-    checklists = nil
+    checklists = @checklists_by_card[card.id]
+    return checklists if checklists
     trello_do('checklists') do
       checklists = card.checklists
     end
-    checklists = target(checklists, 'checklists') if checklists
+    if checklists
+      checklists = target(checklists, 'checklists')
+      @checklists_by_card[card.id] = checklists
+    end
     checklists
   end
 

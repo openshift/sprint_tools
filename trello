@@ -524,8 +524,8 @@ command :update do |c|
         tag_to_epic = {}
         epic_lists.each do |epic_list|
           epic_list.cards.each do |epic_card|
-            trello.rename_checklist(epic_card, "Scenarios", TrelloHelper::UNASSIGNED_RELEASE)
-            trello.rename_checklist(epic_card, "Future Scenarios", TrelloHelper::FUTURE_RELEASE)
+            #trello.rename_checklist(epic_card, "Scenarios", TrelloHelper::UNASSIGNED_RELEASE)
+            #trello.rename_checklist(epic_card, "Future Scenarios", TrelloHelper::FUTURE_RELEASE)
             trello.card_labels(epic_card).each do |label|
               if label.name.start_with? 'epic-'
                 tag_to_epic[label.name] = epic_card
@@ -768,8 +768,7 @@ command :update do |c|
                     if checklists.any?
                       puts "Adding #{checklists.pretty_inspect.chomp} to #{card.name}"
                       checklists.each do |checklist_name|
-                        checklist = Trello::Checklist.create({:name => checklist_name, :board_id => board.id})
-                        card.add_checklist(checklist)
+                        trello.create_checklist(card, checklist_name)
                       end
                     end
                   end
