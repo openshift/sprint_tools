@@ -356,28 +356,28 @@ end
 command :generate_default_overviews do |c|
   c.syntax = "#{name} generate_default_overviews"
 
-  c.option "--out_dir OUT_DIR", "The dir to output to Ex: /tmp"
+  c.option "--out-dir OUT_DIR", "The dir to output to Ex: /tmp"
 
   c.description = "Generate the default overviews"
   c.action do |args, options|
-    options.out ||= '/tmp'
+    options.out_dir ||= '/tmp'
 
     $sprint = Sprint.new({:trello => trello})
 
     erb = ERB.new(File.open('templates/roadmap_overview.erb', "rb").read)
-    File.open(options.out + '/roadmap_overview.html', 'w') {|f| f.write(erb.result(binding)) }
+    File.open(options.out_dir + '/roadmap_overview.html', 'w') {|f| f.write(erb.result(binding)) }
 
     erb = ERB.new(File.open('templates/releases_overview.erb', "rb").read)
-    File.open(options.out + '/releases_overview.html', 'w') {|f| f.write(erb.result(binding)) }
+    File.open(options.out_dir + '/releases_overview.html', 'w') {|f| f.write(erb.result(binding)) }
 
     erb = ERB.new(File.open('templates/labels_overview.erb', "rb").read)
-    File.open(options.out + '/labels_overview.html', 'w') {|f| f.write(erb.result(binding)) }
+    File.open(options.out_dir + '/labels_overview.html', 'w') {|f| f.write(erb.result(binding)) }
 
     options.sprints = options.sprints ? options.sprints.to_i : 8
     options.offset = options.offset ? options.offset.to_i : 0
 
     erb = ERB.new(File.open('templates/sprints_overview.erb', "rb").read)
-    File.open(options.out + '/sprints_overview.html', 'w') {|f| f.write(erb.result(binding)) }
+    File.open(options.out_dir + '/sprints_overview.html', 'w') {|f| f.write(erb.result(binding)) }
   end
 end
 
