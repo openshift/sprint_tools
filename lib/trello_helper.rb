@@ -334,6 +334,12 @@ class TrelloHelper
     end
   end
 
+  def delete_label(label)
+    trello_do('delete_label') do
+      label.delete
+    end
+  end
+
   def list_checklists(card)
     checklists = @checklists_by_card[card.id]
     return checklists if checklists

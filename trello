@@ -431,7 +431,22 @@ command :sync_labels do |c|
               trello.update_label(board_label)
             else
               puts "Setting label #{label_name} to #{label_color}"
-              trello.create_label(label_name, label_color, board.id)
+              created = false
+              create_retry_count = 0
+              while !created
+                begin
+                  trello.create_label(label_name, label_color, board.id)
+                  created = true
+                rescue => e
+                  board_labels = trello.target(trello.board_labels(board))
+                  created = board_labels.map{|l| l.name }.include?(label_name)
+                  unless created
+                    $stderr.puts "Error creating label: #{e.message}"
+                    raise if create_retry_count >= TrelloHelper::DEFAULT_RETRIES
+                  end
+                end
+                create_retry_count += 1
+              end
             end
           end
         end
@@ -439,7 +454,11 @@ command :sync_labels do |c|
         board_labels.each do |board_label|
           unless roadmap_label_colors_by_name.has_key?(board_label.name) && (roadmap_label_colors_by_name[board_label.name] == board_label.color)
             puts "Deleting label #{board_label.name}"
-            board_label.delete
+            begin
+              trello.delete_label(board_label)
+            rescue => e
+              $stderr.puts "Error deleting label: #{e.message}"
+            end
           end
         end
       end
@@ -631,7 +650,7 @@ command :update do |c|
                     end
 
                     marker_card_tags = card.name.scan(/\[[^\]]+\]/)
-                    checklist_name = (marker_card_tags.include?(TrelloHelper::FUTURE_TAG) || card_labels.map{|c| c.name }.include?(TrelloHelper::FUTURE_LABEL)) ? TrelloHelper::FUTURE_RELEASE : TrelloHelper::UNASSIGNED_RELEASE
+                    checklist_name = (marker_card_tags.include?(TrelloHelper::FUTURE_TAG) || card_labels.map{|l| l.name }.include?(TrelloHelper::FUTURE_LABEL)) ? TrelloHelper::FUTURE_RELEASE : TrelloHelper::UNASSIGNED_RELEASE
                     card_tags += marker_card_tags if card_tags.empty?
 
                     card_tags.each do |card_tag|
@@ -741,9 +760,9 @@ command :update do |c|
                     labels = trello.card_labels(card)
                     checklists = []
                     checklists << 'Tasks' if options.add_task_checklists
-                    checklists << 'Bugs' if options.add_bug_checklists && !labels.map{|c| c.name }.include?('no-qe')
+                    checklists << 'Bugs' if options.add_bug_checklists && !labels.map{|l| l.name }.include?('no-qe')
 
-                    if options.add_doc_cards && labels.map{|c| c.name }.include?('documentation') && doc_descriptions.any?
+                    if options.add_doc_cards && labels.map{|l| l.name }.include?('documentation') && doc_descriptions.any?
                       found = false
                       doc_descriptions.each do |desc|
                         if desc.include?(card.short_url)
