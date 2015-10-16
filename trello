@@ -129,6 +129,23 @@ command :days_left_in_sprint do |c|
   end
 end
 
+command :card_ref_from_url do |c|
+  c.syntax = "#{name} card_ref_from_url"
+
+  c.option "--card-url URL", "Card url Ex: https://trello.com/c/6EhPEbM4"
+
+  c.description = "Print the card ref based on a given url"
+  c.action do |args, options|
+    card = trello.card_by_url(options.card_url)
+    if card
+      print trello.card_ref(card)
+    else
+      $stderr.puts "#{options.card_url} not found!"
+      exit 1
+    end
+  end
+end
+
 command :list_invalid_users do |c|
   c.syntax = "#{name} list_invalid_users"
 
@@ -393,13 +410,13 @@ command :comment do |c|
     card = nil
     if options.card_ref
       card = trello.card_by_ref(options.card_ref)
-    elsif  options.card_url
+    elsif options.card_url
       card = trello.card_by_url(options.card_url)
     end
     if card
       card.add_comment(comment)
     else
-      $stderr.puts "#{options.card_ref} is an invalid format!"
+      $stderr.puts "#{options.card_ref || options.card_url} is an invalid format!"
       exit 1
     end
   end

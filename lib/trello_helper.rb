@@ -58,6 +58,20 @@ class TrelloHelper
     return board_ids
   end
 
+  def card_ref(card)
+    board_name = nil
+    teams.each do |team_name, team_map|
+      team_boards_map = team_boards_map(team_map)
+      team_boards_map.each do |b_name, b_id|
+        if b_id == card.board_id
+          board_name = b_name
+          break
+        end
+      end
+    end
+    return "#{board_name}_#{card.short_id}"
+  end
+
   def team_boards(team_name)
     team_map = teams[team_name.to_sym]
     team_boards = []
