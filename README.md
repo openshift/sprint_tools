@@ -19,6 +19,18 @@ Commands
     OPTIONS:
         --card-ref SCOPE_TEAM_ID
             Get a single card Ex: team1_board1_1
+        --card-url URL
+            Card url Ex: https://trello.com/c/6EhPEbM4
+
+
+**card_ref_from_url**
+
+    DESCRIPTION:
+        Print the card ref based on a given url
+
+    OPTIONS:
+        --card-url URL
+            Card url Ex: https://trello.com/c/6EhPEbM4
 
 
 **generate_roadmap_overview**
@@ -77,7 +89,6 @@ Commands
         List the potentially invalid users
 
 
-
 **report**
 
     DESCRIPTION:
@@ -94,6 +105,12 @@ Commands
 
     DESCRIPTION:
         Print the sprint identifier
+
+
+**days_left_in_sprint**
+
+    DESCRIPTION:
+        Print the number of days left in the sprint
 
 
 **update**
@@ -115,13 +132,17 @@ Commands
         --update-roadmap
             Update the roadmap board with progress from teams.  Note: Existing checklist items will be removed with matching [tag]s.
 
+
 **sync_labels**
 
-  DESCRIPTION:
+    DESCRIPTION:
+        Sync the labels from the roadmap board to all the rest
 
-    Sync the labels from the roadmap board to all the rest
 
+**convert_markers_to_labels**
 
+    DESCRIPTION:
+        Convert [] markers on cards to epic- and future labels that exist
 
 
 Detailed Run Example
