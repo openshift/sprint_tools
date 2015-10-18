@@ -559,7 +559,7 @@ command :update do |c|
         epic_lists = trello.epic_lists(roadmap_board)
         tag_to_epic = {}
         epic_lists.each do |epic_list|
-          epic_list.cards.each do |epic_card|
+          trello.list_cards(epic_list).each do |epic_card|
             #trello.rename_checklist(epic_card, "Scenarios", TrelloHelper::UNASSIGNED_RELEASE)
             #trello.rename_checklist(epic_card, "Future Scenarios", TrelloHelper::FUTURE_RELEASE)
             trello.card_labels(epic_card).each do |label|
@@ -726,7 +726,7 @@ command :update do |c|
         end
         # Delete empty epic checklists
         epic_lists.each do |epic_list|
-          epic_list.cards.each do |epic_card|
+          trello.list_cards(epic_list).each do |epic_card|
             trello.delete_empty_epic_checklists(epic_card)
           end
         end
