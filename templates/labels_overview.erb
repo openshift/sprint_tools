@@ -25,7 +25,7 @@
 }
 .table.table-rows>tbody>tr>th,
 .table.table-rows>tbody>tr>td {
-  padding: 15px; 
+  padding: 15px;
 }
 
 
@@ -89,10 +89,24 @@
       end
 
 %>
+<h2>Table of Contents</h2>
+<ul>
 <%
       label_data.each do |label_name, label_cards|
 %>
-<h3 style="text-transform:uppercase"><%=label_name%></h3>
+  <li><a href='#<%=label_name%>' style="text-transform:uppercase"><%=label_name%></a></li>
+<%
+      end
+%>
+</ul>
+<br />
+<br />
+<br />
+
+<%
+      label_data.each do |label_name, label_cards|
+%>
+<h3 style="text-transform:uppercase" id="<%=label_name%>"><%=label_name%></h3>
 <div class="container">
 <div class="table-responsive">
 <table class="table table-normal table-condensed">
@@ -121,4 +135,3 @@
   </div><!-- /container -->
 </body>
 </html>
-

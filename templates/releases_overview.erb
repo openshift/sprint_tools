@@ -25,7 +25,7 @@
 }
 .table.table-rows>tbody>tr>th,
 .table.table-rows>tbody>tr>td {
-  padding: 15px; 
+  padding: 15px;
 }
 
 
@@ -108,13 +108,39 @@
         'targeted' => "Targeted to be delivered but not yet committed",
         'proposed' => "Proposed to be delivered and awaiting approval",
       }
-
+%>
+<h2>Table of Contents</h2>
+<ul>
+<%
+      releases.each do |release|
+        release_name = release[0]
+%>
+  <li><a href='#<%=release_name%>'><%=release_name%></a></li>
+  <ul>
+<%
+        states = release_data[release_name]
+        ['committed', 'targeted', 'proposed'].each do |state|
+          release_cards = states[state]
+          next unless release_cards
+%>
+    <li><a href='#<%="#{state}-#{release_name}"%>'><%="#{state}-#{release_name}"%></a> (<%=release_cards.length%> cards)</li>
+<%
+        end
+%>
+  </ul>
+<%
+      end
+%>
+</ul>
+<br />
+<br />
+<%
       releases.each do |release|
         release_name = release[0]
         release_complete_sizing_total = 0
         release_remaining_sizing_total = 0
 %>
-<h2 style="text-transform:uppercase"><%=release_name%></h2>
+<h2 style="text-transform:uppercase" id="<%=release_name%>"><%=release_name%></h2>
 <div class="container">
 <%
         states = release_data[release_name]
@@ -125,7 +151,7 @@
           state_complete_sizing_total = 0
           state_remaining_sizing_total = 0
 %>
-<h5 style="text-transform:uppercase" title="<%=state_titles[state]%>"><%=state%></h5>
+<h5 style="text-transform:uppercase" title="<%=state_titles[state]%>" id="<%="#{state}-#{release_name}"%>"><%=state%></h5>
 <div class="container">
 <div class="table-responsive">
 <table class="table table-normal table-condensed">
@@ -197,4 +223,3 @@
   </div><!-- /container -->
 </body>
 </html>
-

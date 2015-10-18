@@ -25,7 +25,7 @@
 }
 .table.table-rows>tbody>tr>th,
 .table.table-rows>tbody>tr>td {
-  padding: 15px; 
+  padding: 15px;
 }
 
 
@@ -95,6 +95,22 @@
           end
         end
       end
+%>
+<h2>Table of Contents</h2>
+<ul>
+<%
+      sprint_data.each do |team_name, sprint_map|
+%>
+  <li><a href='#<%=team_name%>' style="text-transform:uppercase"><%=team_name%></a></li>
+<%
+      end
+%>
+</ul>
+<br />
+<br />
+<br />
+
+<%
       sprint_data.each do |team_name, sprint_map|
         team_total_sizing = 0
         previous_sprints_count = 0
@@ -109,7 +125,7 @@
           sprints = sprints.last(options.sprints)
         end
 %>
-<h3 style="text-transform:uppercase"><%=team_name%></h3>
+<h3 style="text-transform:uppercase" id="<%=team_name%>"><%=team_name%></h3>
 <div class="table-responsive">
 <table class="table table-condensed table-rows">
 
@@ -192,4 +208,3 @@
   </div><!-- /container -->
 </body>
 </html>
-

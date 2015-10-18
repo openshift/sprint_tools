@@ -124,14 +124,14 @@ class TrelloHelper
   end
 
   def documentation_board
-    @documentation_board = Trello::Board.find(documentation_id) unless @documentation_board
+    @documentation_board = find_board(documentation_id) unless @documentation_board
     @documentation_board
   end
 
   def docs_planning_board
     unless @docs_planning_board
       if docs_planning_id
-        @docs_planning_board = Trello::Board.find(docs_planning_id)
+        @docs_planning_board = find_board(docs_planning_id)
       else
         @docs_planning_board = documentation_board
       end
@@ -141,16 +141,34 @@ class TrelloHelper
 
   def roadmap_board
     if roadmap_id
-      @roadmap_board = Trello::Board.find(roadmap_id) unless @roadmap_board
+      @roadmap_board = find_board(roadmap_id) unless @roadmap_board
     end
     @roadmap_board
   end
 
   def public_roadmap_board
     if public_roadmap_id
-      @public_roadmap_board = Trello::Board.find(public_roadmap_id) unless @public_roadmap_board
+      @public_roadmap_board = find_board(public_roadmap_id) unless @public_roadmap_board
     end
     @public_roadmap_board
+  end
+
+  def find_board(board_id)
+    trello_do('find_board') do
+      return Trello::Board.find(board_id)
+    end
+  end
+
+  def find_card_by_short_id(board, card_id)
+    trello_do('find_card_by_short_id') do
+      return board.find_card(card_id)
+    end
+  end
+
+  def find_card(card_id)
+    trello_do('find_card') do
+      return Trello::Card.find(card_id)
+    end
   end
 
   def roadmap_boards
@@ -407,7 +425,7 @@ class TrelloHelper
       board_name = $1
       card_short_id = $2
       board = team_board(board_name)
-      card = board.find_card(card_short_id)
+      card = find_card_by_short_id(board, card_short_id)
     end
     card
   end
