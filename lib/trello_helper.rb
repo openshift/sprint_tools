@@ -402,7 +402,7 @@ class TrelloHelper
     print "     "
     print "#{num}) " if num
     puts "#{card.name} (##{card.short_id})"
-    members = card.members
+    members = card_members(card)
     if !members.empty?
       puts "       Assignee(s): #{members.map{|member| member.full_name}.join(',')}"
     end
@@ -436,7 +436,7 @@ class TrelloHelper
     if card_url =~ /^https?:\/\/trello\.com\/c\/([[:alnum:]]+)/
       card_id = $1
       begin
-        card = Trello::Card.find(card_id)
+        card = find_card(card_id)
       rescue
       end
     end
@@ -451,7 +451,9 @@ class TrelloHelper
   end
 
   def org_boards
-    target(org.boards)
+    trello_do('org_boards') do
+      return target(org.boards)
+    end
   end
 
   def board(board_id)
