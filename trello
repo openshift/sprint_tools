@@ -687,7 +687,7 @@ command :update do |c|
         end
 
         epic_lists.each do |epic_list|
-          list_cards(epic_list).each do |epic_card|
+          trello.list_cards(epic_list).each do |epic_card|
             unless epic_stories_by_epic[epic_card.id]
               trello.clear_epic_refs(epic_card)
             end
