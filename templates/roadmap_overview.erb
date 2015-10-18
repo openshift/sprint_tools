@@ -45,16 +45,31 @@
       cross_epic_remaining_sizing_total = 0
       cross_epic_card_names = {}
       tag_to_epics = trello.tag_to_epics
+%>
+    <h2>Table of Contents</h2>
+    <ol>
+<%
+      tag_to_epics.each do |tag, epic_cards|
+        primary_epic_card = epic_cards.first
+        epic_name = tag[5..-1]
+%>
+      <li><a href="#<%=epic_name%>" title="<%=primary_epic_card.name%>"><%=epic_name%></a></li>
+<%
+      end
+%>
+    </ol>
+    <br />
+    <br />
+    <br />
+<%
       tag_to_epics.each do |tag, epic_cards|
         primary_epic_card = epic_cards.first
         secondary_epic_card = epic_cards[1]
-        labels = trello.card_labels(primary_epic_card)
-        label_names = labels.map{ |label| label.name }
-        epic_name = "(#{tag[5..-1]})"
+        epic_name = tag[5..-1]
 
 %>
 <section>
-<h3><a href='<%=primary_epic_card.url%>'><%="#{primary_epic_card.name}"%></a> <%=epic_name%></h3>
+<h3 id="<%=epic_name%>"><a href='<%=primary_epic_card.url%>'><%="#{primary_epic_card.name}"%></a> (<%=epic_name%>)</h3>
 <% if secondary_epic_card %>
 Corresponding Private Roadmap Board Epic: <a href='<%=secondary_epic_card.url%>'><%=secondary_epic_card.name%></a></br>
 <% end %>
