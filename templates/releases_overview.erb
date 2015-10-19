@@ -97,7 +97,7 @@
                   releases << [release, major, minor, patch] unless release_data[release]
                   release_data[release] = {} unless release_data[release]
                   release_data[release][state] = [] unless release_data[release][state]
-                  release_data[release][state] << [card, status, board, orig_state]
+                  release_data[release][state] << [card, status, board, team_name, orig_state]
                 end
               end
             end
@@ -145,6 +145,8 @@
         release_name = release[0]
         release_complete_sizing_total = 0
         release_remaining_sizing_total = 0
+        team_complete_sizing_totals = {}
+        team_remaining_sizing_totals = {}
 %>
 <h2 style="text-transform:uppercase" id="<%=release_name%>"><%=release_name%></h2>
 <div class="container">
@@ -168,7 +170,8 @@
             card = release_card[0]
             status = release_card[1]
             board = release_card[2]
-            orig_state = release_card[3]
+            team_name = release_card[3]
+            orig_state = release_card[4]
             labels = trello.card_labels(card)
             label_names = labels.map{ |label| label.name }
             epics = []
@@ -188,15 +191,19 @@
               name = $2
               if status == 'Complete'
                 state_complete_sizing_total += sizing.to_i
+                team_complete_sizing_totals[team_name] = 0 unless team_complete_sizing_totals[team_name]
+                team_complete_sizing_totals[team_name] += sizing.to_i
               else
                 state_remaining_sizing_total += sizing.to_i
+                team_remaining_sizing_totals[team_name] = 0 unless team_remaining_sizing_totals[team_name]
+                team_remaining_sizing_totals[team_name] += sizing.to_i
               end
             end
 %>
 <tr>
 <td><a href='<%=card.url%>'><%=name%></a></td>
 <td><%=sizing%></td>
-<td title="Original Plan State: <%=orig_state%>"><%=status%></td>
+<td title="Plan State: <%=orig_state%>"><%=status%></td>
 <td><%epics.each_with_index do |epic, index|%>
 <a href='<%=epic[1]%>'><%=epic[0]%></a><%=(index == epics.length - 1) ? '' : ', '%>
 <%end%></td>
@@ -209,7 +216,7 @@
           release_remaining_sizing_total += state_remaining_sizing_total
 %>
 </table>
-<i>Completed Points (<%=state%>) : <%="#{state_complete_sizing_total} of #{state_complete_sizing_total + state_remaining_sizing_total}"%></i><br />
+<i>Completed Points (<%=state%>): <%="#{state_complete_sizing_total} of #{state_complete_sizing_total + state_remaining_sizing_total}"%></i><br />
 <br />
 <br />
 </div>
@@ -218,6 +225,14 @@
         end
 %>
 </div>
+<h5><%=release_name%> Totals:</h5>
+<%
+        team_complete_sizing_totals.each do |team_name, complete_sizing|
+%>
+<%=team_name.upcase%> Completed Points: <%="#{complete_sizing} of #{complete_sizing + team_remaining_sizing_totals[team_name]}"%>
+<%
+        end
+%>
 <strong>Total <%=release_name%> Completed Points: <%="#{release_complete_sizing_total} of #{release_complete_sizing_total + release_remaining_sizing_total}"%></strong><br />
 <br />
 <br />
