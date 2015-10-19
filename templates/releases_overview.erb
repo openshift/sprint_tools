@@ -225,15 +225,17 @@
         end
 %>
 </div>
-<h5><%=release_name%> Totals:</h5>
+<h4><%=release_name%> Completed Points:</h4>
+<div class="container">
 <%
         team_complete_sizing_totals.each do |team_name, complete_sizing|
 %>
-<%=team_name.upcase%> Completed Points: <%="#{complete_sizing} of #{complete_sizing + team_remaining_sizing_totals[team_name]}"%>
+<%=team_name.upcase%>: <%="#{complete_sizing} of #{complete_sizing + team_remaining_sizing_totals[team_name]}"%><br />
 <%
         end
 %>
-<strong>Total <%=release_name%> Completed Points: <%="#{release_complete_sizing_total} of #{release_complete_sizing_total + release_remaining_sizing_total}"%></strong><br />
+<strong>Total: <%="#{release_complete_sizing_total} of #{release_complete_sizing_total + release_remaining_sizing_total}"%></strong><br />
+</div>
 <br />
 <br />
 <%
