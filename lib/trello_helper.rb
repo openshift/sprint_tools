@@ -23,6 +23,12 @@ class TrelloHelper
     'proposed' => 2
   }
 
+  RELEASE_STATE_DISPLAY_NAME = {
+    'committed' => 'Complete or Committed',
+    'targeted' => 'Targeted',
+    'proposed' => 'Proposed'
+  }
+
   UNASSIGNED_RELEASE = "Unassigned Release"
   FUTURE_RELEASE = "Future Release"
 

@@ -71,9 +71,11 @@
         trello.team_boards(team_name).each do |board|
           trello.target(trello.board_lists(board, :filter => [:all])).each do |list|
             list_name = list.name
+            complete = false
             status = 'Planned'
             if list_name == 'Accepted' || list_name =~ /^Sprint \d+/
               status = 'Complete'
+              complete = true
             elsif list_name == 'In Progress' || list_name == 'Complete'
               status = 'In Progress'
             end
@@ -88,10 +90,14 @@
                   major = $3.to_i
                   minor = $5.to_i
                   patch = $7.to_i
+                  orig_state = state
+                  if complete
+                    state = 'committed'
+                  end
                   releases << [release, major, minor, patch] unless release_data[release]
                   release_data[release] = {} unless release_data[release]
                   release_data[release][state] = [] unless release_data[release][state]
-                  release_data[release][state] << [card, status, board]
+                  release_data[release][state] << [card, status, board, orig_state]
                 end
               end
             end
@@ -104,7 +110,7 @@
       releases.sort_by!{ |release| [release[1], release[2], release[3]] }
 
       state_titles = {
-        'committed' => "Committed in plan to be delivered",
+        'committed' => "Committed in plan to be delivered and/or already complete",
         'targeted' => "Targeted to be delivered but not yet committed",
         'proposed' => "Proposed to be delivered and awaiting approval",
       }
@@ -123,7 +129,7 @@
           release_cards = states[state]
           next unless release_cards
 %>
-    <li><a href='#<%="#{state}-#{release_name}"%>'><%="#{state}-#{release_name}"%></a> (<%=release_cards.length%> cards)</li>
+    <li><a href='#<%="#{state}-#{release_name}"%>'><%=TrelloHelper::RELEASE_STATE_DISPLAY_NAME[state]%></a> (<%=release_cards.length%> cards)</li>
 <%
         end
 %>
@@ -151,7 +157,7 @@
           state_complete_sizing_total = 0
           state_remaining_sizing_total = 0
 %>
-<h5 style="text-transform:uppercase" title="<%=state_titles[state]%>" id="<%="#{state}-#{release_name}"%>"><%=state%></h5>
+<h5 style="text-transform:uppercase" title="<%=state_titles[state]%>" id="<%="#{state}-#{release_name}"%>"><%=TrelloHelper::RELEASE_STATE_DISPLAY_NAME[state]%></h5>
 <div class="container">
 <div class="table-responsive">
 <table class="table table-normal table-condensed">
@@ -162,6 +168,7 @@
             card = release_card[0]
             status = release_card[1]
             board = release_card[2]
+            orig_state = release_card[3]
             labels = trello.card_labels(card)
             label_names = labels.map{ |label| label.name }
             epics = []
@@ -189,7 +196,7 @@
 <tr>
 <td><a href='<%=card.url%>'><%=name%></a></td>
 <td><%=sizing%></td>
-<td><%=status%></td>
+<td title="Original Plan State: <%=orig_state%>"><%=status%></td>
 <td><%epics.each_with_index do |epic, index|%>
 <a href='<%=epic[1]%>'><%=epic[0]%></a><%=(index == epics.length - 1) ? '' : ', '%>
 <%end%></td>
