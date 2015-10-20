@@ -165,7 +165,7 @@
 <table class="table table-normal table-condensed">
   <tr><th title="Card Name">Scenario</th><th title="Sizing in Story Points">Sizing</th><th title="Planned, In Progress, or Complete">Status</th><th title="Associated Epics">Epic(s)</th><th title="Corresponding Board">Board</th></tr>
 <%
-          release_cards.sort_by! {|release_card| release_card[1]}
+          release_cards.sort_by! {|release_card| release_card[1], release_card[3]}
           release_cards.each do |release_card|
             card = release_card[0]
             status = release_card[1]
