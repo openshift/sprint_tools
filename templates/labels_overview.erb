@@ -68,7 +68,7 @@
       label_data = {}
       trello.teams.keys.map{ |team_name| team_name.to_s }.each do |team_name|
         trello.team_boards(team_name).each do |board|
-          trello.target(trello.board_lists(board)).each do |list|
+          trello.board_lists(board).each do |list|
             list_name = list.name
             if (list_name == 'In Progress' || list_name == 'Complete' || list_name == 'Accepted')
               cards = trello.list_cards(list)

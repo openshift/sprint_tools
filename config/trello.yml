@@ -6,6 +6,7 @@
 :consumer_secret: <consumer_secret>
 :oauth_token: <oauth_token>
 :oauth_token_secret: <oauth_secret>
+:max_lists: 20
 :teams:
   :team1:
     :boards:
