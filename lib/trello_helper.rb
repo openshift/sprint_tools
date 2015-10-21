@@ -9,7 +9,7 @@ class TrelloHelper
                 :sprint_length_in_weeks, :sprint_start_day, :sprint_end_day, :logo,
                 :docs_new_list_name, :roadmap_board_lists, :max_lists
 
-  attr_accessor :boards, :trello_login_to_email, :cards_by_list, :labels_by_card, :list_by_card, :members_by_card, :checklists_by_card, :board_lists_by_board
+  attr_accessor :boards, :trello_login_to_email, :cards_by_list, :labels_by_card, :list_by_card, :members_by_card, :checklists_by_card, :lists_by_board
 
   DEFAULT_RETRIES = 3
   DEFAULT_RETRY_SLEEP = 10
@@ -49,7 +49,7 @@ class TrelloHelper
     @list_by_card = {}
     @members_by_card = {}
     @checklists_by_card = {}
-    @board_lists_by_board = {}
+    @lists_by_board = {}
   end
 
   def board_ids(for_sprint_report=false)
@@ -219,13 +219,13 @@ class TrelloHelper
   end
 
   def board_lists(board)
-    lists = @board_lists_by_board[board.id]
+    lists = @lists_by_board[board.id]
     return lists if lists
     trello_do('lists') do
       lists = board.lists(:filter => [:all])
       lists.sort_by!{ |list| list.name =~ /^Sprint (\d+)/ ? (9999999 - $1.to_i) : 0 }
       lists = lists.first(max_lists) if max_lists
-      @board_lists_by_board[board.id] = lists
+      @lists_by_board[board.id] = lists
       return lists
     end
   end
