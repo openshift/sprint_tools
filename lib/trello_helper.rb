@@ -223,6 +223,7 @@ class TrelloHelper
     return lists if lists
     trello_do('lists') do
       lists = board.lists(:filter => [:all])
+      lists = lists.delete_if{ |list| list.name !~ /^Sprint (\d+)/ && list.closed? }
       lists.sort_by!{ |list| list.name =~ /^Sprint (\d+)/ ? (9999999 - $1.to_i) : 0 }
       lists = lists.first(max_lists) if max_lists
       @lists_by_board[board.id] = lists
@@ -270,7 +271,7 @@ class TrelloHelper
       cl.items.each do |item|
         if item.name =~ /\[.*\]\(https?:\/\/trello\.com\/[^\)]+\) \([^\)]+\) \([^\)]+\)/
           begin
-            trello_do('checklist') do
+            trello_do('checklist', 2) do
               cl.delete_checklist_item(item.id)
             end
           rescue => e
