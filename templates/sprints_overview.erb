@@ -111,6 +111,7 @@
 
 <%
       sprint_data.each do |team_name, sprint_map|
+        puts "Team: #{team_name}"
         team_total_sizing = 0
         previous_sprints_count = 0
         sprints = []
@@ -133,6 +134,7 @@
         sprint_end = nil
         sprints.each do |sprint|
           sprint_num = sprint.keys.first
+          puts "  Sprint: #{sprint_num}"
           previous_sprints_count += 1 if sprint_num < 9999990
           sprint.values.first.each do |card|
             if card.name =~ /^Sprint (\d+)/
