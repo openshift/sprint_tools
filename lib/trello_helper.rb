@@ -288,8 +288,8 @@ class TrelloHelper
     cl = checklist(card, checklist_name)
     unless cl
       puts "Adding #{checklist_name} to #{card.name}"
-      cl = Trello::Checklist.create({:name => checklist_name, :board_id => card.board_id})
-      card.add_checklist(cl)
+      cl = Trello::Checklist.create({:name => checklist_name, :board_id => card.board_id, :card_id => card.id})
+      #card.add_checklist(cl)
       @checklists_by_card.delete(card.id)
     end
     cl
