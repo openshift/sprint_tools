@@ -104,7 +104,11 @@ class Sprint
   end
 
   def title(short = false)
-    str = "Report for Current Sprint: Day %d" % [day]
+    sprint_name = 'Current Sprint'
+    if sprint_card.name =~ /^Sprint (\d+)/
+      sprint_name = "Sprint #{$1}"
+    end
+    str = "Report for #{sprint_name}: Day %d" % [day]
     str << " (%s - %s)" % [start, self.finish] unless short
     str
   end
