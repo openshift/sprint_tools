@@ -67,39 +67,56 @@
 <%
       release_data = {}
       releases = []
+      search_list_info = []
       trello.teams.keys.map{ |team_name| team_name.to_s }.each do |team_name|
         trello.team_boards(team_name).each do |board|
           trello.board_lists(board).each do |list|
-            list_name = list.name
-            complete = false
-            status = 'Planned'
-            if list_name == 'Accepted' || list_name =~ /^Sprint \d+/
-              status = 'Complete'
-              complete = true
-            elsif list_name == 'In Progress' || list_name == 'Complete'
-              status = 'In Progress'
-            end
-            cards = trello.list_cards(list)
-            cards.each do |card|
-              labels = trello.card_labels(card)
-              label_names = labels.map{ |label| label.name }
-              label_names.each do |label_name|
-                if label_name =~ RELEASE_LABEL_REGEX
-                  state = $1
-                  release = $2
-                  major = $3.to_i
-                  minor = $5.to_i
-                  patch = $7.to_i
-                  orig_state = state
-                  if complete
-                    state = 'committed'
-                  end
-                  releases << [release, major, minor, patch] unless release_data[release]
-                  release_data[release] = {} unless release_data[release]
-                  release_data[release][state] = [] unless release_data[release][state]
-                  release_data[release][state] << [card, status, board, team_name, orig_state]
-                end
+            search_list_info << [team_name, board, list]
+          end
+        end
+      end
+
+      trello.roadmap_boards.each do |board|
+        trello.board_lists(board).each do |list|
+          if list.name == 'New'
+            search_list_info << ['roadmap', board, list]
+            break
+          end
+        end
+      end
+
+      search_list_info.each do |list_info|
+        team_name = list_info[0]
+        board = list_info[1]
+        list = list_info[2]
+        list_name = list.name
+        complete = false
+        status = 'Planned'
+        if list_name == 'Accepted' || list_name =~ /^Sprint \d+/
+          status = 'Complete'
+          complete = true
+        elsif list_name == 'In Progress' || list_name == 'Complete'
+          status = 'In Progress'
+        end
+        cards = trello.list_cards(list)
+        cards.each do |card|
+          labels = trello.card_labels(card)
+          label_names = labels.map{ |label| label.name }
+          label_names.each do |label_name|
+            if label_name =~ RELEASE_LABEL_REGEX
+              state = $1
+              release = $2
+              major = $3.to_i
+              minor = $5.to_i
+              patch = $7.to_i
+              orig_state = state
+              if complete
+                state = 'committed'
               end
+              releases << [release, major, minor, patch] unless release_data[release]
+              release_data[release] = {} unless release_data[release]
+              release_data[release][state] = [] unless release_data[release][state]
+              release_data[release][state] << [card, status, board, team_name, orig_state]
             end
           end
         end
@@ -181,7 +198,7 @@
                 if tag_to_epics[label_name]
                   epic_card = tag_to_epics[label_name].first
                 end
-                epics << [label_name[5..-1], epic_card ? epic_card.url : '']
+                epics << [label_name[5..-1], epic_card ? epic_card.url : nil]
               end
             end
             name = card.name.strip
@@ -204,8 +221,18 @@
 <td><a href='<%=card.url%>'><%=name%></a></td>
 <td><%=sizing%></td>
 <td title="Plan State: <%=orig_state%>"><%=status%></td>
-<td><%epics.each_with_index do |epic, index|%>
-<a href='<%=epic[1]%>'><%=epic[0]%></a><%=(index == epics.length - 1) ? '' : ', '%>
+<td><%epics.each_with_index do |epic, index|
+        separator = (index == epics.length - 1) ? '' : ', '
+        if epic[1]
+%>
+<a href='<%=epic[1]%>'><%=epic[0]%></a><%=separator%>
+<%
+        else
+%>
+<%="#{epic[0]}#{separator}"%>
+<%
+        end
+%>
 <%end%></td>
 <td><a href='<%=board.url%>'><%=board.name%></a></td>
 </tr>
