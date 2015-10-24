@@ -840,7 +840,7 @@ command :update do |c|
                   if trello.card_labels(card).map{|label| label.name }.include?("documentation")
                     tasks_checklist = trello.checklist(card, 'Tasks')
                     if tasks_checklist
-                      doc_reminder = "Update this card (in the description or in a comment) with details about what needs to be documented.  For subjects that have corresponding engineering owned documentation, a pointer to that documentation should suffice."
+                      doc_reminder = "Update this card (in the description or in a comment) with details about what needs to be documented."
                       found = false
                       tasks_checklist.items.each do |item|
                         if item.name.include? doc_reminder

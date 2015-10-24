@@ -1,4 +1,5 @@
 require 'trello'
+require 'kramdown'
 
 class TrelloHelper
   # Trello Config

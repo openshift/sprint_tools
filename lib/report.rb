@@ -1,4 +1,3 @@
-require 'kramdown'
 require 'ostruct'
 require 'mailer'
 
@@ -103,27 +102,6 @@ class Report
     data
   end
 
-  def to_kramdown(data, user=nil)
-    str = []
-    str << "## %s" % user ? "Incomplete User Stories for #{user}" : $sprint.title
-    data.each do |t|
-      r = t[:report]
-      d = t[:data]
-      str << ''
-      str << "### #{r.print_title}"
-      str << ''
-      str << "|---"
-      str << "| %s" % d[:headings].join(" | ")
-      str << "| %s :--|" % (":--:|" * (d[:headings].length-1) )
-
-      d[:rows].each do |row|
-        str << "| %s" % row.join(' | ')
-      end
-      str << "{: border='1px solid black'}"
-    end
-    Kramdown::Document.new(str.join("\n"))
-  end
-
   def to_ascii(data, user = nil)
     return capture_stdout do
       title = user ? "Incomplete User Stories for #{user}" : $sprint.title
@@ -172,8 +150,6 @@ class Report
       :to => to,
       :subject => subject,
       :body => to_ascii(data)
-      #TODO: Removing the HTML mail for now, it's kinda clunky looking
-      #:html_body => to_kramdown(data).to_html
     )
   end
 end

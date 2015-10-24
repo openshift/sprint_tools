@@ -51,8 +51,8 @@ def _progress(msg)
   @indent = indent
 end
 
-def _table(title,hash,args = {})
-  table = make_table(hash,args)
+def _table(title, hash, args={})
+  table = make_table(hash, args)
 
   heading title do
     table.lines.each do |line|
@@ -63,7 +63,6 @@ end
 
 def make_table(args, options={})
   options = OpenStruct.new(options)
-
   # Sort the stuff or just convert to an array
   args = if (key = options.sort)
            args.sort do |a,b|
