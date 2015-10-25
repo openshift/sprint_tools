@@ -92,11 +92,15 @@
         list_name = list.name
         complete = false
         status = 'Planned'
+        pos_adjustment = TrelloHelper::LIST_POSITION_ADJUSTMENT[list_name]
         if list_name == 'Accepted' || list_name =~ /^Sprint \d+/
+          pos_adjustment = 0
           status = 'Complete'
           complete = true
         elsif list_name == 'In Progress' || list_name == 'Complete'
           status = 'In Progress'
+        else
+          pos_adjustment = TrelloHelper::MAX_LIST_POSITION_ADJUSTMENT
         end
         cards = trello.list_cards(list)
         cards.each do |card|
@@ -113,10 +117,11 @@
               if complete
                 state = 'committed'
               end
+              pos = card.pos + pos_adjustment
               releases << [release, major, minor, patch] unless release_data[release]
               release_data[release] = {} unless release_data[release]
               release_data[release][state] = [] unless release_data[release][state]
-              release_data[release][state] << [card, status, board, team_name, orig_state]
+              release_data[release][state] << [card, status, board, team_name, orig_state, pos]
             end
           end
         end
@@ -182,7 +187,7 @@
 <table class="table table-normal table-condensed">
   <tr><th title="Card Name">Scenario</th><th title="Sizing in Story Points">Sizing</th><th title="Planned, In Progress, or Complete">Status</th><th title="Associated Epics">Epic(s)</th><th title="Corresponding Board">Board</th></tr>
 <%
-          release_cards.sort_by! {|release_card| [release_card[1], release_card[3]]}
+          release_cards.sort_by! {|release_card| [release_card[1], release_card[3], release_card[5]]}
           release_cards.each do |release_card|
             card = release_card[0]
             status = release_card[1]

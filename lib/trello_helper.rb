@@ -30,6 +30,17 @@ class TrelloHelper
     'proposed' => 'Proposed'
   }
 
+  LIST_POSITION_ADJUSTMENT = {
+    'Complete' => 100,
+    'In Progress' => 200,
+    'Next' => 300,
+    'Backlog' => 400,
+    'New' => 800
+  }
+
+  MAX_LIST_POSITION_ADJUSTMENT = 1000
+
+
   UNASSIGNED_RELEASE = "Unassigned Release"
   FUTURE_RELEASE = "Future Release"
 
