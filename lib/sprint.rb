@@ -124,7 +124,7 @@ class Sprint
       lists.each do |list|
         if list.name == 'In Progress' || list.name == 'Complete' || list.name == 'Accepted'
           cards = trello.list_cards(list)
-          cards = cards.delete_if {|card| card.name =~ /^Sprint \d+/ && !card.due.nil?}
+          cards = cards.clone.delete_if {|card| card.name =~ /^Sprint \d+/ && !card.due.nil?}
           @stories += cards
         end
       end
