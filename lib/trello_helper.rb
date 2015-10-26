@@ -232,7 +232,7 @@ class TrelloHelper
 
   def board_lists(board, list_limit=max_lists_per_board)
     lists = nil
-    lists = @lists_by_board[board.id] if (list_limit && list_limit <= max_lists_per_board) || list_limit.nil?
+    lists = @lists_by_board[board.id] if max_lists_per_board.nil? || (list_limit && list_limit <= max_lists_per_board)
     unless lists
       trello_do('lists') do
         lists = board.lists(:filter => [:all])
@@ -240,7 +240,7 @@ class TrelloHelper
         lists.sort_by!{ |list| list.name =~ /^Sprint (\d+)/ ? (9999999 - $1.to_i) : 0 }
       end
     end
-    @lists_by_board[board.id] = lists if ((list_limit && list_limit >= max_lists_per_board) || list_limit.nil?) && !@lists_by_board[board.id]
+    @lists_by_board[board.id] = lists if ((list_limit && max_lists_per_board && (list_limit >= max_lists_per_board)) || list_limit.nil?) && !@lists_by_board[board.id]
     lists = lists.first(list_limit) if list_limit
     return lists
   end
