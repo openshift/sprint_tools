@@ -103,7 +103,7 @@
           pos_adjustment = TrelloHelper::MAX_LIST_POSITION_ADJUSTMENT
         end
         cards = trello.list_cards(list)
-        cards.each do |card|
+        cards.each_with_index do |card, index|
           labels = trello.card_labels(card)
           label_names = labels.map{ |label| label.name }
           label_names.each do |label_name|
@@ -117,7 +117,7 @@
               if complete
                 state = 'committed'
               end
-              pos = card.pos + pos_adjustment
+              pos = index + pos_adjustment
               releases << [release, major, minor, patch] unless release_data[release]
               release_data[release] = {} unless release_data[release]
               release_data[release][state] = [] unless release_data[release][state]
@@ -180,16 +180,23 @@
 
           state_complete_sizing_total = 0
           state_remaining_sizing_total = 0
+          sorted_by_help = nil
+          if state == 'committed'
+            release_cards.sort_by! {|release_card| [release_card[1], release_card[3], release_card[5]]}
+            sorted_by_help = '(sorted by status, team, position)'
+          else
+            release_cards.sort_by! {|release_card| [release_card[3], release_card[5]]}
+            sorted_by_help = '(sorted by team, position)'
+          end
 %>
-<h5 title="<%=state_titles[state]%>" id="<%="#{state}-#{release_name}"%>"><%=TrelloHelper::RELEASE_STATE_DISPLAY_NAME[state]%> (<%=release_name%>)</h5>
+<h5 title="<%="#{state_titles[state]} #{sorted_by_help}"%>" id="<%="#{state}-#{release_name}"%>"><%=TrelloHelper::RELEASE_STATE_DISPLAY_NAME[state]%> (<%=release_name%>)</h5>
 <div class="container">
 <div class="table-responsive">
 <table class="table table-normal table-condensed">
-  <tr><th title="Card Name">Scenario</th><th title="Sizing in Story Points">Sizing</th><th title="Planned, In Progress, or Complete">Status</th><th title="Associated Epics">Epic(s)</th><th title="Corresponding Board">Board</th><th title="Team Position Within Status">Position</th></tr>
+  <tr><th title="Card Name">Scenario</th><th title="Sizing in Story Points">Sizing</th><th title="Planned, In Progress, or Complete">Status</th><th title="Associated Epics">Epic(s)</th><th title="Corresponding Board">Board</th><th title="Team Position Within State">Position</th></tr>
 <%
-          release_cards.sort_by! {|release_card| [release_card[1], release_card[3], release_card[5]]}
           previous_team_name = nil
-          team_position = 1
+          team_positions = {}
           release_cards.each do |release_card|
             card = release_card[0]
             status = release_card[1]
@@ -197,9 +204,9 @@
             team_name = release_card[3]
             orig_state = release_card[4]
             if previous_team_name == team_name
-              team_position += 1
+              team_positions[team_name] += 1
             else
-              team_position = 1
+              team_positions[team_name] = 1
               previous_team_name = team_name
             end
             labels = trello.card_labels(card)
@@ -248,7 +255,7 @@
 %>
 <%end%></td>
 <td><a href='<%=board.url%>'><%=board.name%></a></td>
-<td><%=team_position%></td>
+<td><%=team_positions[team_name]%></td>
 </tr>
 <%
           end
