@@ -231,16 +231,18 @@ class TrelloHelper
   end
 
   def board_lists(board, list_limit=max_lists_per_board)
-    lists = @lists_by_board[board.id] if list_limit == max_lists_per_board
-    return lists if lists
-    trello_do('lists') do
-      lists = board.lists(:filter => [:all])
-      lists = lists.delete_if{ |list| list.name !~ /^Sprint (\d+)/ && list.closed? }
-      lists.sort_by!{ |list| list.name =~ /^Sprint (\d+)/ ? (9999999 - $1.to_i) : 0 }
-      lists = lists.first(list_limit) if list_limit
-      @lists_by_board[board.id] = lists if list_limit == max_lists_per_board
-      return lists
+    lists = nil
+    lists = @lists_by_board[board.id] if (list_limit && list_limit <= max_lists_per_board) || list_limit.nil?
+    unless lists
+      trello_do('lists') do
+        lists = board.lists(:filter => [:all])
+        lists = lists.delete_if{ |list| list.name !~ /^Sprint (\d+)/ && list.closed? }
+        lists.sort_by!{ |list| list.name =~ /^Sprint (\d+)/ ? (9999999 - $1.to_i) : 0 }
+      end
     end
+    @lists_by_board[board.id] = lists if ((list_limit && list_limit >= max_lists_per_board) || list_limit.nil?) && !@lists_by_board[board.id]
+    lists = lists.first(list_limit) if list_limit
+    return lists
   end
 
   def epic_lists(board)
