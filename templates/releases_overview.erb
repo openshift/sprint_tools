@@ -203,12 +203,11 @@
             board = release_card[2]
             team_name = release_card[3]
             orig_state = release_card[4]
-            if previous_team_name == team_name
-              team_positions[team_name] += 1
-            else
-              team_positions[team_name] = 1
+            if previous_team_name != team_name
+              team_positions[team_name] = 0 unless team_positions[team_name]
               previous_team_name = team_name
             end
+            team_positions[team_name] += 1
             labels = trello.card_labels(card)
             label_names = labels.map{ |label| label.name }
             epics = []
