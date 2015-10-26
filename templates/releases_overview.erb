@@ -185,15 +185,23 @@
 <div class="container">
 <div class="table-responsive">
 <table class="table table-normal table-condensed">
-  <tr><th title="Card Name">Scenario</th><th title="Sizing in Story Points">Sizing</th><th title="Planned, In Progress, or Complete">Status</th><th title="Associated Epics">Epic(s)</th><th title="Corresponding Board">Board</th></tr>
+  <tr><th title="Card Name">Scenario</th><th title="Sizing in Story Points">Sizing</th><th title="Planned, In Progress, or Complete">Status</th><th title="Associated Epics">Epic(s)</th><th title="Corresponding Board">Board</th><th title="Team Position Within Status">Position</th></tr>
 <%
           release_cards.sort_by! {|release_card| [release_card[1], release_card[3], release_card[5]]}
+          previous_team_name = nil
+          team_position = 1
           release_cards.each do |release_card|
             card = release_card[0]
             status = release_card[1]
             board = release_card[2]
             team_name = release_card[3]
             orig_state = release_card[4]
+            if previous_team_name == team_name
+              team_position += 1
+            else
+              team_position = 1
+              previous_team_name = team_name
+            end
             labels = trello.card_labels(card)
             label_names = labels.map{ |label| label.name }
             epics = []
@@ -240,6 +248,7 @@
 %>
 <%end%></td>
 <td><a href='<%=board.url%>'><%=board.name%></a></td>
+<td><%=team_position%></td>
 </tr>
 <%
           end
