@@ -193,7 +193,7 @@
 <div class="container">
 <div class="table-responsive">
 <table class="table table-normal table-condensed">
-  <tr><th title="Card Name">Scenario</th><th title="Sizing in Story Points">Sizing</th><th title="Planned, In Progress, or Complete">Status</th><th title="Associated Epics">Epic(s)</th><th title="Corresponding Board">Board</th><th title="Team Position Within State">Position</th></tr>
+  <tr><th title="Card Name">Scenario</th><th title="Team Position Within State">Position</th><th title="Corresponding Board">Board</th><th title="Planned, In Progress, or Complete">Status</th><th title="Associated Epics">Epic(s)</th><th title="Sizing in Story Points">Sizing</th></tr>
 <%
           previous_team_name = nil
           team_positions = {}
@@ -238,7 +238,8 @@
 %>
 <tr>
 <td><a href='<%=card.url%>'><%=name%></a></td>
-<td><%=sizing%></td>
+<td><%=team_positions[team_name]%></td>
+<td><a href='<%=board.url%>'><%=board.name%></a></td>
 <td title="Plan State: <%=orig_state%>"><%=status%></td>
 <td><%epics.each_with_index do |epic, index|
         separator = (index == epics.length - 1) ? '' : ', '
@@ -253,8 +254,7 @@
         end
 %>
 <%end%></td>
-<td><a href='<%=board.url%>'><%=board.name%></a></td>
-<td><%=team_positions[team_name]%></td>
+<td><%=sizing%></td>
 </tr>
 <%
           end

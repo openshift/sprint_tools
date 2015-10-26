@@ -8,7 +8,7 @@ class TrelloHelper
                 :public_roadmap_id, :public_roadmap_board, :documentation_board,
                 :documentation_next_list, :docs_planning_id, :organization_name,
                 :sprint_length_in_weeks, :sprint_start_day, :sprint_end_day, :logo,
-                :docs_new_list_name, :roadmap_board_lists, :max_lists
+                :docs_new_list_name, :roadmap_board_lists, :max_lists_per_board
 
   attr_accessor :boards, :trello_login_to_email, :cards_by_list, :labels_by_card, :list_by_card, :members_by_card, :checklists_by_card, :lists_by_board
 
@@ -230,15 +230,15 @@ class TrelloHelper
     tag_to_epics
   end
 
-  def board_lists(board)
-    lists = @lists_by_board[board.id]
+  def board_lists(board, list_limit=max_lists_per_board)
+    lists = @lists_by_board[board.id] if list_limit == max_lists_per_board
     return lists if lists
     trello_do('lists') do
       lists = board.lists(:filter => [:all])
       lists = lists.delete_if{ |list| list.name !~ /^Sprint (\d+)/ && list.closed? }
       lists.sort_by!{ |list| list.name =~ /^Sprint (\d+)/ ? (9999999 - $1.to_i) : 0 }
-      lists = lists.first(max_lists) if max_lists
-      @lists_by_board[board.id] = lists
+      lists = lists.first(list_limit) if list_limit
+      @lists_by_board[board.id] = lists if list_limit == max_lists_per_board
       return lists
     end
   end
