@@ -180,20 +180,23 @@
 
           state_complete_sizing_total = 0
           state_remaining_sizing_total = 0
-          sorted_by_help = nil
+          sorted_by_title = nil
+          position_title = nil
           if state == 'committed'
             release_cards.sort_by! {|release_card| [release_card[1], release_card[3], release_card[5]]}
-            sorted_by_help = '(sorted by status, team, position)'
+            sorted_by_title = '(sorted by status, team, position)'
+            position_title = 'Team Position Within Status'
           else
             release_cards.sort_by! {|release_card| [release_card[3], release_card[5]]}
-            sorted_by_help = '(sorted by team, position)'
+            sorted_by_title = '(sorted by team, position)'
+            position_title = 'Team Position'
           end
 %>
-<h5 title="<%="#{state_titles[state]} #{sorted_by_help}"%>" id="<%="#{state}-#{release_name}"%>"><%=TrelloHelper::RELEASE_STATE_DISPLAY_NAME[state]%> (<%=release_name%>)</h5>
+<h5 title="<%="#{state_titles[state]} #{sorted_by_title}"%>" id="<%="#{state}-#{release_name}"%>"><%=TrelloHelper::RELEASE_STATE_DISPLAY_NAME[state]%> (<%=release_name%>)</h5>
 <div class="container">
 <div class="table-responsive">
 <table class="table table-normal table-condensed">
-  <tr><th title="Card Name">Scenario</th><th title="Team Position Within State">Position</th><th title="Corresponding Board">Board</th><th title="Planned, In Progress, or Complete">Status</th><th title="Associated Epics">Epic(s)</th><th title="Sizing in Story Points">Sizing</th></tr>
+  <tr><th title="Card Name">Scenario</th><th title="<%=position_title%>">Position</th><th title="Corresponding Board">Board</th><th title="Planned, In Progress, or Complete">Status</th><th title="Associated Epics">Epic(s)</th><th title="Sizing in Story Points">Sizing</th></tr>
 <%
           previous_team_name = nil
           team_positions = {}
