@@ -196,10 +196,11 @@
 <div class="container">
 <div class="table-responsive">
 <table class="table table-normal table-condensed">
-  <tr><th title="Card Name">Scenario</th><th title="<%=position_title%>">Position</th><th title="Corresponding Board">Board</th><th title="Planned, In Progress, or Complete">Status</th><th title="Associated Epics">Epic(s)</th><th title="Sizing in Story Points">Sizing</th></tr>
+  <tr><th title="Card Name">Scenario</th><th title="<%=position_title%>">Position</th><th title="Corresponding Board">Board</th><th title="Planned, In Progress, or Complete">Status</th><th title="Associated Epics">Epic(s)</th><th title="Sizing in Story Points (Team Sum)">Sizing</th></tr>
 <%
           previous_team_name = nil
           team_positions = {}
+          team_sizing_totals = {}
           release_cards.each do |release_card|
             card = release_card[0]
             status = release_card[1]
@@ -208,6 +209,7 @@
             orig_state = release_card[4]
             if previous_team_name != team_name
               team_positions[team_name] = 0 unless team_positions[team_name]
+              team_sizing_totals[team_name] = 0 unless team_sizing_totals[team_name]
               previous_team_name = team_name
             end
             team_positions[team_name] += 1
@@ -224,11 +226,12 @@
               end
             end
             name = card.name.strip
-            sizing = ''
+            sizing = nil
             team_complete_sizing_totals[team_name] = 0 unless team_complete_sizing_totals[team_name]
             team_remaining_sizing_totals[team_name] = 0 unless team_remaining_sizing_totals[team_name]
             if name =~ /\((\d+|\?)\)(.*)/
               sizing = $1
+              team_sizing_totals[team_name] += sizing.to_i
               name = $2
               if status == 'Complete'
                 state_complete_sizing_total += sizing.to_i
@@ -257,7 +260,7 @@
         end
 %>
 <%end%></td>
-<td><%=sizing%></td>
+<td><%=sizing ? "#{sizing} (#{team_sizing_totals[team_name]})" : ''%></td>
 </tr>
 <%
           end
