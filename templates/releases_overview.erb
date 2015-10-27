@@ -196,7 +196,7 @@
 <div class="container">
 <div class="table-responsive">
 <table class="table table-normal table-condensed">
-  <tr><th title="Card Name">Scenario</th><th title="<%=position_title%>">Position</th><th title="Corresponding Board">Board</th><th title="Planned, In Progress, or Complete">Status</th><th title="Associated Epics">Epic(s)</th><th title="Sizing in Story Points (Team Sum)">Sizing</th></tr>
+  <tr><th title="Card Name">Scenario</th><th title="<%=position_title%>">Position</th><th title="Corresponding Board">Board</th><th title="Planned, In Progress, or Complete">Status</th><th title="Associated Epics">Epic(s)</th><th title="Sizing in Story Points (Team Rolling Total)">Sizing</th></tr>
 <%
           previous_team_name = nil
           team_positions = {}
@@ -230,15 +230,15 @@
             team_complete_sizing_totals[team_name] = 0 unless team_complete_sizing_totals[team_name]
             team_remaining_sizing_totals[team_name] = 0 unless team_remaining_sizing_totals[team_name]
             if name =~ /\((\d+|\?)\)(.*)/
-              sizing = $1
-              team_sizing_totals[team_name] += sizing.to_i
+              sizing = $1.to_i
+              team_sizing_totals[team_name] += sizing
               name = $2
               if status == 'Complete'
-                state_complete_sizing_total += sizing.to_i
-                team_complete_sizing_totals[team_name] += sizing.to_i
+                state_complete_sizing_total += sizing
+                team_complete_sizing_totals[team_name] += sizing
               else
-                state_remaining_sizing_total += sizing.to_i
-                team_remaining_sizing_totals[team_name] += sizing.to_i
+                state_remaining_sizing_total += sizing
+                team_remaining_sizing_totals[team_name] += sizing
               end
             end
 %>
@@ -260,7 +260,7 @@
         end
 %>
 <%end%></td>
-<td><%=sizing ? "#{sizing} (#{team_sizing_totals[team_name]})" : ''%></td>
+<td nowrap><%=sizing ? "#{sizing} (#{team_sizing_totals[team_name]})" : ''%></td>
 </tr>
 <%
           end
