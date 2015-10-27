@@ -152,6 +152,20 @@
           next unless release_cards
 %>
     <li><a href='#<%="#{state}-#{release_name}"%>'><%=TrelloHelper::RELEASE_STATE_DISPLAY_NAME[state]%></a> (<%=release_cards.length%> cards)</li>
+    <ul>
+<%
+          previous_team_name = nil
+          release_cards.each do |release_card|
+            team_name = release_card[3]
+            if previous_team_name != team_name
+              previous_team_name = team_name
+%>
+      <li><a class="anchor" href='#<%="#{state}-#{team_name}"%>'><%=team_name.upcase%></a></li>
+<%
+            end
+          end
+%>
+    </ul>
 <%
         end
 %>
@@ -208,9 +222,16 @@
             team_name = release_card[3]
             orig_state = release_card[4]
             if previous_team_name != team_name
+%>
+<tr id="<%="#{state}-#{team_name}"%>">
+<%
               team_positions[team_name] = 0 unless team_positions[team_name]
               team_sizing_totals[team_name] = 0 unless team_sizing_totals[team_name]
               previous_team_name = team_name
+            else
+%>
+<tr>
+<%
             end
             team_positions[team_name] += 1
             labels = trello.card_labels(card)
@@ -242,7 +263,6 @@
               end
             end
 %>
-<tr>
 <td><a href='<%=card.url%>'><%=name%></a></td>
 <td title="<%=position_title%>"><%=team_positions[team_name]%></td>
 <td><a href='<%=board.url%>'><%=board.name%></a></td>
