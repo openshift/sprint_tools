@@ -244,7 +244,7 @@
 %>
 <tr>
 <td><a href='<%=card.url%>'><%=name%></a></td>
-<td><%=team_positions[team_name]%></td>
+<td title="<%=position_title%>"><%=team_positions[team_name]%></td>
 <td><a href='<%=board.url%>'><%=board.name%></a></td>
 <td title="Plan State: <%=orig_state%>"><%=status%></td>
 <td><%epics.each_with_index do |epic, index|
@@ -260,7 +260,7 @@
         end
 %>
 <%end%></td>
-<td nowrap><%=sizing ? "#{sizing} (#{team_sizing_totals[team_name]})" : ''%></td>
+<td title="Sizing in Story Points (Team Rolling Total)" nowrap><%=sizing ? "#{sizing} (#{team_sizing_totals[team_name]})" : ''%></td>
 </tr>
 <%
           end
