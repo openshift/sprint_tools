@@ -184,7 +184,7 @@
         team_complete_sizing_totals = {}
         team_remaining_sizing_totals = {}
 %>
-<h2 style="text-transform:uppercase" id="<%=release_name%>"><%=release_name%></h2>
+<h2 class="anchor" id="<%=release_name%>"><%=release_name.upcase%></h2>
 <div class="container">
 <%
         states = release_data[release_name]
@@ -206,7 +206,7 @@
             position_title = 'Team Position'
           end
 %>
-<h5 title="<%="#{state_titles[state]} #{sorted_by_title}"%>" id="<%="#{state}-#{release_name}"%>"><%=TrelloHelper::RELEASE_STATE_DISPLAY_NAME[state]%> (<%=release_name%>)</h5>
+<h5 title="<%="#{state_titles[state]} #{sorted_by_title}"%>" class="anchor" id="<%="#{state}-#{release_name}"%>"><%=TrelloHelper::RELEASE_STATE_DISPLAY_NAME[state]%> (<%=release_name%>)</h5>
 <div class="container">
 <div class="table-responsive">
 <table class="table table-normal table-condensed">
@@ -303,7 +303,7 @@
 <%
         end
 %>
-<h4 id="<%=release_name%>_completed_points"><a href="#<%=release_name%>_completed_points" title="Link to this section"><%=release_name%> Completed Points:</a></h4>
+<h4 class="anchor" id="<%=release_name%>_completed_points"><a href="#<%=release_name%>_completed_points" title="Link to this section"><%=release_name%> Completed Points:</a></h4>
 <div class="container">
 <%
         team_complete_sizing_totals.each do |team_name, complete_sizing|
