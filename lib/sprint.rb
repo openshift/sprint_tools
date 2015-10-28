@@ -4,7 +4,7 @@ require 'core_ext/date'
 
 class Sprint
   # Calendar related attributes
-  attr_accessor :start, :finish, :sprint_card, :prod, :stg, :int
+  attr_accessor :start, :finish, :sprint_card, :prod, :stg, :int, :next_major_release
   # Trello related attributes
   attr_accessor :trello
   # UserStory related attributes
@@ -44,7 +44,7 @@ class Sprint
 
   def sprint_card
     return @sprint_card if @sprint_card
-    board = trello.board(trello.board_ids.first)
+    board = trello.board(trello.board_ids.last)
     trello.board_lists(board).each do |list|
       if list.name == 'In Progress'
         @sprint_card = list.cards.sort_by { |card| card.pos }.first
@@ -101,6 +101,12 @@ class Sprint
     return @int if @int
     @int = sprint_card_date("First Push to INT")
     @int
+  end
+
+  def next_major_release
+    return @next_major_release if @next_major_release
+    @next_major_release = sprint_card_date("Next Major Release")
+    @next_major_release
   end
 
   def title(short = false)
