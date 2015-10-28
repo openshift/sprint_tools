@@ -97,6 +97,14 @@ pre {
 
 .navbar-collapse.in {overflow-y: inherit;}
 
+h1:before,h2:before,h3:before,h4:before,h5:before,h6:before {
+  display: block;
+  content: " ";
+  margin-top: -71px;
+  padding-top: 71px;
+  visibility: hidden;
+}
+
 /* Responsive
  //---------------  */
 
@@ -106,7 +114,7 @@ pre {
   .brand {
   margin-left: 0;
   }
-  .nav li a.active:after, .nav li a.active:before { 
+  .nav li a.active:after, .nav li a.active:before {
     display: block;
   }
 }
