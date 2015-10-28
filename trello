@@ -129,8 +129,8 @@ command :days_left_in_sprint do |c|
   end
 end
 
-command :days_left_until_major_release do |c|
-  c.syntax = "#{name} days_left_until_major_release"
+command :days_until_major_release do |c|
+  c.syntax = "#{name} days_until_major_release"
 
   c.description = "Print the number of days left until the next major release"
   c.action do |args, options|
