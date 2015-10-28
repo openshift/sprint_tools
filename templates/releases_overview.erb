@@ -222,16 +222,10 @@
             team_name = release_card[3]
             orig_state = release_card[4]
             if previous_team_name != team_name
-%>
-<tr id="<%="#{state}-#{team_name}"%>">
-<%
               team_positions[team_name] = 0 unless team_positions[team_name]
               team_sizing_totals[team_name] = 0 unless team_sizing_totals[team_name]
               previous_team_name = team_name
             else
-%>
-<tr>
-<%
             end
             team_positions[team_name] += 1
             labels = trello.card_labels(card)
@@ -263,7 +257,8 @@
               end
             end
 %>
-<td><a href='<%=card.url%>'><%=name%></a></td>
+<tr>
+<td><div class="anchor" id="<%="#{state}-#{team_name}"%>"><a href='<%=card.url%>'><%=name%></a></div></td>
 <td title="<%=position_title%>"><%=team_positions[team_name]%></td>
 <td><a href='<%=board.url%>'><%=board.name%></a></td>
 <td title="Plan State: <%=orig_state%>"><%=status%></td>
