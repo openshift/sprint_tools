@@ -225,7 +225,6 @@
               team_positions[team_name] = 0 unless team_positions[team_name]
               team_sizing_totals[team_name] = 0 unless team_sizing_totals[team_name]
               previous_team_name = team_name
-            else
             end
             team_positions[team_name] += 1
             labels = trello.card_labels(card)
