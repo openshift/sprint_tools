@@ -66,8 +66,10 @@ class LdapHelper
       end
       name = member.full_name
       begin
-        if name.index('(')
-          name = name[0..name.index('(') - 1]
+        ['(', '['].each do |c|
+          if name.index(c)
+            name = name[0..name.index(c) - 1]
+          end
         end
         names = name.strip.split(' ')
         first_name = I18n.transliterate(names.first)
