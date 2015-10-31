@@ -1,6 +1,6 @@
 class Sprint
-  def check_labels(card, target)
-    trello.card_labels(card).map{|label| label.name }.include?(target)
+  def has_label(card, labels)
+    (labels - trello.card_labels(card).map{|label| label.name }).length < labels.length
   end
 
   def check_comments(card, target)
@@ -12,17 +12,17 @@ class Sprint
   def queries
     {
       :needs_qe => {
-        :function => lambda{ |card| !check_labels(card, 'no-qe') }
+        :function => lambda{ |card| !has_label(card, ['no-qe']) }
       },
       :qe_ready => {
         :parent => :needs_qe,
-        :function => lambda{ |card| check_comments(card, 'tcms') }
+        :function => lambda{ |card| check_comments(card, ['tcms']) }
       },
       :approved => {
-        :function => lambda{ |card| check_labels(card, 'tc-approved') || check_labels(card, 'no-qe') }
+        :function => lambda{ |card| has_label(card, ['tc-approved', 'no-qe']) }
       },
       :accepted   => {
-        :function => lambda{ |card| trello.card_list(card).name == 'Accepted' }
+        :function => lambda{ |card| trello.card_list(card).name == 'Accepted' || (trello.card_list(card).name == 'Complete' && has_label(card, ['no-qe'])) }
       },
       :completed  => {
         :parent   => :not_accepted,
@@ -30,7 +30,11 @@ class Sprint
       },
       :not_dcut_complete => {
         :parent   => :not_completed,
-        :function => lambda{ |card| check_labels(card, 'devcut')}
+        :function => lambda{ |card| has_label(card, ['devcut'])}
+      },
+      :release_incomplete => {
+        :parent   => :not_accepted,
+        :function => lambda{ |card| (trello.current_release_labels && has_label(card, trello.current_release_labels))}
       }
     }
   end
