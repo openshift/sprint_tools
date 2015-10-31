@@ -3,20 +3,21 @@ class Sprint
     (labels - trello.card_labels(card).map{|label| label.name }).length < labels.length
   end
 
-  def check_comments(card, target)
+  def has_comment(card, target_comment)
     #TODO Trello doesn't have an api for comments yet
-    #card.comments.map{|card| card.body }.include?(target)
+    #card.comments.map{|comment| comment.body }.include?(target_comment)
     true
   end
 
   def queries
     {
       :needs_qe => {
+        :parent   => :not_accepted,
         :function => lambda{ |card| !has_label(card, ['no-qe']) }
       },
       :qe_ready => {
         :parent => :needs_qe,
-        :function => lambda{ |card| check_comments(card, ['tcms']) }
+        :function => lambda{ |card| has_comment(card, 'tcms') }
       },
       :approved => {
         :function => lambda{ |card| has_label(card, ['tc-approved', 'no-qe']) }
@@ -33,8 +34,8 @@ class Sprint
         :function => lambda{ |card| has_label(card, ['devcut'])}
       },
       :release_incomplete => {
-        :parent   => :not_accepted,
-        :function => lambda{ |card| (trello.current_release_labels && has_label(card, trello.current_release_labels))}
+        :function => lambda{ |card| (trello.current_release_labels && has_label(card, trello.current_release_labels))},
+        :include_backlog => true
       }
     }
   end

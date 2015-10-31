@@ -86,7 +86,7 @@ class Report
 
       stats.data.unshift({
         :name => 'Total Stories',
-        :count => $sprint.stories.length
+        :count => $sprint.sprint_stories.length
       })
 
       data.unshift({

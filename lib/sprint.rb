@@ -8,7 +8,7 @@ class Sprint
   # Trello related attributes
   attr_accessor :trello
   # UserStory related attributes
-  attr_accessor :stories, :processed, :results
+  attr_accessor :sprint_stories, :not_accepted_stories, :processed, :results
 
   attr_accessor :debug
 
@@ -16,7 +16,7 @@ class Sprint
     opts.each do |k,v|
       send("#{k}=",v)
     end
-    get_stories
+    init_stories
   end
 
   def day
@@ -119,28 +119,40 @@ class Sprint
     str
   end
 
-  def get_stories
+  def init_stories
     # Reset processed status
     @processed = {}
     @results = {}
 
-    @stories = []
+    @sprint_stories = []
+    @not_accepted_stories = []
     trello.boards_for_sprint_report.each do |board_id, board|
       lists = trello.board_lists(board)
       lists.each do |list|
         if list.name == 'In Progress' || list.name == 'Complete' || list.name == 'Accepted'
           cards = trello.list_cards(list)
           cards = cards.clone.delete_if {|card| card.name =~ /^Sprint \d+/ && !card.due.nil?}
-          @stories += cards
+          @sprint_stories += cards
+          @not_accepted_stories += cards if list.name != 'Accepted'
+        elsif !list.closed? && list.name !~ /^Sprint \d+/
+          cards = trello.list_cards(list)
+          @not_accepted_stories += cards
         end
       end
     end
-    @stories
+  end
+
+  def query_stories(include_backlog)
+    if include_backlog
+      not_accepted_stories
+    else
+      sprint_stories
+    end
   end
 
   def find(name, match = true)
     query = queries[name]
-    where = stories
+    where = query_stories(query[:include_backlog])
     if parent = query[:parent]
       where = send(parent)
     end
