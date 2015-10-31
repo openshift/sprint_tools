@@ -28,6 +28,28 @@
   padding: 15px;
 }
 
+@font-face{
+  font-family:'PatternFlyIcons-webfont';
+  src:url(fonts/PatternFlyIcons-webfont.eot) format('embedded-opentype'),url(fonts/PatternFlyIcons-webfont.ttf) format('truetype'),url(fonts/PatternFlyIcons-webfont.woff) format('woff'),url(fonts/PatternFlyIcons-webfont.svg#PatternFlyIcons-webfont) format('svg');
+}
+
+.pficon-help:before{
+  padding-left: 5px;
+  font-size: 14px;
+  margin-right: 5px;
+  text-align: center;
+  width: 14px;
+  display: inline-block;
+  font-family: 'PatternFlyIcons-webfont';
+  font-style: normal;
+  font-variant: normal;
+  font-weight: 400;
+  line-height: 1;
+  speak: none;
+  text-transform: none;
+  -webkit-font-smoothing: antialiased;
+  content:"\e605"
+}
 
 </style>
 
@@ -206,11 +228,11 @@
             position_title = 'Team Position'
           end
 %>
-<h5 title="<%="#{state_titles[state]} #{sorted_by_title}"%>" class="anchor" id="<%="#{state}-#{release_name}"%>"><%=TrelloHelper::RELEASE_STATE_DISPLAY_NAME[state]%> (<%=release_name%>)</h5>
+<h5 title="<%="#{state_titles[state]} #{sorted_by_title}"%>" class="anchor" id="<%="#{state}-#{release_name}"%>"><%=TrelloHelper::RELEASE_STATE_DISPLAY_NAME[state]%> (<%=release_name%>)<span class="pficon-help"></span></h5>
 <div class="container">
 <div class="table-responsive">
 <table class="table table-normal table-condensed">
-  <tr><th title="Card Name">Scenario</th><th title="<%=position_title%>">Position</th><th title="Corresponding Board">Board</th><th title="Planned, In Progress, or Complete">Status</th><th title="Associated Epics">Epic(s)</th><th title="Sizing in Story Points (Team Rolling Total)">Sizing</th></tr>
+  <tr><th title="Card Name">Scenario</th><th title="<%=position_title%>">Position<span class="pficon-help"></span></th><th title="Corresponding Board">Board</th><th title="Planned, In Progress, or Complete">Status<span class="pficon-help"></span></th><th title="Associated Epics">Epic(s)</th><th title="Sizing in Story Points (Team Rolling Total)">Sizing<span class="pficon-help"></span></th></tr>
 <%
           previous_team_name = nil
           team_positions = {}
