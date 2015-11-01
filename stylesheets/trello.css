@@ -102,6 +102,29 @@ pre {
   margin-top: -51px;
 }
 
+@font-face{
+  font-family:'PatternFlyIcons-webfont';
+  src:url(../fonts/PatternFlyIcons-webfont.eot) format('embedded-opentype'),url(../fonts/PatternFlyIcons-webfont.ttf) format('truetype'),url(../fonts/PatternFlyIcons-webfont.woff) format('woff'),url(../fonts/PatternFlyIcons-webfont.svg#PatternFlyIcons-webfont) format('svg');
+}
+
+.pficon-help:before{
+  padding-left: 5px;
+  font-size: 14px;
+  margin-right: 5px;
+  text-align: center;
+  width: 14px;
+  display: inline-block;
+  font-family: 'PatternFlyIcons-webfont';
+  font-style: normal;
+  font-variant: normal;
+  font-weight: 400;
+  line-height: 1;
+  speak: none;
+  text-transform: none;
+  -webkit-font-smoothing: antialiased;
+  content:"\e605"
+}
+
 /* Responsive
  //---------------  */
 
