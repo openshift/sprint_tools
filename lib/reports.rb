@@ -81,6 +81,8 @@ module SprintReport
     def send_attr(card, attr)
       if attr == 'members'
         return report.members(card)
+      elsif attr == 'list'
+        return report.sprint.trello.card_list(card)
       else
         report.sprint.trello.trello_do('send_attr') do
           return card.send(attr)
@@ -110,7 +112,7 @@ module SprintReport
 
     def format(value)
       if value.is_a? Array
-        value.map { |v| format_str(v) }.join(', ')
+        format_str(value.join(', '))
       else
         format_str(value)
       end
@@ -119,7 +121,12 @@ module SprintReport
     # Format a string if needed (like for URLs)
     def format_str(value)
       value ||= '<none>'
-      fmt ? (fmt % [value]) : value
+      value = fmt ? (fmt % [value]) : value
+      if (value.is_a? String) && value.length > 30
+        value = value[0..26]
+        value += ('.' * (30 - value.length))
+      end
+      value
     end
   end
 end
@@ -131,6 +138,7 @@ class UserStoryReport
       :headings => [
         { :header => 'name', :attr => 'short_url' },
         { :header => 'members', :sub_attr => 'full_name' },
+        { :header => 'list', :sub_attr => 'name' },
         { :header => 'Name' },
       ],
       :sort_key => :member_ids
