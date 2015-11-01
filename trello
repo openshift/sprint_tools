@@ -185,68 +185,10 @@ command :generate_trello_login_to_email_json do |c|
 
   c.description = "Generate a json file with trello login -> email"
   c.action do |args, options|
-    valid_users = {}
     require 'ldap_helper'
     ldap = load_conf(LdapHelper, CONFIG.ldap, true)
     members = trello.org.members
-    members.each do |member|
-      login = member.username
-      name = member.full_name
-      begin
-        first_name = nil
-        last_name = nil
-        if name
-          ['(', '['].each do |c|
-            if name.index(c)
-              name = name[0..name.index(c) - 1]
-            end
-          end
-          names = name.strip.split(' ')
-          first_name = I18n.transliterate(names.first)
-          if first_name.end_with? '.'
-            first_name = first_name[0..-2]
-          end
-          if names.length > 1
-            last_name = I18n.transliterate(names.last)
-          end
-        end
-        if last_name
-          users = ldap.ldap_users_by_name(first_name, last_name, true)
-          if users.length == 1
-            valid_users[login] = users.first['mail'].first
-          else
-            users = ldap.ldap_users_by_name(first_name, last_name)
-            if users.length == 1
-              valid_users[login] = users.first['mail'].first
-            elsif names.length > 2
-              middle_name = I18n.transliterate(names[1])
-              users = ldap.ldap_users_by_name(middle_name, last_name)
-              if users.length == 1
-                valid_users[login] = users.first['mail'].first
-              else
-                users = ldap.ldap_users_by_name(first_name, "#{middle_name} #{last_name}")
-                if users.length == 1
-                  valid_users[login] = users.first['mail'].first
-                end
-              end
-            end
-            if !valid_users[login]
-              users = ldap.ldap_users_by_last_name(last_name)
-              if users.length == 1
-                valid_users[login] = users.first['mail'].first
-              end
-            end
-          end
-          if !valid_users[login]
-            puts "Not found or multiple matches: #{login}: #{name}"
-          end
-        else
-          puts "No last name: #{login}: #{name}"
-        end
-      rescue Exception => e
-        puts "    #{login}: #{name} (Exception: #{e.message})"
-      end
-    end
+    valid_users = ldap.valid_users(members)
     if options.out
       File.open(options.out, 'w') {|f| f.write(valid_users.to_json) }
     else
