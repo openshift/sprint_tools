@@ -17,7 +17,11 @@ module SprintReport
       @data = sprint.send(function)
     end
     if sort_key
-      @data = @data.sort_by{|x| x.send(sort_key)}
+      if sort_key == :list_name
+        @data.sort_by!{|x| list_name = sprint.trello.card_list(x).name; TrelloHelper::LIST_POSITION_ADJUSTMENT[list_name] ? TrelloHelper::LIST_POSITION_ADJUSTMENT[list_name] : list_name.hash.abs}
+      else
+        @data.sort_by!{|x| x.send(sort_key)}
+      end
     end
     @data
   end
@@ -70,7 +74,7 @@ module SprintReport
   end
 
   class Column
-    attr_accessor :header, :attr, :fmt, :sub_attr, :report
+    attr_accessor :header, :attr, :fmt, :sub_attr, :report, :max_length
     def initialize(opts, report)
       opts.each do |k,v|
         send("#{k}=",v)
@@ -122,9 +126,9 @@ module SprintReport
     def format_str(value)
       value ||= '<none>'
       value = fmt ? (fmt % [value]) : value
-      if (value.is_a? String) && value.length > 30
-        value = value[0..26]
-        value += ('.' * (30 - value.length))
+      if max_length && (value.is_a? String) && value.length > max_length
+        value = value[0..(max_length-4)]
+        value += ('.' * (max_length - value.length))
       end
       value
     end
@@ -137,11 +141,11 @@ class UserStoryReport
     _opts = {
       :headings => [
         { :header => 'name', :attr => 'short_url' },
-        { :header => 'members', :sub_attr => 'full_name' },
-        { :header => 'list', :sub_attr => 'name' },
-        { :header => 'Name' },
+        { :header => 'list', :sub_attr => 'name', :max_length => 15 },
+        { :header => 'Name', :max_length => 30 },
+        { :header => 'members', :sub_attr => 'full_name', :max_length => 25 }
       ],
-      :sort_key => :member_ids
+      :sort_key => :list_name
     }
     super(_opts.merge(opts))
   end

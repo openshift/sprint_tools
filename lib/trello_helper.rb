@@ -32,6 +32,7 @@ class TrelloHelper
   }
 
   LIST_POSITION_ADJUSTMENT = {
+    'Accepted' => 10,
     'Complete' => 100,
     'In Progress' => 200,
     'Next' => 300,
