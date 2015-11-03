@@ -43,6 +43,16 @@ Commands
             The file to output Ex: /tmp/roadmap_overview.html
 
 
+**generate_releases_overview**
+
+    DESCRIPTION:
+        Generate the releases overview
+
+    OPTIONS:
+        --out OUT_FILE
+            The file to output Ex: /tmp/releases_overview.html
+
+
 **generate_sprint_schedule**
 
     DESCRIPTION:
@@ -67,6 +77,26 @@ Commands
             The number of sprints to show
         --offset NUM
             The number of sprints to offset from the latest
+
+
+**generate_labels_overview**
+
+    DESCRIPTION:
+        Generate the labels overview
+
+    OPTIONS:
+        --out OUT_FILE
+            The file to output Ex: /tmp/labels_overview.html
+
+
+**generate_default_overviews**
+
+    DESCRIPTION:
+        Generate the default overviews
+
+    OPTIONS:
+        --out OUT_FILE
+            The dir to output to Ex: /tmp
 
 
 **list**
@@ -150,10 +180,11 @@ Detailed Run Example
     ./trello sync-labels --trace
     ./trello update --update-roadmap --trace
     ./trello update --add-task-checklists --add-bug-checklists --update-bug-tasks --add-doc-tasks --add-doc-cards --trace
-    ./trello generate_roadmap_overview --out /tmp/roadmap_overview.html --trace
+    ./trello generate_default_overviews --out /tmp --trace
     cp /tmp/roadmap_overview.html /var/www/html/roadmap_overview.html
-    ./trello generate_sprints_overview --out /tmp/sprints_overview.html --sprints 8 --trace
+    cp /tmp/releases_overview.html /var/www/html/releases_overview.html
     cp /tmp/sprints_overview.html /var/www/html/sprints_overview.html
+    cp /tmp/labels_overview.html /var/www/html/labels_overview.html
     ./trello generate_sprints_overview --out /tmp/previous_sprints_overview.html --sprints 8 --offset 8 --trace
     cp /tmp/previous_sprints_overview.html /var/www/html/previous_sprints_overview.html
     ./trello generate_sprint_schedule --out /tmp/sprint_schedule.html --sprints 10 --trace
