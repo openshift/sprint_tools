@@ -108,6 +108,7 @@ pre {
 }
 
 .pficon-help:before{
+  cursor: pointer;
   padding-left: 5px;
   font-size: 14px;
   margin-right: 5px;
