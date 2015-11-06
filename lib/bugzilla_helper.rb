@@ -23,7 +23,20 @@ class BugzillaHelper
     status = 'NOTFOUND'
     if url =~ /https?:\/\/bugzilla\.redhat\.com\/show_bug\.cgi\?id=(\d+)/
       id = $1
-      result = bug.get_bugs([id], ::Bugzilla::Bug::FIELDS_DETAILS)
+      result = []
+      tries = 1
+      while true
+        begin
+          result = bug.get_bugs([id], ::Bugzilla::Bug::FIELDS_DETAILS)
+          break
+        rescue
+          if tries == 3
+            $stderr.puts "Error getting: #{url}"
+            raise
+          end
+          tries += 1
+        end
+      end
       if !result.empty?
         status = result.first['status']
       end
