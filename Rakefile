@@ -14,6 +14,7 @@ for f in `find lib -name *.rb`
 do
   ruby -c $f >/dev/null;
 done
+ruby -c trello >/dev/null;
 }
     `#{syntax_check_cmd}`
     if $?.exitstatus != 0
