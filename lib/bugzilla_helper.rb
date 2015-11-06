@@ -23,11 +23,13 @@ class BugzillaHelper
     status = 'NOTFOUND'
     if url =~ /https?:\/\/bugzilla\.redhat\.com\/show_bug\.cgi\?id=(\d+)/
       id = $1
-      result = []
       tries = 1
       while true
         begin
           result = bug.get_bugs([id], ::Bugzilla::Bug::FIELDS_DETAILS)
+          if !result.empty?
+            status = result.first['status']
+          end
           break
         rescue
           if tries == 3
@@ -36,9 +38,6 @@ class BugzillaHelper
           end
           tries += 1
         end
-      end
-      if !result.empty?
-        status = result.first['status']
       end
     end
     return status
