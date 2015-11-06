@@ -1,5 +1,11 @@
+
+OpenShift Sprint Tools
+===
+
+[![TravisCI](https://travis-ci.org/openshift/sprint_tools.svg?branch=master)](https://travis-ci.org/openshift/sprint_tools)
+
 Setup
-=====
+===
     bundle install
 
 
