@@ -392,7 +392,7 @@ command :sync_labels do |c|
         empty_labels_by_color = {}
         board_labels.each do |board_label|
           if board_label.name.nil? || board_label.name.empty?
-            empty_labels_by_color[board_label.color] = board_label
+            empty_labels_by_color[board_label.color] = board_label if board_label.color
           else
             board_labels_by_name[board_label.name] = board_label
           end
