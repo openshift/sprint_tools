@@ -159,7 +159,7 @@
             if previous_team_name != team_name
               previous_team_name = team_name
 %>
-      <li><a href='#<%="#{state}-#{team_name}"%>'><%=team_name.upcase%></a></li>
+      <li><a href='#<%="#{state}-#{release_name}-#{team_name}"%>'><%=team_name.upcase%></a></li>
 <%
             end
           end
@@ -256,7 +256,7 @@
             end
 %>
 <tr>
-<td><div class="anchor" id="<%="#{state}-#{team_name}"%>"><a href='<%=card.url%>'><%=name%></a></div></td>
+<td><div class="anchor" id="<%="#{state}-#{release_name}-#{team_name}"%>"><a href='<%=card.url%>'><%=name%></a></div></td>
 <td title="<%=position_title%>"><%=team_positions[team_name]%></td>
 <td><a href='<%=board.url%>'><%=board.name%></a></td>
 <td title="Plan State: <%=orig_state%>"><%=status%></td>
