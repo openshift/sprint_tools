@@ -98,9 +98,8 @@
           complete = true
         elsif list_name == 'In Progress' || list_name == 'Complete'
           status = 'In Progress'
-        else
-          pos_adjustment = TrelloHelper::MAX_LIST_POSITION_ADJUSTMENT
         end
+        pos_adjustment = TrelloHelper::MAX_LIST_POSITION_ADJUSTMENT unless pos_adjustment
         cards = trello.list_cards(list)
         cards.each_with_index do |card, index|
           labels = trello.card_labels(card)
