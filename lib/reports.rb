@@ -29,16 +29,11 @@ module SprintReport
     if @data.empty? && sprint && function
       @data = sprint.send(function)
     end
-    if secondary_sort_key && !sort_key
-      sort_key = secondary_sort_key
-      secondary_sort_key = nil
-    end
-    if sort_key
-      if secondary_sort_key
-        @data.sort_by!{|card| [send_attr(card, sort_key.to_s), send_attr(card, secondary_sort_key.to_s)]}
-      else
-        @data.sort_by!{|card| send_attr(card, sort_key.to_s)}
-      end
+    sort_keys = []
+    sort_keys << sort_key.to_s if sort_key
+    sort_keys << secondary_sort_key.to_s if secondary_sort_key
+    unless sort_keys.empty?
+      @data.sort_by!{|card| sort_keys.map{ |key| send_attr(card, key) }}
     end
     @data
   end
