@@ -786,7 +786,7 @@ command :update do |c|
                               bugs_checklist.add_item(item_name, true, 'bottom')
                               bugs_checklist.delete_checklist_item(item.id)
                             end
-                          elsif status == 'OPEN' || status == 'ASSIGNED'
+                          else
                             if item.state == 'complete'
                               puts "Marking incomplete: #{item_name}"
                               bugs_checklist.add_item(item_name, false, 'top')

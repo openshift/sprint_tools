@@ -123,6 +123,17 @@ class TrelloHelper
     end
   end
 
+  def team_name(card)
+    teams.each do |team_name, team_map|
+      team_boards_map = team_boards_map(team_map)
+      team_boards_map.each do |b_name, b_id|
+        if b_id == card.board_id
+          return team_name.to_s
+        end
+      end
+    end
+  end
+
   def boards
     return @boards if @boards
     @boards = {}

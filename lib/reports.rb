@@ -1,44 +1,61 @@
 require 'sprint'
 
 module SprintReport
-  attr_accessor :title, :headings, :function, :columns, :data, :day, :days_before_release, :sort_key, :friendly
+  attr_accessor :title, :headings, :function, :columns, :data, :day, :days_before_release, :sort_key, :secondary_sort_key, :friendly
   attr_accessor :sprint
   def initialize(opts)
     opts.each do |k,v|
       send("#{k}=",v)
     end
 
-    @columns = headings.map{|x| Column.new(x, self)}
+    @columns = headings.map{|heading| Column.new(heading, self)}
     @data = []
+  end
+
+  def send_attr(card, attr)
+    if attr == 'team_name'
+      return sprint.trello.team_name(card)
+    elsif attr == 'list_name'
+      list_name = sprint.trello.card_list(card).name
+      return TrelloHelper::LIST_POSITION_ADJUSTMENT[list_name] ? TrelloHelper::LIST_POSITION_ADJUSTMENT[list_name] : list_name.hash.abs
+    else
+      sprint.trello.trello_do('send_attr') do
+        return card.send(attr)
+      end
+    end
   end
 
   def data
     if @data.empty? && sprint && function
       @data = sprint.send(function)
     end
+    if secondary_sort_key && !sort_key
+      sort_key = secondary_sort_key
+      secondary_sort_key = nil
+    end
     if sort_key
-      if sort_key == :list_name
-        @data.sort_by!{|x| list_name = sprint.trello.card_list(x).name; TrelloHelper::LIST_POSITION_ADJUSTMENT[list_name] ? TrelloHelper::LIST_POSITION_ADJUSTMENT[list_name] : list_name.hash.abs}
+      if secondary_sort_key
+        @data.sort_by!{|card| [send_attr(card, sort_key.to_s), send_attr(card, secondary_sort_key.to_s)]}
       else
-        @data.sort_by!{|x| x.send(sort_key)}
+        @data.sort_by!{|card| send_attr(card, sort_key.to_s)}
       end
     end
     @data
   end
 
   def offenders
-    data.map{|x| sprint.trello.member_emails(members(x))}.flatten.uniq
+    data.map{|card| sprint.trello.member_emails(members(card))}.flatten.uniq
   end
 
   def rows(user = nil)
     _data = data
     if user
-      _data = data.select{|x| sprint.trello.member_emails(members(x)).include?(user)}
+      _data = data.select{|card| sprint.trello.member_emails(members(card)).include?(user)}
     end
-    _data.map do |row|
+    _data.map do |card|
       # Get data for each column
       columns.map do |col|
-        col.process(row)
+        col.process(card)
       end
     end
   end
@@ -87,6 +104,8 @@ module SprintReport
         return report.members(card)
       elsif attr == 'list'
         return report.sprint.trello.card_list(card)
+      elsif attr == 'team_name'
+        return report.sprint.trello.team_name(card)
       else
         report.sprint.trello.trello_do('send_attr') do
           return card.send(attr)
@@ -140,12 +159,13 @@ class UserStoryReport
   def initialize(opts)
     _opts = {
       :headings => [
-        { :header => 'name', :attr => 'short_url' },
-        { :header => 'list', :sub_attr => 'name', :max_length => 15 },
+        { :header => 'url', :attr => 'short_url' },
+        { :header => 'Team', :attr => 'team_name', :max_length => 15 },
+        { :header => 'List', :sub_attr => 'name', :max_length => 15 },
         { :header => 'Name', :max_length => 30 },
-        { :header => 'members', :sub_attr => 'full_name', :max_length => 25 }
+        { :header => 'Members', :sub_attr => 'full_name', :max_length => 25 }
       ],
-      :sort_key => :list_name
+      :secondary_sort_key => :list_name
     }
     super(_opts.merge(opts))
   end
