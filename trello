@@ -630,7 +630,7 @@ command :update do |c|
 
                     marker_card_tags = card.name.scan(/\[[^\]]+\]/)
                     checklist_name = (marker_card_tags.include?(TrelloHelper::FUTURE_TAG) || card_labels.map{|l| l.name }.include?(TrelloHelper::FUTURE_LABEL)) ? TrelloHelper::FUTURE_RELEASE : TrelloHelper::UNASSIGNED_RELEASE
-                    card_tags += marker_card_tags if card_tags.empty?
+                    card_tags += marker_card_tags
 
                     card_tags.each do |card_tag|
                       epic = tag_to_epic[card_tag]
