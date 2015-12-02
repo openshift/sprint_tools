@@ -47,7 +47,7 @@ class Sprint
     board = trello.board(trello.board_ids.last)
     trello.board_lists(board).each do |list|
       if list.name == 'In Progress'
-        @sprint_card = list.cards.sort_by { |card| card.pos }.first
+        @sprint_card = trello.list_cards(list).sort_by { |card| card.pos }.first
         return @sprint_card
       end
     end
