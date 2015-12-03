@@ -404,7 +404,7 @@ command :sync_labels do |c|
           if !board_label || (label_color != board_label.color) || empty_labels_by_color[label_color]
             if board_label
               puts "Updating label #{label_name} to #{label_color}"
-              board_label.color = (label_color.nil? || label_color.empty?) ? '' : label.color
+              board_label.color = (label_color.nil? || label_color.empty?) ? '' : label_color
               board_label.name = label_name
               trello.update_label(board_label)
               empty_labels_by_color.delete(label_color) if empty_labels_by_color[label_color]
