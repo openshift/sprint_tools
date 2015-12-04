@@ -445,6 +445,41 @@ command :sync_labels do |c|
   end
 end
 
+command :rename_label do |c|
+  c.syntax = "#{name} rename_label"
+
+  c.option "--from FROM", "The label to rename"
+  c.option "--to TO", "What to rename it to"
+
+  c.description = "Renames a label on all the boards"
+  c.action do |args, options|
+
+    raise "--from not specified" if options.from.nil? || options.from.empty?
+    raise "--to not specified" if options.to.nil? || options.to.empty?
+
+    boards = trello.roadmap_boards + trello.boards.values
+    boards.each do |board|
+      puts "\nBoard Name: #{board.name}"
+      board_labels = trello.target(trello.board_labels(board))
+      board_label = nil
+      board_labels.each do |bl|
+        if options.from == bl.name
+          board_label = bl
+          break
+        end
+      end
+
+      if board_label.nil?
+        puts "  #{options.from} not found on #{board.name}"
+      else
+        puts "  Updating label #{options.from} to #{options.to}"
+        board_label.name = options.to
+        trello.update_label(board_label)
+      end
+    end
+  end
+end
+
 command :convert_markers_to_labels do |c|
   c.syntax = "#{name} sync_labels"
 
