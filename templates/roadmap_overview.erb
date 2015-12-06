@@ -82,6 +82,7 @@ Corresponding Private Roadmap Board Epic: <a href='<%=secondary_epic_card.url%>'
         complete_sizing_total = 0
         remaining_sizing_total = 0
         epic_cards.each do |epic_card|
+          epic_card_names = {}
           epic_checklists = trello.list_checklists(epic_card)
           epic_checklists.each do |checklist|
             checklist.items.each do |item|
@@ -96,7 +97,7 @@ Corresponding Private Roadmap Board Epic: <a href='<%=secondary_epic_card.url%>'
                 list = $3
                 board = $4
               end
-              if name =~ /\((\d+|\?)\)(.*)/
+              if name =~ /\((\d+|\?)\)(.*)/ && !epic_card_names[item.name]
                 sizing = $1
                 name = $2
 
@@ -110,6 +111,7 @@ Corresponding Private Roadmap Board Epic: <a href='<%=secondary_epic_card.url%>'
                     cross_epic_remaining_sizing_total += sizing_i unless cross_epic_card_names[item.name]
                   end
                   cross_epic_card_names[item.name] = true
+                  epic_card_names[item.name] = true
                 end
               end
 %>
