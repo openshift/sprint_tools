@@ -138,15 +138,22 @@
       }
 %>
 <%
-      if product.nil? && trello.other_products && !trello.other_products.empty?
+      if trello.other_products && !trello.other_products.empty?
 %>
 <h2>Other Product Releases</h2>
 <ul>
 <%
-        trello.other_products.each do |product|
+        unless product.nil?
 %>
-  <li><a href="releases_overview_<%=product%>.html"><%=product.upcase%></a></li>
+  <li><a href="releases_overview.html"><%=trello.default_product.upcase%></a></li>
 <%
+        end
+        trello.other_products.each do |p|
+          if p != product
+%>
+  <li><a href="releases_overview_<%=p%>.html"><%=p.upcase%></a></li>
+<%
+          end
         end
 %>
 </ul>
