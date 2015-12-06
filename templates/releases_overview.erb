@@ -106,20 +106,22 @@
           label_names = labels.map{ |label| label.name }
           label_names.each do |label_name|
             if label_name =~ RELEASE_LABEL_REGEX
-              state = $1
-              release = $2
-              major = $3.to_i
-              minor = $5.to_i
-              patch = $7.to_i
-              orig_state = state
-              if complete
-                state = 'committed'
+              if product == $2
+                state = $1
+                release = $3
+                major = $4.to_i
+                minor = $6.to_i
+                patch = $8.to_i
+                orig_state = state
+                if complete
+                  state = 'committed'
+                end
+                pos = index + pos_adjustment
+                releases << [release, major, minor, patch] unless release_data[release]
+                release_data[release] = {} unless release_data[release]
+                release_data[release][state] = [] unless release_data[release][state]
+                release_data[release][state] << [card, status, board, team_name, orig_state, pos]
               end
-              pos = index + pos_adjustment
-              releases << [release, major, minor, patch] unless release_data[release]
-              release_data[release] = {} unless release_data[release]
-              release_data[release][state] = [] unless release_data[release][state]
-              release_data[release][state] << [card, status, board, team_name, orig_state, pos]
             end
           end
         end
@@ -135,6 +137,22 @@
         'proposed' => "Proposed to be delivered and awaiting approval",
       }
 %>
+<%
+      if product.nil? && trello.other_products && !trello.other_products.empty?
+%>
+<h2>Other Product Releases</h2>
+<ul>
+<%
+        trello.other_products.each do |product|
+%>
+  <li><a href="releases_overview_<%=product%>.html"><%=product.upcase%></a></li>
+<%
+        end
+%>
+</ul>
+<%
+      end
+%>
 <h2>Table of Contents</h2>
 <ul>
 <%
@@ -145,7 +163,7 @@
   <ul>
 <%
         states = release_data[release_name]
-        ['committed', 'targeted', 'proposed'].each do |state|
+        TrelloHelper::RELEASE_STATES.each do |state|
           release_cards = states[state]
           next unless release_cards
 %>
@@ -186,7 +204,7 @@
 <div class="container">
 <%
         states = release_data[release_name]
-        ['committed', 'targeted', 'proposed'].each do |state|
+        TrelloHelper::RELEASE_STATES.each do |state|
           release_cards = states[state]
           next unless release_cards
 

@@ -9,7 +9,7 @@ class TrelloHelper
                 :documentation_next_list, :docs_planning_id, :organization_name,
                 :sprint_length_in_weeks, :sprint_start_day, :sprint_end_day, :logo,
                 :docs_new_list_name, :roadmap_board_lists, :max_lists_per_board,
-                :current_release_labels
+                :current_release_labels, :other_products
 
   attr_accessor :boards, :trello_login_to_email, :cards_by_list, :labels_by_card, :list_by_card, :members_by_card, :checklists_by_card, :lists_by_board
 
@@ -24,6 +24,8 @@ class TrelloHelper
     'targeted' => 1,
     'proposed' => 2
   }
+
+  RELEASE_STATES = ['committed', 'targeted', 'proposed']
 
   RELEASE_STATE_DISPLAY_NAME = {
     'committed' => 'Complete or Committed',
@@ -41,7 +43,6 @@ class TrelloHelper
   }
 
   MAX_LIST_POSITION_ADJUSTMENT = 1000
-
 
   UNASSIGNED_RELEASE = "Unassigned Release"
   FUTURE_RELEASE = "Future Release"
