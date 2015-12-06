@@ -106,12 +106,12 @@
           label_names = labels.map{ |label| label.name }
           label_names.each do |label_name|
             if label_name =~ RELEASE_LABEL_REGEX
-              if product == $2
+              if product == $3
                 state = $1
-                release = $3
-                major = $4.to_i
-                minor = $6.to_i
-                patch = $8.to_i
+                release = $4
+                major = $5.to_i
+                minor = $7.to_i
+                patch = $9.to_i
                 orig_state = state
                 if complete
                   state = 'committed'
