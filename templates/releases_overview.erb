@@ -140,6 +140,7 @@
 <%
       if trello.other_products && !trello.other_products.empty?
 %>
+<h1><%=product.nil? ? trello.default_product.upcase : product.upcase %></h1>
 <h2>Other Product Releases</h2>
 <ul>
 <%
