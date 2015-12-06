@@ -47,7 +47,7 @@ LINKS = {'roadmap_overview' => 'Roadmap',
          'labels_overview' => 'Labels',
          'sprint_schedule' => 'Sprint Schedule'}
 
-RELEASE_LABEL_REGEX = /^(proposed|targeted|committed)-((\w*)-)*((\d+)(.(\d+))?(.(\d+))*)/
+RELEASE_LABEL_REGEX = /^(proposed|targeted|committed)-((\w*)-)*((\d+)(.(\d+))?(.(\d+))?(.(\d+))*)/
 
 def create_releases_overview(out, trello)
   extname = File.extname out
@@ -654,15 +654,16 @@ command :update do |c|
                         major = $5.to_i
                         minor = $7.to_i
                         patch = $9.to_i
+                        hotfix = $11.to_i
                         card_releases[product] = [] unless card_releases[product]
-                        card_releases[product] << [label, state, release, major, minor, patch]
+                        card_releases[product] << [label, state, release, major, minor, patch, hotfix]
                       end
                     end
 
                     unless card_releases.empty?
                       card_releases.each do |product, product_card_releases|
                         if product_card_releases.length > 1
-                          product_card_releases.sort_by!{ |release| [release[3], release[4], release[5], TrelloHelper::RELEASE_STATE_ORDER[release[1]]] }
+                          product_card_releases.sort_by!{ |release| [release[3], release[4], release[5], release[6], TrelloHelper::RELEASE_STATE_ORDER[release[1]]] }
                           first_release = product_card_releases.first
                           previous_release = first_release[2]
                           lowest_state_order = TrelloHelper::RELEASE_STATE_ORDER[first_release[1]]
