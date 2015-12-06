@@ -51,7 +51,7 @@
 <%
       tag_to_epics.each do |tag, epic_cards|
         primary_epic_card = epic_cards.first
-        epic_name = tag[5..-1]
+        epic_name = tag[5..-1] if tag.start_with?('epic-')
 %>
       <li><a href="#<%=epic_name%>" title="<%=primary_epic_card.name%>"><%=epic_name%></a></li>
 <%
@@ -64,7 +64,7 @@
       tag_to_epics.each do |tag, epic_cards|
         primary_epic_card = epic_cards.first
         secondary_epic_card = epic_cards[1]
-        epic_name = tag[5..-1]
+        epic_name = tag[5..-1] if tag.start_with?('epic-')
 
 %>
 <section>
