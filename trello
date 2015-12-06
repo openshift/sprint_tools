@@ -47,7 +47,7 @@ LINKS = {'roadmap_overview' => 'Roadmap',
          'labels_overview' => 'Labels',
          'sprint_schedule' => 'Sprint Schedule'}
 
-RELEASE_LABEL_REGEX = /^(proposed|targeted|committed)-((\w*)-)*((\d+)(.(\d+))*)/
+RELEASE_LABEL_REGEX = /^(proposed|targeted|committed)-((\w*)-)*((\d+)(.(\d+))?(.(\d+))*)/
 
 def create_releases_overview(out, trello)
   extname = File.extname out
