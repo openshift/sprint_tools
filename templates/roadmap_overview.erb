@@ -82,14 +82,13 @@ Corresponding Private Roadmap Board Epic: <a href='<%=secondary_epic_card.url%>'
         complete_sizing_total = 0
         remaining_sizing_total = 0
         epic_cards.each do |epic_card|
-          epic_card_names = {}
           epic_checklists = trello.list_checklists(epic_card)
+          cards = {}
           epic_checklists.each do |checklist|
             checklist.items.each do |item|
               name = item.name.strip
               url = nil
               list = "Epic Backlog"
-              sizing = ''
               board = 'Roadmap'
               if name =~ /\[(.*)\]\((https?:\/\/trello\.com\/[^\)]+)\) \(([^\)]+)\) \(([^\)]+)\)/
                 name = $1.strip
@@ -97,39 +96,56 @@ Corresponding Private Roadmap Board Epic: <a href='<%=secondary_epic_card.url%>'
                 list = $3
                 board = $4
               end
-              if name =~ /\((\d+|\?)\)(.*)/ && !epic_card_names[item.name]
-                sizing = $1
-                name = $2
+              key = url ? url : name
+              c = cards[key]
+              if c
+                c[4] << checklist.name
+              else
+                cards[key] = [name, url, list, board, [checklist.name]]
+              end
+            end
+          end
+          cards.values.each do |card|
+            name = card[0]
+            url = card[1]
+            list = card[2]
+            board = card[3]
+            releases = card[4]
+            sizing = ''
 
-                if list && sizing != '?'
-                  sizing_i = sizing.to_i
-                  if (list.match('^Sprint \d+') || list == 'Accepted' || list == 'Complete')
-                    complete_sizing_total += sizing_i
-                    cross_epic_complete_sizing_total += sizing_i unless cross_epic_card_names[item.name]
-                  else
-                    remaining_sizing_total += sizing_i
-                    cross_epic_remaining_sizing_total += sizing_i unless cross_epic_card_names[item.name]
-                  end
-                  cross_epic_card_names[item.name] = true
-                  epic_card_names[item.name] = true
+            if name =~ /\((\d+|\?)\)(.*)/
+              sizing = $1
+              name = $2
+
+              if list && sizing != '?'
+                sizing_i = sizing.to_i
+                if (list.match('^Sprint \d+') || list == 'Accepted' || list == 'Complete')
+                  complete_sizing_total += sizing_i
+                  cross_epic_complete_sizing_total += sizing_i unless url && cross_epic_card_names[url]
+                else
+                  remaining_sizing_total += sizing_i
+                  cross_epic_remaining_sizing_total += sizing_i unless url && cross_epic_card_names[url]
+                end
+                if url
+                  cross_epic_card_names[url] = true
                 end
               end
+            end
 %>
 <tr>
 <%
-              if url
+            if url
 %>
 <td><a href='<%=url%>'><%=name%></a></td>
 <%
-              else
+            else
 %>
 <td><a href='<%=epic_card.url%>'><%=name%></a></td>
 <%
-              end
-%>
-<td><%=sizing%></td><td><%=list%></td><td><%=checklist.name%></td><td><%=board%></td></tr>
-<%
             end
+%>
+<td><%=sizing%></td><td><%=list%></td><td><%=releases.join(', ')%></td><td><%=board%></td></tr>
+<%
           end
         end
 %>
