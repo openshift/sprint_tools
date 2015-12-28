@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title><%= trello.organization_name %> Teams Overview</title>
+<script type='text/javascript' src='https://ajax.googleapis.com/ajax/libs/jquery/1.8.1/jquery.min.js?ver=3.8.1'></script>
+<link href="https://netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css" type="text/css" rel="stylesheet" media="screen">
+<script src="https://netdna.bootstrapcdn.com/bootstrap/3.1.1/js/bootstrap.min.js"></script>
+<link href='https://fonts.googleapis.com/css?family=Open+Sans:400,300,600,800,700' rel='stylesheet' type='text/css'>
+<link href="stylesheets/trello.css" rel="stylesheet" type="text/css">
+<link rel="shortcut icon" href="favicon.ico" type="image/x-icon" />
+<meta name="viewport" content="width=device-width">
+<style type="text/css">
+
+.table>tbody>tr.in-progress>th {
+  background-color: #94cc75;
+  border-top: 1px solid #94cc75;
+}
+.table>tbody>tr.next>th {
+  background-color: #c4e3b3;
+  border-top: 1px solid #c4e3b3;
+}
+.table>tbody>tr.backlog>th {
+  background-color: #dbedfe;
+  border-top: 1px solid #dbedfe;
+}
+.table.table-rows>tbody>tr>th,
+.table.table-rows>tbody>tr>td {
+  padding: 15px;
+}
+
+</style>
+
+</head>
+
+<body>
+  <div class="navbar navbar-default navbar-fixed-top" role="navigation">
+      <div class="container">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <div class="brand" style="background: transparent url('<%=trello.logo%>') no-repeat left -5px; background-size: 200px auto">
+          </div>
+        </div>
+        <div class="navbar-collapse collapse">
+          <ul class="nav navbar-nav">
+              <% LINKS.each do |page_name, page_title|
+                if page_name != 'teams_overview' %>
+                  <li><a href='<%=page_name%>.html'><%=page_title%></a></li>
+                <%else%>
+                  <li><a class="active" href='<%=page_name%>.html'><%=page_title%></a></li>
+                <%end
+                end%>
+          </ul>
+        </div><!--/.nav-collapse -->
+      </div>
+    </div>
+
+  <div class="container">
+
+    <h2 class="visible-xs"><%= trello.organization_name %> Teams Overview</h2>
+
+<%
+      release_data = {}
+      releases = []
+      search_lists = []
+      trello.team_boards(team).each do |board|
+        trello.board_lists(board).each do |list|
+          search_lists << list
+        end
+      end if team
+
+      search_lists.each do |list|
+        list_name = list.name
+        complete = false
+        status = 'Planned'
+        pos_adjustment = TrelloHelper::LIST_POSITION_ADJUSTMENT[list_name]
+        if list_name == 'Accepted' || list_name =~ /^Sprint \d+/
+          pos_adjustment = 0
+          status = 'Complete'
+          complete = true
+        elsif list_name == 'In Progress' || list_name == 'Complete'
+          status = 'In Progress'
+        end
+        pos_adjustment = TrelloHelper::MAX_LIST_POSITION_ADJUSTMENT unless pos_adjustment
+        cards = trello.list_cards(list)
+        cards.each_with_index do |card, index|
+          labels = trello.card_labels(card)
+          label_names = labels.map{ |label| label.name }
+          label_names.each do |label_name|
+            if label_name =~ RELEASE_LABEL_REGEX
+              state = $1
+              product = $3
+              release = $4
+              major = $5.to_i
+              minor = $7.to_i
+              patch = $9.to_i
+              hotfix = $11.to_i
+              orig_state = state
+              if complete
+                state = 'committed'
+              end
+              pos = index + pos_adjustment
+              release_data[product] = {} unless release_data[product]
+              releases << [product, release, major, minor, patch, hotfix] unless release_data[product][release]
+
+              release_data[product][release] = {} unless release_data[product][release]
+              release_data[product][release][state] = [] unless release_data[product][release][state]
+              release_data[product][release][state] << [card, status, orig_state, pos]
+            end
+          end
+        end
+      end
+
+      tag_to_epics = trello.tag_to_epics
+
+      releases.sort_by!{ |release| [release[0] ? release[0] : '', release[2], release[3], release[4], release[5]] }
+
+      state_titles = {
+        'committed' => "Committed in plan to be delivered and/or already complete",
+        'targeted' => "Targeted to be delivered but not yet committed",
+        'proposed' => "Proposed to be delivered and awaiting approval",
+      }
+%>
+<h2>Teams</h2>
+<ul>
+<%
+      trello.teams.keys.each do |t|
+        if t == team
+%>
+  <li><%=t.upcase%></li>
+<%
+        else
+%>
+  <li><a href="teams_overview_<%=t%>.html"><%=t.upcase%></a></li>
+<%
+        end
+      end
+%>
+</ul>
+<%if team%>
+<h2>Table of Contents</h2>
+<ul>
+<%
+      releases.each do |release|
+        product = release[0]
+        release_name = release[1]
+%>
+  <li><a href='#<%="#{product ? "#{product}-": ''}#{release_name}"%>'><%="#{product ? "#{product.upcase}-": ''}#{release_name}"%></a></li>
+  <ul>
+<%
+        states = release_data[product][release_name]
+        TrelloHelper::RELEASE_STATES.each do |state|
+          release_cards = states[state]
+          next unless release_cards
+%>
+    <li><a href='#<%="#{state}-#{product ? "#{product}-": ''}#{release_name}"%>'><%=TrelloHelper::RELEASE_STATE_DISPLAY_NAME[state]%></a> (<%=release_cards.length%> cards)</li>
+<%
+        end
+%>
+  </ul>
+<%
+      end
+%>
+</ul>
+<br />
+<hr>
+<%
+      releases.each do |release|
+        product = release[0]
+        release_name = release[1]
+        release_complete_sizing_total = 0
+        release_remaining_sizing_total = 0
+%>
+<h2 class="anchor" id="<%="#{product ? "#{product}-": ''}#{release_name}"%>"><%="#{product ? "#{product.upcase}-": ''}#{release_name}"%></h2>
+<div class="container">
+<%
+        states = release_data[product][release_name]
+        TrelloHelper::RELEASE_STATES.each do |state|
+          release_cards = states[state]
+          next unless release_cards
+
+          state_complete_sizing_total = 0
+          state_remaining_sizing_total = 0
+          sorted_by_title = nil
+          position_title = nil
+          if state == 'committed'
+            release_cards.sort_by! {|release_card| [release_card[1], release_card[3]]}
+            sorted_by_title = '(sorted by status, position)'
+            position_title = 'Position Within Status'
+          else
+            release_cards.sort_by! {|release_card| [release_card[3]]}
+            sorted_by_title = '(sorted by position)'
+            position_title = 'Position'
+          end
+%>
+<h5 title="<%="#{state_titles[state]} #{sorted_by_title}"%>" class="anchor" id="<%="#{state}-#{product ? "#{product}-": ''}#{release_name}"%>"><%=TrelloHelper::RELEASE_STATE_DISPLAY_NAME[state]%> (<%=release_name%>)<span class="pficon-help"></span></h5>
+<div class="container">
+<div class="table-responsive">
+<table class="table table-normal table-condensed">
+  <tr><th title="Card Name">Scenario</th><th title="<%=position_title%>">Position<span class="pficon-help"></span></th><th title="Planned, In Progress, or Complete">Status<span class="pficon-help"></span></th><th title="Associated Epics">Epic(s)</th><th title="Additional Release(s)">Additional Release(s)</th><th title="Sizing in Story Points (Rolling Total)">Sizing<span class="pficon-help"></span></th></tr>
+<%
+          position = 0
+          sizing_total = 0
+          release_cards.each do |release_card|
+            card = release_card[0]
+            status = release_card[1]
+            orig_state = release_card[2]
+            position += 1
+            labels = trello.card_labels(card)
+            label_names = labels.map{ |label| label.name }
+            epics = []
+            addtl_releases = []
+            label_names.each do |label_name|
+              if label_name.start_with? 'epic-'
+                epic_card = nil
+                if tag_to_epics[label_name]
+                  epic_card = tag_to_epics[label_name].first
+                end
+                epics << [label_name[5..-1], epic_card ? epic_card.url : nil]
+              elsif label_name =~ RELEASE_LABEL_REGEX
+                if product != $3
+                  addtl_releases << [$3, label_name, $1, $4]
+                end
+              end
+            end
+            name = card.name.strip
+            sizing = nil
+            if name =~ /\((\d+|\?)\)(.*)/
+              sizing = $1.to_i
+              sizing_total += sizing
+              name = $2
+              if status == 'Complete'
+                state_complete_sizing_total += sizing
+              else
+                state_remaining_sizing_total += sizing
+              end
+            end
+%>
+<tr>
+<td><div><a href='<%=card.url%>'><%=name%></a></div></td>
+<td title="<%=position_title%>"><%=position%></td>
+<td title="Plan State: <%=orig_state%>"><%=status%></td>
+<td><%epics.each_with_index do |epic, index|
+        separator = (index == epics.length - 1) ? '' : ', '
+        if epic[1]
+%>
+<a href='<%=epic[1]%>'><%=epic[0]%></a><%=separator%>
+<%
+        else
+%>
+<%="#{epic[0]}#{separator}"%>
+<%
+        end
+%>
+<%end%></td>
+<td><%addtl_releases.each_with_index do |release_info, index|
+        p = release_info[0]
+        label = release_info[1]
+        state = release_info[2]
+        release = release_info[3]
+        separator = (index == addtl_releases.length - 1) ? '' : ', '
+%>
+<a href='<%="##{state}-#{p ? "#{p}-": ''}#{release}"%>'><%=label%></a><%=separator%>
+<%end%></td>
+<td title="Sizing in Story Points (Rolling Total)" nowrap><%=sizing ? "#{sizing} (#{sizing_total})" : ''%></td>
+</tr>
+<%
+          end
+
+          release_complete_sizing_total += state_complete_sizing_total
+          release_remaining_sizing_total += state_remaining_sizing_total
+          completed_details = nil
+          if state == 'committed'
+            completed_details = "Completed Points (#{state}): #{state_complete_sizing_total} of #{state_complete_sizing_total + state_remaining_sizing_total}"
+          else
+            completed_details = "Total Points (#{state}): #{state_remaining_sizing_total}"
+          end
+%>
+</table>
+<i><%=completed_details%></i><br />
+<br />
+<br />
+</div>
+</div>
+<%
+        end
+%>
+<h4 class="anchor" id="<%="#{product ? "#{product}-": ''}#{release_name}"%>_completed_points"><a href="#<%="#{product ? "#{product}-": ''}#{release_name}"%>_completed_points" title="Link to this section"><%="#{product ? "#{product.upcase}-": ''}#{release_name} Completed Points:"%></a> <%="#{release_complete_sizing_total} of #{release_complete_sizing_total + release_remaining_sizing_total}"%></h4>
+</div>
+<br />
+<br />
+<%
+      end
+%>
+<%end%>
+
+  </div><!-- /container -->
+</body>
+</html>
