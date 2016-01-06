@@ -59,6 +59,16 @@ Commands
             The file to output Ex: /tmp/releases_overview.html
 
 
+**generate_teams_overview**
+
+    DESCRIPTION:
+        Generate the teams overview
+
+    OPTIONS:
+        --out OUT_FILE
+            The file to output Ex: /tmp/teams_overview.html
+
+
 **generate_sprint_schedule**
 
     DESCRIPTION:
@@ -183,7 +193,6 @@ Commands
 
 Detailed Run Example
 ===
-    ./trello sync_labels --trace
     ./trello update --update-roadmap --trace
     ./trello update --add-task-checklists --add-bug-checklists --update-bug-tasks --add-doc-tasks --add-doc-cards --trace
     ./trello generate_default_overviews --out /tmp --trace
@@ -197,3 +206,4 @@ Detailed Run Example
     cp /tmp/sprint_schedule.html /var/www/html/sprint_schedule.html
 
     cp stylesheets/* /var/www/html/stylesheets/
+    ./trello sync_labels --trace
