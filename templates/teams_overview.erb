@@ -260,11 +260,11 @@
 <td><%addtl_releases.each_with_index do |release_info, index|
         p = release_info[0]
         label = release_info[1]
-        state = release_info[2]
-        release = release_info[3]
+        addtl_state = release_info[2]
+        addtl_release = release_info[3]
         separator = (index == addtl_releases.length - 1) ? '' : ', '
 %>
-<a href='<%="##{state}-#{p ? "#{p}-": ''}#{release}"%>'><%=label%></a><%=separator%>
+<a href='<%="##{addtl_state}-#{p ? "#{p}-": ''}#{addtl_release}"%>'><%=label%></a><%=separator%>
 <%end%></td>
 <td title="Sizing in Story Points (Rolling Total)" nowrap><%=sizing ? "#{sizing} (#{sizing_total})" : ''%></td>
 </tr>

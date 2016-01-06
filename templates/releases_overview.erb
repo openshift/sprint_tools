@@ -314,13 +314,13 @@
 <td><%addtl_releases.each_with_index do |release_info, index|
         p = release_info[0]
         label = release_info[1]
-        state = release_info[2]
-        release = release_info[3]
+        addtl_state = release_info[2]
+        addtl_release = release_info[3]
         product_release_page = nil
         if p
-          product_release_page = "releases_overview_#{p}.html##{state}-#{release}"
+          product_release_page = "releases_overview_#{p}.html##{addtl_state}-#{addtl_release}"
         else
-          product_release_page = "releases_overview.html##{state}-#{release}"
+          product_release_page = "releases_overview.html##{addtl_state}-#{addtl_release}"
         end
         separator = (index == addtl_releases.length - 1) ? '' : ', '
 %>
