@@ -183,7 +183,7 @@ Commands
 
 Detailed Run Example
 ===
-    ./trello sync-labels --trace
+    ./trello sync_labels --trace
     ./trello update --update-roadmap --trace
     ./trello update --add-task-checklists --add-bug-checklists --update-bug-tasks --add-doc-tasks --add-doc-cards --trace
     ./trello generate_default_overviews --out /tmp --trace
