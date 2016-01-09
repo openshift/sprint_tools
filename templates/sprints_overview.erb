@@ -72,20 +72,24 @@
           trello.board_lists(board, trello.max_lists_per_board + options.offset).each do |list|
             list_name = list.name
             sprint_id = nil
-            if list_name =~ /^Sprint (\d+)/
-              sprint_id = $1.to_i
-            elsif (list_name == 'Backlog')
-              sprint_id = 9999999
-            elsif (list_name == 'Next')
-              sprint_id = 9999998
-            elsif (list_name == 'In Progress' || list_name == 'Complete' || list_name == 'Accepted')
-              sprint_id = 9999997
+            if list_name =~ TrelloHelper::SPRINT_REGEXES
+              if $1
+                sprint_id = [$1.to_i]
+              else
+                sprint_id = [$3.to_i, $4.to_i, $6.to_i, $8.to_i]
+              end
+            elsif TrelloHelper::BACKLOG_STATES.include?(list_name)
+              sprint_id = [9999999]
+            elsif TrelloHelper::NEXT_STATES.include?(list_name)
+              sprint_id = [9999998]
+            elsif TrelloHelper::CURRENT_SPRINT_STATES.include?(list_name)
+              sprint_id = [9999997]
             end
             if sprint_id
               cards = trello.list_cards(list)
               unless cards.empty?
                 sprint_data[team_name][sprint_id] = [] unless sprint_data[team_name][sprint_id]
-                if list_name == 'Backlog'
+                if TrelloHelper::BACKLOG_STATES.include?(list_name)
                   sprint_data[team_name][sprint_id] += cards.first(5)
                 else
                   sprint_data[team_name][sprint_id] += cards
@@ -133,16 +137,17 @@
         sprint_begin = nil
         sprint_end = nil
         sprints.each do |sprint|
-          sprint_num = sprint.keys.first
-          puts "  Sprint: #{sprint_num}"
+          sprint_id = sprint.keys.first
+          while sprint_id.last == 0
+            sprint_id.pop
+          end
+          sprint_num = sprint_id.first
+          sprint_id = sprint_id.join('.')
+          puts "  Sprint: #{sprint_id}"
           previous_sprints_count += 1 if sprint_num < 9999990
           sprint.values.first.each do |card|
-            if card.name =~ /^Sprint (\d+)/
+            if card.name =~ TrelloHelper::SPRINT_REGEX
               sprint_end = card.due.to_date
-              unless sprint_begin
-                sprint_begin = sprint_end
-                trello.sprint_length_in_weeks.times{sprint_begin = sprint_begin.previous(trello.sprint_start_day.to_sym)}
-              end
             elsif sprint_num < 9999990 && card.name =~ /\((\d+|\?)\)(.*)/
               sizing = $1
               if sizing != '?'
@@ -150,10 +155,21 @@
               end
             end
           end
+
+          unless sprint_end
+            sprint_end = trello.sprint_card.due.to_date
+            (sprints.length - 3).times do
+              trello.sprint_length_in_weeks.times{sprint_end = sprint_end.previous(trello.sprint_end_day.to_sym)}
+            end
+          end
+          unless sprint_begin
+            sprint_begin = sprint_end
+            trello.sprint_length_in_weeks.times{sprint_begin = sprint_begin.previous(trello.sprint_start_day.to_sym)}
+          end
           sprint_dates = nil
           sprint_name = nil
           if sprint_num == 9999999
-            sprint_name = "Backlog (Top 10)"
+            sprint_name = "Backlog (Top)"
             sprint_backlog = "backlog"
           elsif sprint_num == 9999998
             sprint_name = "Next"
@@ -163,7 +179,7 @@
             sprint_dates = "(#{sprint_begin} - #{sprint_end})"
             sprint_in_progress = "in-progress"
           else
-            sprint_name = "Sprint #{sprint_num}"
+            sprint_name = "Sprint #{sprint_id}"
             sprint_dates = "(#{sprint_begin} - #{sprint_end})"
           end
 %>
@@ -172,6 +188,7 @@
 <th><%=sprint_name%><div class="sprint-date"><%=sprint_dates%></div></th>
 <%
           sprint_begin = sprint_end.next(trello.sprint_start_day)
+          trello.sprint_length_in_weeks.times{sprint_end = sprint_end.next(trello.sprint_end_day.to_sym)}
 
 %>
 
@@ -179,7 +196,7 @@
 <td>
 <%
           sprint.values.first.each do |card|
-            unless card.name =~ /^Sprint (\d+)/
+            unless card.name =~ TrelloHelper::SPRINT_REGEX
 %>
 <a href='<%=card.url%>'><%=card.name%></a><br/>
 <%

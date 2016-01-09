@@ -23,11 +23,11 @@ class Sprint
         :function => lambda{ |card| has_label(card, ['tc-approved', 'no-qe']) }
       },
       :accepted   => {
-        :function => lambda{ |card| trello.card_list(card).name == 'Accepted' || (trello.card_list(card).name == 'Complete' && has_label(card, ['no-qe'])) }
+        :function => lambda{ |card| TrelloHelper::ACCEPTED_STATES.include?(trello.card_list(card).name) || (TrelloHelper::COMPLETE_STATES.include?(trello.card_list(card).name) && has_label(card, ['no-qe'])) }
       },
       :completed  => {
         :parent   => :not_accepted,
-        :function => lambda{ |card| trello.card_list(card).name == 'Complete' }
+        :function => lambda{ |card| TrelloHelper::COMPLETE_STATES.include?(trello.card_list(card).name) }
       },
       :not_dcut_complete => {
         :parent   => :not_completed,

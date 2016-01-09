@@ -43,10 +43,10 @@
   <h2 class="visible-xs"><%= trello.organization_name %> Sprint Schedule</h2>
 <section>
 <%
-      if $sprint.sprint_card
-        if $sprint.sprint_card.name =~ /^Sprint (\d+)/
+      if trello.sprint_card
+        if trello.sprint_card.name =~ TrelloHelper::SPRINT_REGEX
           sprint_num = $1.to_i
-          sprint_end = $sprint.sprint_card.due.to_date
+          sprint_end = trello.sprint_card.due.to_date
           sprint_end = sprint_end.next(trello.sprint_end_day.to_sym) unless sprint_end.wday == Date.new.next(trello.sprint_end_day.to_sym).wday
           sprint_begin = sprint_end
           trello.sprint_length_in_weeks.times{sprint_begin = sprint_begin.previous(trello.sprint_start_day.to_sym)}

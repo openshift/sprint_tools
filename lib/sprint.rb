@@ -4,7 +4,7 @@ require 'core_ext/date'
 
 class Sprint
   # Calendar related attributes
-  attr_accessor :start, :finish, :sprint_card, :prod, :stg, :int, :next_major_release
+  attr_accessor :start, :finish, :prod, :stg, :int, :next_major_release
   # Trello related attributes
   attr_accessor :trello
   # UserStory related attributes
@@ -42,20 +42,8 @@ class Sprint
     $date ||= Date.today
   end
 
-  def sprint_card
-    return @sprint_card if @sprint_card
-    board = trello.board(trello.board_ids.last)
-    trello.board_lists(board).each do |list|
-      if list.name == 'In Progress'
-        @sprint_card = trello.list_cards(list).sort_by { |card| card.pos }.first
-        return @sprint_card
-      end
-    end
-    nil
-  end
-
   def sprint_card_date(str)
-    sc = sprint_card
+    sc = trello.sprint_card
     if sc
       sc.desc.each_line do |line|
         if line =~ /(\d*-\d*-\d*).*-.*#{str}/i
@@ -69,7 +57,7 @@ class Sprint
 
   def finish
     return @finish if @finish
-    sc = sprint_card
+    sc = trello.sprint_card
     if sc
       @finish = sc.due.to_date
     end
@@ -111,7 +99,7 @@ class Sprint
 
   def title(short = false)
     sprint_name = 'Current Sprint'
-    if sprint_card.name =~ /^Sprint (\d+)/
+    if trello.sprint_card.name =~ TrelloHelper::SPRINT_REGEX
       sprint_name = "Sprint #{$1}"
     end
     str = "Report for #{sprint_name}: Day %d" % [day]
@@ -129,12 +117,12 @@ class Sprint
     trello.boards_for_sprint_report.each do |board_id, board|
       lists = trello.board_lists(board)
       lists.each do |list|
-        if list.name == 'In Progress' || list.name == 'Complete' || list.name == 'Accepted'
+        if TrelloHelper::CURRENT_SPRINT_STATES.include?(list.name)
           cards = trello.list_cards(list)
-          cards = cards.clone.delete_if {|card| card.name =~ /^Sprint \d+/ && !card.due.nil?}
+          cards = cards.clone.delete_if {|card| card.name =~ TrelloHelper::SPRINT_REGEX && !card.due.nil?}
           @sprint_stories += cards
-          @not_accepted_stories += cards if list.name != 'Accepted'
-        elsif !list.closed? && list.name !~ /^Sprint \d+/
+          @not_accepted_stories += cards if !TrelloHelper::ACCEPTED_STATES.include?(list.name)
+        elsif !list.closed? && list.name !~ TrelloHelper::SPRINT_REGEXES
           cards = trello.list_cards(list)
           @not_accepted_stories += cards
         end

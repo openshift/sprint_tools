@@ -77,7 +77,7 @@
 
       trello.roadmap_boards.each do |board|
         trello.board_lists(board).each do |list|
-          if list.name == 'New'
+          if TrelloHelper::NEW_STATES.include?(list.name)
             search_list_info << ['roadmap', board, list]
             break
           end
@@ -92,11 +92,11 @@
         complete = false
         status = 'Planned'
         pos_adjustment = TrelloHelper::LIST_POSITION_ADJUSTMENT[list_name]
-        if list_name == 'Accepted' || list_name =~ /^Sprint \d+/
+        if TrelloHelper::ACCEPTED_STATES.include?(list_name) || list_name =~ TrelloHelper::SPRINT_REGEXES
           pos_adjustment = 0
           status = 'Complete'
           complete = true
-        elsif list_name == 'In Progress' || list_name == 'Complete'
+        elsif TrelloHelper::CURRENT_SPRINT_NOT_ACCEPTED_STATES.include?(list_name)
           status = 'In Progress'
         end
         pos_adjustment = TrelloHelper::MAX_LIST_POSITION_ADJUSTMENT unless pos_adjustment

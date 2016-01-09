@@ -155,8 +155,7 @@ command :sprint_identifier do |c|
 
   c.description = "Print the sprint identifier"
   c.action do |args, options|
-    $sprint = Sprint.new({:trello => trello})
-    if $sprint.sprint_card.name =~ /^Sprint (\d+)/
+    if trello.sprint_card.name =~ TrelloHelper::SPRINT_REGEX
       print "#{$1}"
     else
       print "unknown"
@@ -169,8 +168,7 @@ command :days_left_in_sprint do |c|
 
   c.description = "Print the number of days left in the sprint"
   c.action do |args, options|
-    $sprint = Sprint.new({:trello => trello})
-    print ($sprint.sprint_card.due.to_time - Time.new).to_i / (60*60*24)
+    print (trello.sprint_card.due.to_time - Time.new).to_i / (60*60*24)
   end
 end
 
@@ -328,8 +326,6 @@ command :generate_sprint_schedule do |c|
   c.action do |args, options|
     options.out ||= '/tmp/sprint_schedule.html'
     options.sprints = options.sprints ? options.sprints.to_i : 8
-
-    $sprint = Sprint.new({:trello => trello})
 
     erb = ERB.new(File.open('templates/sprint_schedule.erb', "rb").read)
     File.open(options.out, 'w') {|f| f.write(erb.result(binding)) }
@@ -624,48 +620,41 @@ command :update do |c|
             if roadmap_board.prefs['permissionLevel'] == 'org' || roadmap_board.prefs['permissionLevel'] == board.prefs['permissionLevel']
               puts "\nBoard Name: #{board.name}"
               all_lists = trello.board_lists(board)
-              new_list = nil
-              backlog_list = nil
-              next_list = nil
-              in_progress_list = nil
-              complete_list = nil
-              accepted_list = nil
+              new_lists = []
+              backlog_lists = []
+              next_lists = []
+              in_progress_lists = []
+              complete_lists = []
+              accepted_lists = []
               previous_sprint_lists = []
               other_lists = []
               all_lists.each do |l|
-                case l.name
-                when 'New'
-                  new_list = l
-                when 'Backlog'
-                  backlog_list = l
-                when 'Next'
-                  next_list = l
-                when 'In Progress'
-                  in_progress_list = l
-                when 'Complete'
-                  complete_list = l
-                when 'Accepted'
-                  accepted_list = l
-                when /^Sprint \d+/
+                if TrelloHelper::NEW_STATES.include?(l.name)
+                  new_lists << l
+                elsif TrelloHelper::BACKLOG_STATES.include?(l.name)
+                  backlog_lists << l
+                elsif TrelloHelper::NEXT_STATES.include?(l.name)
+                  next_lists << l
+                elsif TrelloHelper::IN_PROGRESS_STATES.include?(l.name)
+                  in_progress_lists << l
+                elsif TrelloHelper::COMPLETE_STATES.include?(l.name)
+                  complete_lists << l
+                elsif TrelloHelper::ACCEPTED_STATES.include?(l.name)
+                  accepted_lists << l
+                elsif l.name =~ TrelloHelper::SPRINT_REGEXES
                   previous_sprint_lists << l
                 else
                   other_lists << l
                 end
               end
-              i = 0
-              lists = []
-              [accepted_list, complete_list, in_progress_list, next_list, backlog_list, new_list].each do |l|
-                if !l.nil?
-                  lists[i] = l
-                  i += 1
-                end
-              end
 
-              previous_sprint_lists = previous_sprint_lists.sort_by { |l| l.name.match('^Sprint (\d+)')[1].to_i }
+              lists = accepted_lists + complete_lists + in_progress_lists + next_lists + backlog_lists + new_lists
+
+              previous_sprint_lists = previous_sprint_lists.sort_by { |l| [l.name =~ TrelloHelper::SPRINT_REGEXES ? $1.to_i : 9999999, $3.to_i, $4.to_i, $6.to_i, $8.to_i]}
               lists += previous_sprint_lists
               lists += other_lists
               lists.each do |list|
-                accepted = (list.name.match('^Sprint \d+') || list.name == 'Accepted') ? true : false
+                accepted = (list.name.match(TrelloHelper::SPRINT_REGEXES) || TrelloHelper::ACCEPTED_STATES.include?(list.name)) ? true : false
                 next if (accepted && accepted_pass == 1) || (!accepted && accepted_pass == 2)
                 cards = trello.list_cards(list)
                 if !cards.empty?
@@ -788,7 +777,7 @@ command :update do |c|
         if !cards.empty?
           puts "\n  List: #{list.name}  (#cards #{cards.length})"
           cards.each_with_index do |card, index|
-            if !(card.name =~ /^Sprint \d+/ && !card.due.nil?)
+            if !(card.name =~ TrelloHelper::SPRINT_REGEX && !card.due.nil?)
               doc_descriptions << card.desc if options.add_doc_cards
             end
           end
@@ -816,13 +805,13 @@ command :update do |c|
         puts "\nBoard Name: #{board.name}"
         lists = trello.board_lists(board)
         lists.each do |list|
-          if list.name == 'In Progress' || list.name == 'Complete'
+          if TrelloHelper::CURRENT_SPRINT_NOT_ACCEPTED_STATES.include?(list.name)
             cards = trello.list_cards(list)
             if !cards.empty?
               puts "\n  List: #{list.name}  (#cards #{cards.length})"
               cards.each_with_index do |card, index|
                 if options.add_task_checklists || options.add_bug_checklists || options.add_doc_cards
-                  if !(card.name =~ /^Sprint \d+/ && !card.due.nil?)
+                  if !(card.name =~ TrelloHelper::SPRINT_REGEX && !card.due.nil?)
                     labels = trello.card_labels(card)
                     checklists = []
                     checklists << 'Tasks' if options.add_task_checklists
