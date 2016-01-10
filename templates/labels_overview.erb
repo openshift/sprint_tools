@@ -70,7 +70,7 @@
         trello.team_boards(team_name).each do |board|
           trello.board_lists(board).each do |list|
             list_name = list.name
-            if (list_name == 'In Progress' || list_name == 'Complete' || list_name == 'Accepted')
+            if TrelloHelper::CURRENT_SPRINT_STATES.include?(list_name)
               cards = trello.list_cards(list)
               cards.each do |card|
                 labels = trello.card_labels(card)

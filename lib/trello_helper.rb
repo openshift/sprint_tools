@@ -9,7 +9,8 @@ class TrelloHelper
                 :documentation_next_list, :docs_planning_id, :organization_name,
                 :sprint_length_in_weeks, :sprint_start_day, :sprint_end_day, :logo,
                 :docs_new_list_name, :roadmap_board_lists, :max_lists_per_board,
-                :current_release_labels, :default_product, :other_products
+                :current_release_labels, :default_product, :other_products,
+                :sprint_card
 
   attr_accessor :boards, :trello_login_to_email, :cards_by_list, :labels_by_card, :list_by_card, :members_by_card, :checklists_by_card, :lists_by_board
 
@@ -18,6 +19,43 @@ class TrelloHelper
 
   FUTURE_TAG = '[future]'
   FUTURE_LABEL = 'future'
+
+  SPRINT_REGEX = /^Sprint (\d+)/
+  DONE_REGEX = /^Done: ((\d+)\.(\d+)(.(\d+))?(.(\d+))?)/
+  SPRINT_REGEXES = Regexp.union([SPRINT_REGEX, DONE_REGEX])
+
+  ACCEPTED_STATES = {
+    'Accepted' => true,
+    'Done' => true
+  }
+
+  COMPLETE_STATES = {
+    'Complete' => true
+  }
+
+  IN_PROGRESS_STATES = {
+    'In Progress' => true,
+    'Design' => true
+  }
+
+  NEXT_STATES = {
+    'Stalled' => true,
+    'Next' => true
+  }
+
+  BACKLOG_STATES = {
+    'Backlog' => true
+  }
+
+  NEW_STATES = {
+    'New' => true
+  }
+
+  CURRENT_SPRINT_NOT_ACCEPTED_STATES = IN_PROGRESS_STATES.merge(COMPLETE_STATES)
+
+  CURRENT_SPRINT_NOT_IN_PROGRESS_STATES = COMPLETE_STATES.merge(ACCEPTED_STATES)
+
+  CURRENT_SPRINT_STATES = IN_PROGRESS_STATES.merge(CURRENT_SPRINT_NOT_IN_PROGRESS_STATES)
 
   RELEASE_STATE_ORDER = {
     'committed' => 0,
@@ -34,10 +72,13 @@ class TrelloHelper
   }
 
   LIST_POSITION_ADJUSTMENT = {
-    'Accepted' => 10,
+    'Done' => 10,
+    'Accepted' => 50,
     'Complete' => 100,
     'In Progress' => 200,
+    'Design' => 250,
     'Next' => 300,
+    'Stalled' => 350,
     'Backlog' => 400,
     'New' => 800
   }
@@ -156,6 +197,18 @@ class TrelloHelper
     boards
   end
 
+  def sprint_card
+    return @sprint_card if @sprint_card
+    board = board(board_ids.last)
+    board_lists(board).each do |list|
+      if IN_PROGRESS_STATES.include?(list.name)
+        @sprint_card = list_cards(list).sort_by { |card| card.pos }.first
+        return @sprint_card
+      end
+    end
+    nil
+  end
+
   def documentation_board
     @documentation_board = find_board(documentation_id) unless @documentation_board
     @documentation_board
@@ -250,8 +303,9 @@ class TrelloHelper
     unless lists
       trello_do('lists') do
         lists = board.lists(:filter => [:all])
-        lists = lists.delete_if{ |list| list.name !~ /^Sprint (\d+)/ && list.closed? }
-        lists.sort_by!{ |list| list.name =~ /^Sprint (\d+)/ ? (9999999 - $1.to_i) : 0 }
+        lists = lists.delete_if{ |list| list.name !~ TrelloHelper::SPRINT_REGEXES && list.closed? }
+        lists.sort_by!{ |list| [list.name =~ TrelloHelper::SPRINT_REGEXES ? ($1.to_i) : 9999999, $3.to_i, $4.to_i, $6.to_i, $8.to_i]}
+        lists.reverse!
       end
     end
     @lists_by_board[board.id] = lists if ((list_limit && max_lists_per_board && (list_limit >= max_lists_per_board)) || list_limit.nil?) && !@lists_by_board[board.id]
