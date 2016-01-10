@@ -123,6 +123,13 @@
           sprints << {sprint_id => cards}
         end
         sprints = sprints.sort_by { |sprint| sprint.keys.first }
+        max_sprints_length = [options.sprints + options.offset.to_i, sprints.length].min
+
+        pre_sprint_count = 0
+        sprints.each do |sprint|
+          pre_sprint_count += 1 if sprint.keys.first.first > 9999990
+        end
+
         if options.offset
           sprints = sprints.last(options.sprints + options.offset).first(options.sprints)
         else
@@ -136,6 +143,7 @@
 <%
         sprint_begin = nil
         sprint_end = nil
+
         sprints.each do |sprint|
           sprint_id = sprint.keys.first
           while sprint_id.last == 0
@@ -158,7 +166,7 @@
 
           unless sprint_end
             sprint_end = trello.sprint_card.due.to_date
-            (sprints.length - 3).times do
+            (max_sprints_length - pre_sprint_count).times do
               trello.sprint_length_in_weeks.times{sprint_end = sprint_end.previous(trello.sprint_end_day.to_sym)}
             end
           end
