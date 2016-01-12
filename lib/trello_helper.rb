@@ -106,6 +106,7 @@ class TrelloHelper
     @members_by_card = {}
     @checklists_by_card = {}
     @lists_by_board = {}
+    @comments_by_card = {}
   end
 
   def board_ids(for_sprint_report=false)
@@ -510,7 +511,7 @@ class TrelloHelper
     actions = list_actions(card)
     comments = []
     actions.each do |action|
-      if action == 'createComment'
+      if action.type == 'commentCard'
         comments << action.data['text']
       end
     end
@@ -524,7 +525,7 @@ class TrelloHelper
     puts "#{card.name} (##{card.short_id})"
     members = card_members(card)
     if !members.empty?
-      puts "       Assignee(s): #{members.map{|member| member.full_name}.join(',')}"
+      puts "       Assignee(s): #{members.map{|member| member.full_name}.join(', ')}"
     end
     puts "\nActions:\n"
     list_actions(card).each do |action|

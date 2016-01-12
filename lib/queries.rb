@@ -3,10 +3,13 @@ class Sprint
     (labels - trello.card_labels(card).map{|label| label.name }).length < labels.length
   end
 
-  def has_comment(card, target_comment)
-    #TODO Trello doesn't have an api for comments yet
-    #card.comments.map{|comment| comment.body }.include?(target_comment)
-    true
+  def has_comment(card, target_comments)
+    trello.list_comments(card).each do |comment|
+      target_comments.each do |target_comment|
+        return true if comment.include?(target_comment)
+      end
+    end
+    false
   end
 
   def queries
@@ -17,9 +20,10 @@ class Sprint
       },
       :qe_ready => {
         :parent => :needs_qe,
-        :function => lambda{ |card| has_comment(card, 'tcms') }
+        :function => lambda{ |card| has_comment(card, ['tcms', 'goo.gl']) }
       },
       :approved => {
+        :parent   => :qe_ready,
         :function => lambda{ |card| has_label(card, ['tc-approved', 'no-qe']) }
       },
       :accepted   => {
