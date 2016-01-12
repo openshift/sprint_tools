@@ -12,7 +12,7 @@ class TrelloHelper
                 :current_release_labels, :default_product, :other_products,
                 :sprint_card
 
-  attr_accessor :boards, :trello_login_to_email, :cards_by_list, :labels_by_card, :list_by_card, :members_by_card, :checklists_by_card, :lists_by_board
+  attr_accessor :boards, :trello_login_to_email, :cards_by_list, :labels_by_card, :list_by_card, :members_by_card, :checklists_by_card, :lists_by_board, :comments_by_card
 
   DEFAULT_RETRIES = 3
   DEFAULT_RETRY_SLEEP = 10
@@ -493,6 +493,31 @@ class TrelloHelper
     cards
   end
 
+  def list_actions(card)
+    actions = nil
+    trello_do('actions') do
+      actions = card.actions
+    end
+    if actions
+      actions = target(actions, 'actions')
+    end
+    actions
+  end
+
+  def list_comments(card)
+    comments = @comments_by_card[card.id]
+    return comments if comments
+    actions = list_actions(card)
+    comments = []
+    actions.each do |action|
+      if action == 'createComment'
+        comments << action.data['text']
+      end
+    end
+    @comments_by_card[card.id] = comments
+    comments
+  end
+
   def print_card(card, num=nil)
     print "     "
     print "#{num}) " if num
@@ -500,6 +525,18 @@ class TrelloHelper
     members = card_members(card)
     if !members.empty?
       puts "       Assignee(s): #{members.map{|member| member.full_name}.join(',')}"
+    end
+    puts "\nActions:\n"
+    list_actions(card).each do |action|
+      if action.type == 'updateCard'
+        puts "#{action.type}(#{action.member_creator.username} changed #{action.data['old'].keys.first}):"
+        puts action.data
+        puts
+      elsif action.type == 'createCard'
+        puts "#{action.type}(#{member(action.member_creator_id).username}):"
+        puts action.data
+        puts
+      end
     end
   end
 
