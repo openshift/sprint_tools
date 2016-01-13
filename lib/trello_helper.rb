@@ -527,15 +527,16 @@ class TrelloHelper
     if !members.empty?
       puts "       Assignee(s): #{members.map{|member| member.full_name}.join(', ')}"
     end
-    puts "\nActions:\n"
+    puts "\nActions:\n\n"
     list_actions(card).each do |action|
 
       if action.type == 'updateCard'
         field = action.data['old'].keys.first
         if ['desc', 'pos', 'name'].include?(field)
           puts "#{action.member_creator.username}:"
-          puts "  New #{field}: #{action.data['card'][field]}"
-          puts "  Old #{field}: #{action.data['old'][field]}\n\n"
+          puts "    New #{field}: #{action.data['card'][field]}"
+          puts "    Old #{field}: #{action.data['old'][field]}"
+          puts "-----------------------------------------------\n\n"
         end
       end
     end
