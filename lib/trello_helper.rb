@@ -529,14 +529,14 @@ class TrelloHelper
     end
     puts "\nActions:\n"
     list_actions(card).each do |action|
+
       if action.type == 'updateCard'
-        puts "#{action.type}(#{action.member_creator.username} changed #{action.data['old'].keys.first}):"
-        puts action.data
-        puts
-      elsif action.type == 'createCard'
-        puts "#{action.type}(#{member(action.member_creator_id).username}):"
-        puts action.data
-        puts
+        field = action.data['old'].keys.first
+        if ['desc', 'pos', 'name'].include?(field)
+          puts "#{action.member_creator.username}:"
+          puts "  New #{field}: #{action.data['card'][field]}"
+          puts "  Old #{field}: #{action.data['old'][field]}\n\n"
+        end
       end
     end
   end
