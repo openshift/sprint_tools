@@ -109,7 +109,7 @@
 
               release_data[product][release] = {} unless release_data[product][release]
               release_data[product][release][state] = [] unless release_data[product][release][state]
-              release_data[product][release][state] << [card, status, orig_state, pos]
+              release_data[product][release][state] << [card, status, list_name, orig_state, pos]
             end
           end
         end
@@ -188,11 +188,11 @@
           sorted_by_title = nil
           position_title = nil
           if state == 'committed'
-            release_cards.sort_by! {|release_card| [release_card[1], release_card[3]]}
+            release_cards.sort_by! {|release_card| [release_card[1], release_card[4]]}
             sorted_by_title = '(sorted by status, position)'
             position_title = 'Position Within Status'
           else
-            release_cards.sort_by! {|release_card| [release_card[3]]}
+            release_cards.sort_by! {|release_card| [release_card[4]]}
             sorted_by_title = '(sorted by position)'
             position_title = 'Position'
           end
@@ -208,7 +208,8 @@
           release_cards.each do |release_card|
             card = release_card[0]
             status = release_card[1]
-            orig_state = release_card[2]
+            list_name = release_card[2]
+            orig_state = release_card[3]
             position += 1
             labels = trello.card_labels(card)
             label_names = labels.map{ |label| label.name }
@@ -243,7 +244,7 @@
 <tr>
 <td><div><a href='<%=card.url%>'><%=name%></a></div></td>
 <td title="<%=position_title%>"><%=position%></td>
-<td title="Plan State: <%=orig_state%>"><%=status%></td>
+<td title="Plan State: <%=orig_state%>, List: <%=list_name%>"><%=status%></td>
 <td><%epics.each_with_index do |epic, index|
         separator = (index == epics.length - 1) ? '' : ', '
         if epic[1]

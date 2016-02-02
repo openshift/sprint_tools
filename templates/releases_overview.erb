@@ -121,7 +121,7 @@
                 releases << [release, major, minor, patch, hotfix] unless release_data[release]
                 release_data[release] = {} unless release_data[release]
                 release_data[release][state] = [] unless release_data[release][state]
-                release_data[release][state] << [card, status, board, team_name, orig_state, pos]
+                release_data[release][state] << [card, status, board, team_name, list_name, orig_state, pos]
               end
             end
           end
@@ -229,11 +229,11 @@
           sorted_by_title = nil
           position_title = nil
           if state == 'committed'
-            release_cards.sort_by! {|release_card| [release_card[1], release_card[3], release_card[5]]}
+            release_cards.sort_by! {|release_card| [release_card[1], release_card[3], release_card[6]]}
             sorted_by_title = '(sorted by status, team, position)'
             position_title = 'Team Position Within Status'
           else
-            release_cards.sort_by! {|release_card| [release_card[3], release_card[5]]}
+            release_cards.sort_by! {|release_card| [release_card[3], release_card[6]]}
             sorted_by_title = '(sorted by team, position)'
             position_title = 'Team Position'
           end
@@ -252,7 +252,8 @@
             status = release_card[1]
             board = release_card[2]
             team_name = release_card[3]
-            orig_state = release_card[4]
+            list_name = release_card[4]
+            orig_state = release_card[5]
             if previous_team_name != team_name
               team_positions[team_name] = 0 unless team_positions[team_name]
               team_sizing_totals[team_name] = 0 unless team_sizing_totals[team_name]
@@ -297,7 +298,7 @@
 <td><div class="anchor" id="<%="#{state}-#{release_name}-#{team_name}"%>"><a href='<%=card.url%>'><%=name%></a></div></td>
 <td title="<%=position_title%>"><%=team_positions[team_name]%></td>
 <td><a href='<%=board.url%>'><%=board.name%></a></td>
-<td title="Plan State: <%=orig_state%>"><%=status%></td>
+<td title="Plan State: <%=orig_state%>, List: <%=list_name%>"><%=status%></td>
 <td><%epics.each_with_index do |epic, index|
         separator = (index == epics.length - 1) ? '' : ', '
         if epic[1]
