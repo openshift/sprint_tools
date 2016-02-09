@@ -61,14 +61,14 @@
             if sprint.code_freeze && sprint.code_freeze > sprint_begin
               if sprint.code_freeze > sprint_end
                 feature_complete_date = sprint.code_freeze
-                ((trello.sprint_length_in_weeks * 2) - 1).times do
+                (trello.sprint_length_in_weeks + (sprint.code_freeze.wday == sprint_end.wday ? 0 : 1)).times do
                   feature_complete_date = feature_complete_date.previous(trello.sprint_end_day.to_sym)
                 end
                 if feature_complete_date < sprint_end && feature_complete_date > sprint_begin
                   addtl_sprint_details = "Feature Complete: #{feature_complete_date}"
                 end
               elsif sprint.code_freeze <= sprint_end
-                addtl_sprint_details = "Code Freeze: #{sprint.code_freeze}"
+                addtl_sprint_details = "Code Freeze (max): #{sprint.code_freeze}"
               end
             end
 
