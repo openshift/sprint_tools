@@ -55,10 +55,27 @@
 <table class="table table-normal table-condensed">
 <%
           options.sprints.times do
+            feature_complete_date = nil
+            addtl_sprint_details = ''
+            sprint = Sprint.new({:trello => trello})
+            if sprint.code_freeze && sprint.code_freeze > sprint_begin
+              if sprint.code_freeze > sprint_end
+                feature_complete_date = sprint.code_freeze
+                (trello.sprint_length_in_weeks * 1).times do
+                  feature_complete_date = feature_complete_date.previous(trello.sprint_end_day.to_sym)
+                end
+                if feature_complete_date < sprint_end && feature_complete_date > sprint_begin
+                  addtl_sprint_details = "Feature Complete: #{feature_complete_date}"
+                end
+              elsif sprint.code_freeze <= sprint_end
+                addtl_sprint_details = "Code Freeze: #{sprint.code_freeze}"
+              end
+            end
+
 %>
 <tr>
 <td>
-  <h4>Sprint <%=sprint_num%></h4> <%=sprint_begin%> - <%=sprint_end%> </td>
+  <h4>Sprint <%=sprint_num%></h4> <%=sprint_begin%> - <%=sprint_end%><br/><strong><%=addtl_sprint_details%></strong> </td>
 <td>
 
 <%

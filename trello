@@ -172,13 +172,13 @@ command :days_left_in_sprint do |c|
   end
 end
 
-command :days_until_major_release do |c|
-  c.syntax = "#{name} days_until_major_release"
+command :days_until_code_freeze do |c|
+  c.syntax = "#{name} days_until_code_freeze"
 
-  c.description = "Print the number of days left until the next major release"
+  c.description = "Print the number of days left until the next code freeze"
   c.action do |args, options|
-    $sprint = Sprint.new({:trello => trello})
-    print ($sprint.next_major_release.to_time - Time.new).to_i / (60*60*24)
+    sprint = Sprint.new({:trello => trello})
+    print (sprint.code_freeze.to_time - Time.new).to_i / (60*60*24)
   end
 end
 

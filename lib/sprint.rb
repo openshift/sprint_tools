@@ -4,7 +4,7 @@ require 'core_ext/date'
 
 class Sprint
   # Calendar related attributes
-  attr_accessor :start, :finish, :prod, :stg, :int, :next_major_release
+  attr_accessor :start, :finish, :prod, :stg, :int, :code_freeze
   # Trello related attributes
   attr_accessor :trello
   # UserStory related attributes
@@ -91,10 +91,10 @@ class Sprint
     @int
   end
 
-  def next_major_release
-    return @next_major_release if @next_major_release
-    @next_major_release = sprint_card_date("Next Major Release")
-    @next_major_release
+  def code_freeze
+    return @code_freeze if @code_freeze
+    @code_freeze = sprint_card_date("Release Code Freeze")
+    @code_freeze
   end
 
   def title(short = false)

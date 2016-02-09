@@ -1,7 +1,7 @@
 require 'sprint'
 
 module SprintReport
-  attr_accessor :title, :headings, :function, :columns, :data, :day, :days_before_release, :sort_key, :secondary_sort_key, :friendly
+  attr_accessor :title, :headings, :function, :columns, :data, :day, :days_before_code_freeze, :sort_key, :secondary_sort_key, :friendly
   attr_accessor :sprint
   def initialize(opts)
     opts.each do |k,v|
@@ -60,8 +60,8 @@ module SprintReport
   end
 
   def required?
-    if days_before_release && sprint.next_major_release
-      return (sprint.next_major_release.to_time - Time.new).to_i / (60*60*24) <= days_before_release
+    if days_before_code_freeze && sprint.code_freeze
+      return (sprint.code_freeze.to_time - Time.new).to_i / (60*60*24) <= days_before_code_freeze
     elsif day.nil?
       return true
     else
@@ -78,7 +78,7 @@ module SprintReport
   end
 
   def due_date
-    day ? sprint.start + day.days : sprint.next_major_release
+    day ? sprint.start + day.days : sprint.code_freeze
   end
 
   def members(card)
