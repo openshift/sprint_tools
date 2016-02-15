@@ -55,7 +55,6 @@
 <table class="table table-normal table-condensed">
 <%
           options.sprints.times do
-            feature_complete_date = nil
             addtl_sprint_details = ''
             sprint = Sprint.new({:trello => trello})
             if sprint.code_freeze && sprint.code_freeze > sprint_begin
@@ -65,10 +64,10 @@
                   feature_complete_date = feature_complete_date.previous(trello.sprint_end_day.to_sym)
                 end
                 if feature_complete_date < sprint_end && feature_complete_date > sprint_begin
-                  addtl_sprint_details = "Feature Complete: #{feature_complete_date}"
+                  addtl_sprint_details = "Feature Complete: #{feature_complete_date}<br/>First Release Candidate (max): #{feature_complete_date.next(trello.sprint_end_day.to_sym)}"
                 end
               elsif sprint.code_freeze <= sprint_end
-                addtl_sprint_details = "Code Freeze (max): #{sprint.code_freeze}"
+                addtl_sprint_details = "Code Freeze (max): #{sprint.code_freeze}<br/>Final Release Candidate (max): #{sprint.code_freeze}"
               end
             end
 
