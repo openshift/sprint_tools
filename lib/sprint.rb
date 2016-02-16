@@ -4,7 +4,7 @@ require 'core_ext/date'
 
 class Sprint
   # Calendar related attributes
-  attr_accessor :start, :finish, :prod, :stg, :int, :code_freeze
+  attr_accessor :start, :finish, :prod, :stg, :int, :code_freeze, :feature_complete, :stage_one_dep_complete
   # Trello related attributes
   attr_accessor :trello
   # UserStory related attributes
@@ -95,6 +95,30 @@ class Sprint
     return @code_freeze if @code_freeze
     @code_freeze = sprint_card_date("Release Code Freeze")
     @code_freeze
+  end
+
+  def feature_complete
+    return @feature_complete if @feature_complete
+    @feature_complete = sprint_card_date("Feature Complete")
+    unless @feature_complete
+      @feature_complete = code_freeze
+      trello.sprint_length_in_weeks.times do
+        @feature_complete = @feature_complete.previous(trello.sprint_end_day.to_sym)
+      end
+    end
+    @feature_complete
+  end
+
+  def stage_one_dep_complete
+    return @stage_one_dep_complete if @stage_one_dep_complete
+    @stage_one_dep_complete = sprint_card_date("Stage 1 Dep Complete")
+    unless @stage_one_dep_complete
+      @stage_one_dep_complete = code_freeze
+      ((trello.sprint_length_in_weeks * 2) + 2).times do
+        @stage_one_dep_complete = @stage_one_dep_complete.previous(trello.sprint_end_day.to_sym)
+      end
+    end
+    @stage_one_dep_complete
   end
 
   def title(short = false)

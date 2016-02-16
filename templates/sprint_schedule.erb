@@ -41,40 +41,64 @@
 
   <div class="container">
   <h2 class="visible-xs"><%= trello.organization_name %> Sprint Schedule</h2>
-<section>
+
 <%
       if trello.sprint_card
         if trello.sprint_card.name =~ TrelloHelper::SPRINT_REGEX
+          sprint = Sprint.new({:trello => trello})
           sprint_num = $1.to_i
           sprint_end = trello.sprint_card.due.to_date
           sprint_end = sprint_end.next(trello.sprint_end_day.to_sym) unless sprint_end.wday == Date.new.next(trello.sprint_end_day.to_sym).wday
           sprint_begin = sprint_end
           trello.sprint_length_in_weeks.times{sprint_begin = sprint_begin.previous(trello.sprint_start_day.to_sym)}
 %>
+<section>
+<%
+      if sprint.stage_one_dep_complete < sprint_begin
+%>
+<h4>Previous Milestones:</h4>
+<ul>
+  <%
+        if sprint.stage_one_dep_complete < sprint_begin
+  %>
+  <li><strong>Stage 1 Deps Feature Complete:</strong> <%=sprint.stage_one_dep_complete%></li>
+  <%
+        end
+  %>
+  <%
+        if sprint.feature_complete < sprint_begin
+  %>
+  <li><strong>Feature Complete:</strong> <%=sprint.feature_complete%></li>
+  <%
+        end
+  %>
+</ul>
+<br/>
+<br/>
+<%
+      end
+%>
 <div class="table-responsive">
 <table class="table table-normal table-condensed">
 <%
           options.sprints.times do
             addtl_sprint_details = ''
-            sprint = Sprint.new({:trello => trello})
             if sprint.code_freeze && sprint.code_freeze > sprint_begin
               if sprint.code_freeze > sprint_end
-                feature_complete_date = sprint.code_freeze
-                (trello.sprint_length_in_weeks + (sprint.code_freeze.wday == sprint_end.wday ? 0 : 1)).times do
-                  feature_complete_date = feature_complete_date.previous(trello.sprint_end_day.to_sym)
-                end
-                if feature_complete_date < sprint_end && feature_complete_date > sprint_begin
-                  addtl_sprint_details = "Feature Complete: #{feature_complete_date}<br/>First Release Candidate (max): #{feature_complete_date.next(trello.sprint_end_day.to_sym)}"
+                if sprint.stage_one_dep_complete <= sprint_end && sprint.stage_one_dep_complete > sprint_begin
+                  addtl_sprint_details = "Stage 1 Deps Feature Complete: #{sprint.stage_one_dep_complete}"
+                elsif sprint.feature_complete <= sprint_end && sprint.feature_complete > sprint_begin
+                  addtl_sprint_details = "<strong>Feature Complete:</strong> #{sprint.feature_complete}<br/><strong>First Release Candidate (max):</strong> #{sprint.feature_complete.next(trello.sprint_end_day.to_sym)}"
                 end
               elsif sprint.code_freeze <= sprint_end
-                addtl_sprint_details = "Code Freeze (max): #{sprint.code_freeze}<br/>Final Release Candidate (max): #{sprint.code_freeze}"
+                addtl_sprint_details = "<strong>Code Freeze (max):</strong> #{sprint.code_freeze}<br/><strong>Final Release Candidate (max):</strong> #{sprint.code_freeze}"
               end
             end
 
 %>
 <tr>
 <td>
-  <h4>Sprint <%=sprint_num%></h4> <%=sprint_begin%> - <%=sprint_end%><br/><strong><%=addtl_sprint_details%></strong> </td>
+  <h4>Sprint <%=sprint_num%></h4> <%=sprint_begin%> - <%=sprint_end%><br/><%=addtl_sprint_details%></td>
 <td>
 
 <%
