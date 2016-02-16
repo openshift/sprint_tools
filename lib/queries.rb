@@ -37,8 +37,13 @@ class Sprint
         :parent   => :not_completed,
         :function => lambda{ |card| has_label(card, ['devcut'])}
       },
-      :release_incomplete => {
+      :code_freeze_incomplete => {
         :function => lambda{ |card| (trello.current_release_labels && has_label(card, trello.current_release_labels))},
+        :include_backlog => true
+      },
+      :stage1_incomplete => {
+        :parent   => :code_freeze_incomplete,
+        :function => lambda{ |card| has_label(card, ['stage1-dep'])},
         :include_backlog => true
       }
     }
