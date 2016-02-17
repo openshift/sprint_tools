@@ -215,6 +215,7 @@
             label_names = labels.map{ |label| label.name }
             epics = []
             addtl_releases = []
+            stage1_dep_indicator = ''
             label_names.each do |label_name|
               if label_name.start_with? 'epic-'
                 epic_card = nil
@@ -226,6 +227,8 @@
                 if product != $3
                   addtl_releases << [$3, label_name, $1, $4]
                 end
+              elsif label_name == TrelloHelper::STAGE1_DEP_LABEL
+                stage1_dep_indicator = '*'
               end
             end
             name = card.name.strip
@@ -243,7 +246,7 @@
 %>
 <tr>
 <td><div><a href='<%=card.url%>'><%=name%></a></div></td>
-<td title="<%=position_title%>"><%=position%></td>
+<td title="<%=position_title%>"><%=position%><%=stage1_dep_indicator%></td>
 <td title="Plan State: <%=orig_state%>, List: <%=list_name%>"><%=status%></td>
 <td><%epics.each_with_index do |epic, index|
         separator = (index == epics.length - 1) ? '' : ', '
@@ -297,8 +300,8 @@
 <%
       end
 %>
+* - Stage 1 Dependency (due two sprints before feature complete)
 <%end%>
-
   </div><!-- /container -->
 </body>
 </html>

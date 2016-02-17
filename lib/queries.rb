@@ -43,7 +43,7 @@ class Sprint
       },
       :stage1_incomplete => {
         :parent   => :code_freeze_incomplete,
-        :function => lambda{ |card| has_label(card, ['stage1-dep'])},
+        :function => lambda{ |card| has_label(card, [TrelloHelper::STAGE1_DEP_LABEL])},
         :include_backlog => true
       }
     }
