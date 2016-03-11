@@ -54,19 +54,13 @@
 %>
 <section>
 <%
-      if sprint.stage_one_dep_complete < sprint_begin
+      if sprint.stage_one_dep_complete && sprint.stage_one_dep_complete < sprint_begin
 %>
 <h4>Previous Milestones:</h4>
 <ul>
-  <%
-        if sprint.stage_one_dep_complete < sprint_begin
-  %>
   <li><strong>Stage 1 Deps Feature Complete:</strong> <%=sprint.stage_one_dep_complete%></li>
   <%
-        end
-  %>
-  <%
-        if sprint.feature_complete < sprint_begin
+        if sprint.feature_complete && sprint.feature_complete < sprint_begin
   %>
   <li><strong>Feature Complete:</strong> <%=sprint.feature_complete%></li>
   <%
