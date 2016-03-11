@@ -104,7 +104,7 @@ class Sprint
       @feature_complete = code_freeze
       trello.sprint_length_in_weeks.times do
         @feature_complete = @feature_complete.previous(trello.sprint_end_day.to_sym)
-      end
+      end if @feature_complete
     end
     @feature_complete
   end
@@ -116,7 +116,7 @@ class Sprint
       @stage_one_dep_complete = code_freeze
       ((trello.sprint_length_in_weeks * 2) + 2).times do
         @stage_one_dep_complete = @stage_one_dep_complete.previous(trello.sprint_end_day.to_sym)
-      end
+      end if @stage_one_dep_complete
     end
     @stage_one_dep_complete
   end
