@@ -138,6 +138,7 @@ class Report
           _progress email.mail.to do
             email.deliver!
           end
+          sleep rand 10
         end
       end
     end
