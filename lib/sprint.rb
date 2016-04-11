@@ -1,5 +1,6 @@
 require 'trello_helper'
 require 'queries'
+require 'bugzilla_helper'
 require 'core_ext/date'
 
 class Sprint
@@ -8,7 +9,7 @@ class Sprint
   # Trello related attributes
   attr_accessor :trello
   # UserStory related attributes
-  attr_accessor :sprint_stories, :not_accepted_stories, :processed, :results
+  attr_accessor :sprint_stories, :not_accepted_stories, :accepted_and_after_stories, :all_stories, :rfes, :processed, :results
 
   attr_accessor :debug
 
@@ -17,6 +18,7 @@ class Sprint
       send("#{k}=",v)
     end
     init_stories
+    init_rfes
   end
 
   def day
@@ -138,6 +140,8 @@ class Sprint
 
     @sprint_stories = []
     @not_accepted_stories = []
+    @accepted_and_after_stories = []
+    @all_stories = []
     trello.boards_for_sprint_report.each do |board_id, board|
       lists = trello.board_lists(board)
       lists.each do |list|
@@ -145,17 +149,34 @@ class Sprint
           cards = trello.list_cards(list)
           cards = cards.clone.delete_if {|card| card.name =~ TrelloHelper::SPRINT_REGEX && !card.due.nil?}
           @sprint_stories += cards
-          @not_accepted_stories += cards if !TrelloHelper::ACCEPTED_STATES.include?(list.name)
+          if TrelloHelper::ACCEPTED_STATES.include?(list.name)
+            @accepted_and_after_stories += cards
+          else
+            @not_accepted_stories += cards
+          end
+          @all_stories += cards
         elsif !list.closed? && list.name !~ TrelloHelper::SPRINT_REGEXES
           cards = trello.list_cards(list)
           @not_accepted_stories += cards
+          @all_stories += cards
+        elsif list.name =~ TrelloHelper::SPRINT_REGEXES
+          cards = trello.list_cards(list)
+          @accepted_and_after_stories += cards
+          @all_stories += cards
         end
       end
     end
   end
 
-  def query_stories(include_backlog)
-    if include_backlog
+  def init_rfes
+    return @rfes if @rfes
+    bugzilla = load_conf(BugzillaHelper, CONFIG.bugzilla, true)
+    @rfes = bugzilla.rfes
+    @rfes
+  end
+
+  def query_stories(query)
+    if query[:include_backlog]
       not_accepted_stories
     else
       sprint_stories
@@ -164,9 +185,13 @@ class Sprint
 
   def find(name, match = true)
     query = queries[name]
-    where = query_stories(query[:include_backlog])
+    where = nil
     if parent = query[:parent]
       where = send(parent)
+    elsif query[:type] == 'rfes'
+      where = rfes.values
+    else
+      where = query_stories(query)
     end
 
     unless !debug && processed[name]

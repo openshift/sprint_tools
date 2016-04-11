@@ -3,7 +3,7 @@ require 'base64'
 
 class BugzillaHelper
   # Bugzilla Config
-  attr_accessor :username, :password, :product
+  attr_accessor :username, :password, :products
 
   attr_accessor :bug
 
@@ -41,6 +41,37 @@ class BugzillaHelper
       end
     end
     return status
+  end
+  
+  def rfes    
+    severity_rank = {
+      'urgent' => 0,
+      'high' => 1,
+      'medium' => 2,
+      'low' => 3,
+      'unspecified' => 4
+    }
+
+    rfes = {}
+    ['ASSIGNED', 'NEW', 'MODIFIED', 'POST'].each do |status|
+      searchopts = {}
+      searchopts[:status] = status
+      products.each do |product|
+        searchopts[:product] = product
+        searchopts[:component] = 'RFE'
+        bug.search(searchopts).each do |b|
+          b.each do |inner_b|
+            if inner_b.is_a? Array
+              inner_b.each do |inner_inner_b|
+                #next if inner_inner_b['priority'] == 'low' 
+                rfes[inner_inner_b['id']] = inner_inner_b
+              end
+            end
+          end
+        end
+      end
+    end
+    rfes
   end
 
 end

@@ -1,3 +1,4 @@
 :username: <bugzilla_username>
 :password: <bugzilla_password>
-:product: <product name>
+:products:
+  - <product name>

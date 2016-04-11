@@ -853,7 +853,7 @@ command :update do |c|
                     if bugs_checklist
                       bugs_checklist.items.each do |item|
                         item_name = item.name.strip
-                        if item_name =~ /(https?:\/\/bugzilla\.redhat\.com\/[^\?]+\?id=\d+)/
+                        if item_name =~ TrelloHelper::BUGZILLA_REGEX
                           bug_url = $1
                           status = bugzilla.bug_status_by_url(bug_url)
                           if status == 'VERIFIED' || status == 'CLOSED'

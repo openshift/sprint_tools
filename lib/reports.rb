@@ -1,26 +1,30 @@
 require 'sprint'
 
 module SprintReport
-  attr_accessor :title, :headings, :function, :columns, :data, :day, :days_before_code_freeze, :sort_key, :secondary_sort_key, :friendly
+  attr_accessor :title, :headings, :bug_headings, :function, :columns, :data, :day, :days_before_code_freeze, :sort_key, :secondary_sort_key, :friendly, :type
   attr_accessor :sprint
   def initialize(opts)
     opts.each do |k,v|
       send("#{k}=",v)
     end
 
-    @columns = headings.map{|heading| Column.new(heading, self)}
+    if type == 'bug'
+      @columns = bug_headings.map{|heading| Column.new(heading, self)}
+    else
+      @columns = headings.map{|heading| Column.new(heading, self)}
+    end
     @data = []
   end
 
-  def send_attr(card, attr)
+  def send_attr(x, attr)
     if attr == 'team_name'
-      return sprint.trello.team_name(card)
+      return sprint.trello.team_name(x)
     elsif attr == 'list_name'
-      list_name = sprint.trello.card_list(card).name
+      list_name = sprint.trello.card_list(x).name
       return TrelloHelper::LIST_POSITION_ADJUSTMENT[list_name] ? TrelloHelper::LIST_POSITION_ADJUSTMENT[list_name] : list_name.hash.abs
     else
       sprint.trello.trello_do('send_attr') do
-        return card.send(attr)
+        return x.send(attr)
       end
     end
   end
@@ -31,9 +35,9 @@ module SprintReport
     end
     sort_keys = []
     sort_keys << sort_key.to_s if sort_key
-    sort_keys << secondary_sort_key.to_s if secondary_sort_key
+    sort_keys << secondary_sort_key.to_s if secondary_sort_key && type != 'bug'
     unless sort_keys.empty?
-      @data.sort_by!{|card| sort_keys.map{ |key| send_attr(card, key) }}
+      @data.sort_by!{|x| sort_keys.map{ |key| send_attr(x, key) }}
     end
     @data
   end
@@ -47,10 +51,10 @@ module SprintReport
     if user
       _data = data.select{|card| sprint.trello.member_emails(members(card)).include?(user)}
     end
-    _data.map do |card|
+    _data.map do |x|
       # Get data for each column
       columns.map do |col|
-        col.process(card)
+        col.process(x)
       end
     end
   end
@@ -94,22 +98,26 @@ module SprintReport
       @report = report
     end
 
-    def send_attr(card, attr)
-      if attr == 'members'
-        return report.members(card)
+    def send_attr(x, attr)
+      if attr == 'bug_url'
+        return "https://bugzilla.redhat.com/show_bug.cgi?id=#{x['id']}"
+      elsif x.is_a? Hash
+        return x[attr.to_sym]
+      elsif attr == 'members'
+        return report.members(x)
       elsif attr == 'list'
-        return report.sprint.trello.card_list(card)
+        return report.sprint.trello.card_list(x)
       elsif attr == 'team_name'
-        return report.sprint.trello.team_name(card)
+        return report.sprint.trello.team_name(x)
       else
         report.sprint.trello.trello_do('send_attr') do
-          return card.send(attr)
+          return x.send(attr)
         end
       end
     end
 
     def process(row)
-      value = row.is_a?(Hash) ? row[attr.to_sym] : send_attr(row, attr)
+      value = send_attr(row, attr)
       if value.is_a?(Array)
         value = value.map { |v| process_sub_attr(v) }
       else
@@ -159,6 +167,9 @@ class UserStoryReport
         { :header => 'List', :sub_attr => 'name', :max_length => 15 },
         { :header => 'Name', :max_length => 30 },
         { :header => 'Members', :sub_attr => 'full_name', :max_length => 25 }
+      ],
+      :bug_headings => [
+        { :header => 'bug_url', :attr => 'bug_url' }
       ],
       :secondary_sort_key => :list_name
     }
