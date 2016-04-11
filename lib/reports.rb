@@ -101,6 +101,8 @@ module SprintReport
     def send_attr(x, attr)
       if attr == 'bug_url'
         return "https://bugzilla.redhat.com/show_bug.cgi?id=#{x['id']}"
+      elsif attr == 'bug_summary'
+        return x['summary']
       elsif x.is_a? Hash
         return x[attr.to_sym]
       elsif attr == 'members'
@@ -169,7 +171,8 @@ class UserStoryReport
         { :header => 'Members', :sub_attr => 'full_name', :max_length => 25 }
       ],
       :bug_headings => [
-        { :header => 'bug_url', :attr => 'bug_url' }
+        { :header => 'bug_url', :attr => 'bug_url' },
+        { :header => 'bug_summary', :attr => 'bug_summary', :max_length => 25 }
       ],
       :secondary_sort_key => :list_name
     }
