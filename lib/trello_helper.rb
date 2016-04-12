@@ -12,7 +12,7 @@ class TrelloHelper
                 :current_release_labels, :default_product, :other_products,
                 :sprint_card
 
-  attr_accessor :boards, :trello_login_to_email, :cards_by_list, :labels_by_card, :list_by_card, :members_by_card, :checklists_by_card, :lists_by_board, :comments_by_card
+  attr_accessor :boards, :trello_login_to_email, :cards_by_list, :labels_by_card, :list_by_card, :members_by_card, :checklists_by_card, :lists_by_board, :comments_by_card, :board_id_to_team_map
 
   DEFAULT_RETRIES = 3
   DEFAULT_RETRY_SLEEP = 10
@@ -113,17 +113,28 @@ class TrelloHelper
     @comments_by_card = {}
   end
 
-  def board_ids(for_sprint_report=false)
+  def board_ids
     board_ids = []
     teams.each do |team, team_map|
       team_boards_map = team_boards_map(team_map)
-      unless for_sprint_report && team_map[:exclude_from_sprint_report]
-        team_boards_map.each do |b_name, b_id|
-          board_ids << b_id
-        end
+      team_boards_map.each do |b_name, b_id|
+        board_ids << b_id
       end
     end
     return board_ids
+  end
+  
+  
+  def board_id_to_team_map
+    return @board_id_to_team_map if @board_id_to_team_map
+    @board_id_to_team_map = {}
+    teams.each do |team, team_map|
+      team_boards_map = team_boards_map(team_map)
+      team_boards_map.each do |b_name, b_id|
+        @board_id_to_team_map[b_id] = team_map
+      end
+    end
+    @board_id_to_team_map
   end
 
   def card_ref(card)
@@ -190,16 +201,6 @@ class TrelloHelper
       end
     end
     @boards
-  end
-
-  def boards_for_sprint_report
-    boards = {}
-    org_boards.each do |board|
-      if board_ids(true).include?(board.id)
-        boards[board.id] = board
-      end
-    end
-    boards
   end
 
   def sprint_card

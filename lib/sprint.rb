@@ -142,22 +142,24 @@ class Sprint
     @not_accepted_stories = []
     @accepted_and_after_stories = []
     @all_stories = []
-    trello.boards_for_sprint_report.each do |board_id, board|
+    
+    trello.boards.each do |board_id, board|
+      team_map = trello.board_id_to_team_map[board_id]
       lists = trello.board_lists(board)
       lists.each do |list|
         if TrelloHelper::CURRENT_SPRINT_STATES.include?(list.name)
           cards = trello.list_cards(list)
           cards = cards.clone.delete_if {|card| card.name =~ TrelloHelper::SPRINT_REGEX && !card.due.nil?}
-          @sprint_stories += cards
+          @sprint_stories += cards unless team_map[:exclude_from_sprint_report]
           if TrelloHelper::ACCEPTED_STATES.include?(list.name)
             @accepted_and_after_stories += cards
           else
-            @not_accepted_stories += cards
+            @not_accepted_stories += cards unless team_map[:exclude_from_sprint_report]
           end
           @all_stories += cards
         elsif !list.closed? && list.name !~ TrelloHelper::SPRINT_REGEXES
           cards = trello.list_cards(list)
-          @not_accepted_stories += cards
+          @not_accepted_stories += cards unless team_map[:exclude_from_sprint_report]
           @all_stories += cards
         elsif list.name =~ TrelloHelper::SPRINT_REGEXES
           cards = trello.list_cards(list)
