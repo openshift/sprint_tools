@@ -172,7 +172,7 @@ class UserStoryReport
       ],
       :bug_headings => [
         { :header => 'bug_url', :attr => 'bug_url' },
-        { :header => 'bug_summary', :attr => 'bug_summary', :max_length => 25 }
+        { :header => 'bug_summary', :attr => 'bug_summary', :max_length => 35 }
       ],
       :secondary_sort_key => :list_name
     }
