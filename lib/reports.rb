@@ -17,7 +17,9 @@ module SprintReport
   end
 
   def send_attr(x, attr)
-    if attr == 'team_name'
+    if attr == 'bug_owner'
+      return x['assigned_to']
+    elsif attr == 'team_name'
       return sprint.trello.team_name(x)
     elsif attr == 'list_name'
       list_name = sprint.trello.card_list(x).name
@@ -103,6 +105,8 @@ module SprintReport
         return "https://bugzilla.redhat.com/show_bug.cgi?id=#{x['id']}"
       elsif attr == 'bug_summary'
         return x['summary']
+      elsif attr == 'bug_owner'
+        return x['assigned_to']
       elsif x.is_a? Hash
         return x[attr.to_sym]
       elsif attr == 'members'
@@ -172,6 +176,7 @@ class UserStoryReport
       ],
       :bug_headings => [
         { :header => 'bug_url', :attr => 'bug_url' },
+        { :header => 'bug_owner', :attr => 'bug_owner', :max_length => 20 },
         { :header => 'bug_summary', :attr => 'bug_summary', :max_length => 35 }
       ],
       :secondary_sort_key => :list_name
