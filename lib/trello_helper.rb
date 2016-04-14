@@ -373,12 +373,23 @@ class TrelloHelper
   end
 
   def create_checklist(card, checklist_name)
+    retry_count = 0
     cl = checklist(card, checklist_name)
-    unless cl
-      puts "Adding #{checklist_name} to #{card.name}"
-      cl = Trello::Checklist.create({:name => checklist_name, :board_id => card.board_id, :card_id => card.id})
-      #card.add_checklist(cl)
-      @checklists_by_card.delete(card.id)
+    puts "Adding #{checklist_name} to #{card.name}" if cl.nil?
+    while cl.nil?
+      begin
+        cl = Trello::Checklist.create({:name => checklist_name, :board_id => card.board_id, :card_id => card.id})
+        @checklists_by_card.delete(card.id)
+        break
+      rescue Exception => e
+        $stderr.puts "Error with checklist: #{e.message}"
+        @checklists_by_card.delete(card.id)
+        cl = checklist(card, checklist_name)
+        break unless cl.nil?
+        raise if retry_count >= DEFAULT_RETRIES
+        sleep DEFAULT_RETRY_SLEEP
+        retry_count += 1
+      end
     end
     cl
   end
