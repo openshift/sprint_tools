@@ -383,7 +383,7 @@ class TrelloHelper
         @checklists_by_card.delete(card.id)
         break
       rescue Exception => e
-        $stderr.puts "Error with checklist: #{e.message}"
+        $stderr.puts "Error in create_checklist: #{e.message}"
         @checklists_by_card.delete(card.id)
         cl = checklist(card, checklist_name)
         break unless cl.nil?
