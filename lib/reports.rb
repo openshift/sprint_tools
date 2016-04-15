@@ -8,7 +8,7 @@ module SprintReport
       send("#{k}=",v)
     end
 
-    if type == 'bug'
+    if type == :bug
       @columns = bug_headings.map{|heading| Column.new(heading, self)}
     else
       @columns = headings.map{|heading| Column.new(heading, self)}
@@ -37,7 +37,7 @@ module SprintReport
     end
     sort_keys = []
     sort_keys << sort_key.to_s if sort_key
-    sort_keys << secondary_sort_key.to_s if secondary_sort_key && type != 'bug'
+    sort_keys << secondary_sort_key.to_s if secondary_sort_key && type != :bug
     unless sort_keys.empty?
       @data.sort_by!{|x| sort_keys.map{ |key| send_attr(x, key) }}
     end

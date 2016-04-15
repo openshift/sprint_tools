@@ -54,40 +54,61 @@ class Report
     data.delete_if{|d| d[:data][:rows].length == 0}
 
     unless data.empty? || user
-      deadlines = DeadlinesReport.new
 
-      #TODO: This should probably be moved to the sprint itself
-      deadlines.data = reports.select{|x| !(x.required? || x.first_day?) }.map{|x| {:date => x.due_date, :title => x.friendly || x.title} }
-      deadlines.data << {:date => $sprint.finish, :title => "Last Day of Sprint" }
-      deadlines.data = deadlines.data.sort_by{|x| x[:date] }
-      data.unshift({
-        :report => deadlines,
-        :data => {
-          :title => deadlines.title,
-          :headings => deadlines.columns.map{|col| col.header},
-          :rows => deadlines.rows
-        }
-      })
+      report_types = []
+      data.each do |hash|
+        if hash[:report] && hash[:report].is_a?(UserStoryReport)
+          report_types << hash[:report].type
+        end
+      end
+      report_types.uniq!
 
-      environments = EnvironmentsReport.new
-      environments.data = []
-      environments.data << {:date => $sprint.int,  :title => "First Push to INT" } if $sprint.int
-      environments.data << {:date => $sprint.prod,  :title => "Push to PROD" } if $sprint.prod
-      environments.data << {:date => $sprint.stg,  :title => "Push to STG" } if $sprint.stg
-      data = data.sort_by{|x| x[:date] }
-      data.unshift({
-        :report => environments,
-        :data => {
-          :title => environments.title,
-          :headings => environments.columns.map{|col| col.header},
-          :rows => environments.rows
-        }
-      })
+      bug_reports_included = report_types.include?(:bug)
+      story_reports_included = report_types.include?(:story) || report_types.length > 1 || (!report_types.empty? && !bug_reports_included)
+      only_bug_reports_included = bug_reports_included && !story_reports_included
 
-      stats.data.unshift({
-        :name => 'Total Stories',
-        :count => $sprint.sprint_stories.length
-      })
+      unless only_bug_reports_included
+        deadlines = DeadlinesReport.new
+        deadlines.data = reports.select{|x| !(x.required? || x.first_day?) }.map{|x| {:date => x.due_date, :title => x.friendly || x.title} }
+        deadlines.data << {:date => $sprint.finish, :title => "Last Day of Sprint" }
+        deadlines.data = deadlines.data.sort_by{|x| x[:date] }
+        data.unshift({
+          :report => deadlines,
+          :data => {
+            :title => deadlines.title,
+            :headings => deadlines.columns.map{|col| col.header},
+            :rows => deadlines.rows
+          }
+        })
+
+        environments = EnvironmentsReport.new
+        environments.data = []
+        environments.data << {:date => $sprint.int,  :title => "First Push to INT" } if $sprint.int
+        environments.data << {:date => $sprint.prod,  :title => "Push to PROD" } if $sprint.prod
+        environments.data << {:date => $sprint.stg,  :title => "Push to STG" } if $sprint.stg
+        data = data.sort_by{|x| x[:date] }
+        data.unshift({
+          :report => environments,
+          :data => {
+            :title => environments.title,
+            :headings => environments.columns.map{|col| col.header},
+            :rows => environments.rows
+          }
+        })
+      end
+
+      if story_reports_included
+        stats.data.unshift({
+          :name => 'Total Stories',
+          :count => $sprint.sprint_stories.length
+        })
+      end
+      if bug_reports_included
+        stats.data.unshift({
+          :name => 'Total RFEs',
+          :count => $sprint.rfes.length
+        })
+      end
 
       data.unshift({
         :report => stats,
