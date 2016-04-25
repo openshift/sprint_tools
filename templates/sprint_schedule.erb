@@ -80,7 +80,7 @@
             if sprint.code_freeze && sprint.code_freeze > sprint_begin
               if sprint.code_freeze > sprint_end
                 if sprint.stage_one_dep_complete <= sprint_end && sprint.stage_one_dep_complete > sprint_begin
-                  addtl_sprint_details = "Stage 1 Deps Feature Complete: #{sprint.stage_one_dep_complete}"
+                  addtl_sprint_details = "<strong>Stage 1 Deps Feature Complete:</strong> #{sprint.stage_one_dep_complete}"
                 elsif sprint.feature_complete <= sprint_end && sprint.feature_complete > sprint_begin
                   addtl_sprint_details = "<strong>Feature Complete:</strong> #{sprint.feature_complete}<br/><strong>First Release Candidate (max):</strong> #{sprint.feature_complete.next(trello.sprint_end_day.to_sym)}"
                 end
