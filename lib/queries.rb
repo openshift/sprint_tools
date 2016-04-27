@@ -32,6 +32,22 @@ class Sprint
     return false
   end
 
+  def has_unplanned_referencing_card?(rfe, stories)
+    id = rfe['id']
+    url = "https://bugzilla.redhat.com/show_bug.cgi?id=#{id}"
+    stories.each do |card|
+      if card.desc.include?(url)
+        label_names = trello.card_labels(card).map{ |label| label.name.split('-').first }
+        if !label_names.include?('targeted') && !label_names.include?('committed')
+          return true
+        else
+          break
+        end
+      end
+    end
+    return false
+  end
+
   def queries
     {
       :needs_qe => {
@@ -72,6 +88,10 @@ class Sprint
       },
       :complete_rfes => {
         :function => lambda{ |rfe| has_referencing_card?(rfe, accepted_and_after_stories)},
+        :type => 'rfes'
+      },
+      :unplanned_rfes => {
+        :function => lambda{ |rfe| has_unplanned_referencing_card?(rfe, not_accepted_stories)},
         :type => 'rfes'
       }
     }
