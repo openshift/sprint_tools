@@ -117,6 +117,9 @@
 
       tag_to_epics = trello.tag_to_epics
 
+      bugzilla = load_conf(BugzillaHelper, CONFIG.bugzilla, true)
+      rfes = bugzilla.rfes
+
       releases.sort_by!{ |release| [release[0] ? release[0] : '', release[2], release[3], release[4], release[5]] }
 
       state_titles = {
@@ -231,6 +234,14 @@
                 stage1_dep_indicator = '*'
               end
             end
+
+            related_rfe = nil
+            if card.desc =~ TrelloHelper::BUGZILLA_REGEX
+              if rfes[$2.to_i]
+                related_rfe = $1
+              end
+            end
+
             name = card.name.strip
             sizing = nil
             if name =~ /\((\d+|\?)\)(.*)/
@@ -245,7 +256,15 @@
             end
 %>
 <tr>
-<td><div><a href='<%=card.url%>'><%=name%></a></div></td>
+<td><div>
+<%
+        if related_rfe
+%>
+(<a href='<%=related_rfe%>'>RFE</a>)
+<%
+        end
+%>
+<a href='<%=card.url%>'><%=name%></a></div></td>
 <td title="<%=position_title%>"><%=position%><%=stage1_dep_indicator%></td>
 <td title="Plan State: <%=orig_state%>, List: <%=list_name%>"><%=status%></td>
 <td><%epics.each_with_index do |epic, index|

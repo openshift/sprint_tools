@@ -12,6 +12,7 @@ require 'pp'
 require 'yaml'
 require 'i18n'
 require 'commander/import'
+require 'bugzilla_helper'
 
 Encoding.default_external = "UTF-8"
 
@@ -787,7 +788,6 @@ command :update do |c|
     if options.add_task_checklists || options.add_bug_checklists || options.update_bug_tasks || options.add_doc_tasks || options.add_doc_cards
       bugzilla = nil
       if options.update_bug_tasks
-        require 'bugzilla_helper'
         bugzilla = load_conf(BugzillaHelper, CONFIG.bugzilla, true)
       end
       if options.add_doc_cards && (trello.documentation_board.id != trello.docs_planning_board.id)

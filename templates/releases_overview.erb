@@ -130,6 +130,9 @@
 
       tag_to_epics = trello.tag_to_epics
 
+      bugzilla = load_conf(BugzillaHelper, CONFIG.bugzilla, true)
+      rfes = bugzilla.rfes
+
       releases.sort_by!{ |release| [release[1], release[2], release[3], release[4]] }
 
       state_titles = {
@@ -280,6 +283,14 @@
                 stage1_dep_indicator = '*'
               end
             end
+
+            related_rfe = nil
+            if card.desc =~ TrelloHelper::BUGZILLA_REGEX
+              if rfes[$2.to_i]
+                related_rfe = $1
+              end
+            end
+
             name = card.name.strip
             sizing = nil
             team_complete_sizing_totals[team_name] = 0 unless team_complete_sizing_totals[team_name]
@@ -298,7 +309,15 @@
             end
 %>
 <tr>
-<td><div class="anchor" id="<%="#{state}-#{release_name}-#{team_name}"%>"><a href='<%=card.url%>'><%=name%></a></div></td>
+<td><div class="anchor" id="<%="#{state}-#{release_name}-#{team_name}"%>">
+<%
+        if related_rfe
+%>
+(<a href='<%=related_rfe%>'>RFE</a>)
+<%
+        end
+%>
+<a href='<%=card.url%>'><%=name%></a></div></td>
 <td title="<%=position_title%>"><%=team_positions[team_name]%><%=stage1_dep_indicator%></td>
 <td><a href='<%=board.url%>'><%=board.name%></a></td>
 <td title="Plan State: <%=orig_state%>, List: <%=list_name%>"><%=status%></td>
