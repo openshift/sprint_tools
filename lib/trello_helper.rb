@@ -38,7 +38,8 @@ class TrelloHelper
   IN_PROGRESS_STATES = {
     'In Progress' => true,
     'Design' => true,
-    'Pending Upstream' => true
+    'Pending Upstream' => true,
+    'Pending Merge' => true
   }
 
   NEXT_STATES = {
