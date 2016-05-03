@@ -60,7 +60,7 @@ class TrelloHelper
   CURRENT_SPRINT_NOT_IN_PROGRESS_STATES = COMPLETE_STATES.merge(ACCEPTED_STATES)
 
   CURRENT_SPRINT_STATES = IN_PROGRESS_STATES.merge(CURRENT_SPRINT_NOT_IN_PROGRESS_STATES)
-  
+
   BUGZILLA_REGEX = /(https?:\/\/bugzilla\.redhat\.com\/[^\?]+\?id=(\d+))/
 
   RELEASE_STATE_ORDER = {
@@ -125,8 +125,8 @@ class TrelloHelper
     end
     return board_ids
   end
-  
-  
+
+
   def board_id_to_team_map
     return @board_id_to_team_map if @board_id_to_team_map
     @board_id_to_team_map = {}
