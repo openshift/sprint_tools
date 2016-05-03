@@ -42,8 +42,8 @@ class BugzillaHelper
     end
     return status
   end
-  
-  def rfes    
+
+  def rfes
     severity_rank = {
       'urgent' => 0,
       'high' => 1,
@@ -63,7 +63,7 @@ class BugzillaHelper
           b.each do |inner_b|
             if inner_b.is_a? Array
               inner_b.each do |inner_inner_b|
-                #next if inner_inner_b['priority'] == 'low' 
+                #next if inner_inner_b['priority'] == 'low'
                 rfes[inner_inner_b['id']] = inner_inner_b
               end
             end

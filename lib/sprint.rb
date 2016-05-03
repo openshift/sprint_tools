@@ -142,7 +142,7 @@ class Sprint
     @not_accepted_stories = []
     @accepted_and_after_stories = []
     @all_stories = []
-    
+
     trello.boards.each do |board_id, board|
       team_map = trello.board_id_to_team_map[board_id]
       lists = trello.board_lists(board, trello.max_lists_per_board + 10)
