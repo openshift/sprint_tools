@@ -364,8 +364,8 @@ class TrelloHelper
         item_updated = true
       rescue Exception => e
         $stderr.puts "Error in checklist_add_item: #{e.message}"
-        cl = trello_do('checklist_add_item') do
-          Trello::Checklist.find(cl.id)
+        trello_do('checklist_add_item') do
+          cl = Trello::Checklist.find(cl.id)
         end
         break unless cl.items.select{|i| i.name.strip == item_name && i.state.complete? == checked }.one?
         raise if retry_count >= DEFAULT_RETRIES
@@ -384,8 +384,8 @@ class TrelloHelper
         item_updated = true
       rescue Exception => e
         $stderr.puts "Error in checklist_delete_item: #{e.message}"
-        cl = trello_do('checklist_delete_item') do
-          Trello::Checklist.find(cl.id)
+        trello_do('checklist_delete_item') do
+          cl = Trello::Checklist.find(cl.id)
         end
         break if cl.items.select{|i| i.id == item.id }.empty?
         raise if retry_count >= DEFAULT_RETRIES
