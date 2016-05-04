@@ -753,7 +753,7 @@ command :update do |c|
                 stories_checklist = trello.checklist(epic, checklist_name)
                 if stories_checklist
                   puts "Adding #{card.url}"
-                  trello.add_checklist_item(stories_checklist, "[#{card.name}](#{card.url}) (#{list.name}) (#{board.name})", accepted, 'bottom')
+                  trello.checklist_add_item(stories_checklist, "[#{card.name}](#{card.url}) (#{list.name}) (#{board.name})", accepted, 'bottom')
                 end
               end
             end
