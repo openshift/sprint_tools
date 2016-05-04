@@ -747,17 +747,13 @@ command :update do |c|
               if !next_card_releases.empty?
                 next_card_releases.each do |card_release|
                   cl = trello.create_checklist(epic, card_release)
-                  trello.trello_do('add_checklist_item') do
-                    cl.add_item("[#{card.name}](#{card.url}) (#{list.name}) (#{board.name})", accepted, 'bottom')
-                  end
+                  trello.checklist_add_item(cl, "[#{card.name}](#{card.url}) (#{list.name}) (#{board.name})", accepted, 'bottom')
                 end
               else
                 stories_checklist = trello.checklist(epic, checklist_name)
                 if stories_checklist
                   puts "Adding #{card.url}"
-                  trello.trello_do('add_checklist_item') do
-                    stories_checklist.add_item("[#{card.name}](#{card.url}) (#{list.name}) (#{board.name})", accepted, 'bottom')
-                  end
+                  trello.add_checklist_item(stories_checklist, "[#{card.name}](#{card.url}) (#{list.name}) (#{board.name})", accepted, 'bottom')
                 end
               end
             end
@@ -859,14 +855,14 @@ command :update do |c|
                           if status == 'VERIFIED' || status == 'CLOSED'
                             if item.state == 'incomplete'
                               puts "Marking complete: #{item_name}"
-                              bugs_checklist.add_item(item_name, true, 'bottom')
-                              bugs_checklist.delete_checklist_item(item.id)
+                              trello.checklist_add_item(bugs_checklist, item_name, true, 'bottom')
+                              trello.checklist_delete_item(bugs_checklist, item)
                             end
                           else
                             if item.state == 'complete'
                               puts "Marking incomplete: #{item_name}"
-                              bugs_checklist.add_item(item_name, false, 'top')
-                              bugs_checklist.delete_checklist_item(item.id)
+                              trello.checklist_add_item(bugs_checklist, item_name, false, 'top')
+                              trello.checklist_delete_item(bugs_checklist, item)
                             end
                           end
                         end
@@ -888,7 +884,7 @@ command :update do |c|
                       end
                       unless found
                         puts "Adding documentation reminder: #{card.name}"
-                        tasks_checklist.add_item(doc_reminder, false, 'bottom')
+                        trello.checklist_add_item(tasks_checklist, doc_reminder, false, 'bottom')
                       end
                     end
                   end
