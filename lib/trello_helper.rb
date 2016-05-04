@@ -355,15 +355,53 @@ class TrelloHelper
     return nil
   end
 
+  def checklist_add_item(cl, item_name, checked, position)
+    retry_count = 0
+    item_updated = false
+    while not item_updated
+      begin
+        cl.add_item(item_name, checked, position)
+        item_updated = true
+      rescue Exception => e
+        $stderr.puts "Error in checklist_add_item: #{e.message}"
+        cl = trello_do('checklist_add_item') do
+          Trello::Checklist.find(cl.id)
+        end
+        break unless cl.items.select{|i| i.name.strip == item_name && i.state.complete? == checked }.one?
+        raise if retry_count >= DEFAULT_RETRIES
+        sleep DEFAULT_RETRY_SLEEP
+        retry_count += 1
+      end
+    end
+  end
+
+  def checklist_delete_item(cl, item)
+    retry_count = 0
+    item_updated = false
+    while not item_updated
+      begin
+        cl.delete_checklist_item(item.id)
+        item_updated = true
+      rescue Exception => e
+        $stderr.puts "Error in checklist_delete_item: #{e.message}"
+        cl = trello_do('checklist_delete_item') do
+          Trello::Checklist.find(cl.id)
+        end
+        break if cl.items.select{|i| i.id == item.id }.empty?
+        raise if retry_count >= DEFAULT_RETRIES
+        sleep DEFAULT_RETRY_SLEEP
+        retry_count += 1
+      end
+    end
+  end
+
   def clear_epic_refs(epic_card)
     checklists = list_checklists(epic_card)
     checklists.each do |cl|
       cl.items.each do |item|
         if item.name =~ /\[.*\]\(https?:\/\/trello\.com\/[^\)]+\) \([^\)]+\) \([^\)]+\)/
           begin
-            trello_do('checklist', 2) do
-              cl.delete_checklist_item(item.id)
-            end
+            checklist_delete_item(cl, item)
           rescue => e
             $stderr.puts "Error deleting checklist item: #{e.message}"
           end
