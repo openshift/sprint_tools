@@ -853,13 +853,13 @@ command :update do |c|
                           bug_url = $1
                           status = bugzilla.bug_status_by_url(bug_url)
                           if status == 'VERIFIED' || status == 'CLOSED'
-                            if item.state == 'incomplete'
+                            if !item.complete?
                               puts "Marking complete: #{item_name}"
                               trello.checklist_add_item(bugs_checklist, item_name, true, 'bottom')
                               trello.checklist_delete_item(bugs_checklist, item)
                             end
                           else
-                            if item.state == 'complete'
+                            if item.complete?
                               puts "Marking incomplete: #{item_name}"
                               trello.checklist_add_item(bugs_checklist, item_name, false, 'top')
                               trello.checklist_delete_item(bugs_checklist, item)
