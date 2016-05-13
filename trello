@@ -97,6 +97,35 @@ end
 
 trello = load_conf(TrelloHelper, CONFIG.trello, true)
 
+command :backup_org_boards do |c|
+
+  c.option "--output-dir DIRECTORY", "Directory to dump backup json to"
+
+  c.syntax = "#{name}"
+  c.description = "dump all organization boards"
+  c.action do |args, options|
+    output_dir = (options.output_dir.nil? || options.output_dir.empty?) ? Pathname.pwd : Pathname.new(options.output_dir)
+    if !output_dir.writable?
+      $stderr.puts "Directory #{output_dir} doesn't specify a writable directory."
+      exit 1
+    end
+    trello.boards.each do |board_id, board|
+      unless board.nil?
+        out_filename = "#{board.url.split('/').last}.json"
+        out_path = File.join(output_dir, out_filename)
+        puts "Backing up #{board.name} to #{out_path}"
+        begin
+          # cache the response so we don't create a 0-byte file if the request times out
+          output = trello.dump_board_json(board)
+          File.open(out_path, 'w') { |f| f.write(output)}
+        rescue Exception => e
+          $stderr.puts "Error while writing to #{out_path}: #{e.message}"
+        end
+      end
+    end
+  end
+end
+
 command :list do |c|
   c.syntax = "#{name} list"
 

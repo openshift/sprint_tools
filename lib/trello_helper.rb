@@ -655,6 +655,27 @@ class TrelloHelper
     boards[board_id]
   end
 
+  def dump_board_json(board)
+    board = board(board) unless board.respond_to? :id
+    board_json_url = "#{board.url}.json"
+    request = Trello::Request.new :get, board_json_url, {}, nil
+    response = nil
+    i = 0
+    while true
+      trello_do('dump_board_json') do
+        response = Trello::TInternet.execute Trello.auth_policy.authorize(request)
+        return response.body if response.code == 200
+      end
+      err_msg = "Error with dump_board_json backing up board '#{board.name}': " + (response.code.nil? ? "HTTP Timeout?" : "HTTP response code: #{response.code}, response body: #{response.body}")
+      if i >= DEFAULT_RETRIES
+        raise err_msg
+      end
+      $stderr.puts err_msg
+      sleep DEFAULT_RETRY_SLEEP
+      i += 1
+    end
+  end
+
   def member(member_name)
     Trello::Member.find(member_name)
   end
