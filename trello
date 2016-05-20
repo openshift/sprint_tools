@@ -99,12 +99,12 @@ trello = load_conf(TrelloHelper, CONFIG.trello, true)
 
 command :backup_org_boards do |c|
 
-  c.option "--output-dir DIRECTORY", "Directory to dump backup json to"
+  c.option "--out-dir DIRECTORY", "Directory to dump backup json to"
 
   c.syntax = "#{name}"
   c.description = "dump all organization boards"
   c.action do |args, options|
-    output_dir = (options.output_dir.nil? || options.output_dir.empty?) ? Pathname.pwd : Pathname.new(options.output_dir)
+    output_dir = (options.out_dir.nil? || options.out_dir.empty?) ? Pathname.pwd : Pathname.new(options.out_dir)
     if !output_dir.writable?
       $stderr.puts "Directory #{output_dir} doesn't specify a writable directory."
       exit 1
@@ -401,7 +401,7 @@ end
 command :generate_default_overviews do |c|
   c.syntax = "#{name} generate_default_overviews"
 
-  c.option "--out-dir OUT_DIR", "The dir to output to Ex: /tmp"
+  c.option "--out-dir DIRECTORY", "The dir to output to Ex: /tmp"
 
   c.description = "Generate the default overviews"
   c.action do |args, options|
