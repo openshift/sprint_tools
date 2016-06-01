@@ -658,6 +658,8 @@ class TrelloHelper
   def dump_board_json(board)
     board = board(board) unless board.respond_to? :id
     board_json_url = "#{board.url}.json"
+    # API request to pull down the same content as the export URL, but limited to 100 actions
+    alternate_url = "https://trello.com/1/boards/#{board.id}?fields=all&actions=all&actions_limit=100&action_fields=all&cards=all&card_fields=all&card_attachments=true&labels=all&lists=all&list_fields=all&members=all&member_fields=all&checklists=all&checklist_fields=all&organization=false"
     request = Trello::Request.new :get, board_json_url, {}, nil
     response = nil
     i = 0
@@ -671,8 +673,14 @@ class TrelloHelper
         raise err_msg
       end
       $stderr.puts err_msg
-      sleep DEFAULT_RETRY_SLEEP
-      i += 1
+      if request.uri != alternate_url && response.code.nil?
+        $stderr.puts "Retrying with API-based backup URL to work around timeout. *NOTE*: This will only back up the 100 most recent actions, instead of the usual 1,000."
+        request = Trello::Request.new :get, alternate_url, {}, nil
+      else
+        # don't sleep or increment the counter unless we've tried the workaround
+        sleep DEFAULT_RETRY_SLEEP
+        i += 1
+      end
     end
   end
 
