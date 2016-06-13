@@ -14,8 +14,9 @@ class TrelloHelper
 
   attr_accessor :boards, :trello_login_to_email, :cards_by_list, :labels_by_card, :list_by_card, :members_by_card, :checklists_by_card, :lists_by_board, :comments_by_card, :board_id_to_team_map
 
-  DEFAULT_RETRIES = 3
-  DEFAULT_RETRY_SLEEP = 10
+  DEFAULT_RETRIES = 9
+  DEFAULT_RETRY_SLEEP = 2
+  DEFAULT_RETRY_INC = 1
 
   FUTURE_TAG = '[future]'
   FUTURE_LABEL = 'future'
@@ -369,7 +370,7 @@ class TrelloHelper
         end
         break unless cl.items.select{|i| i.name.strip == item_name && i.complete? == checked }.one?
         raise if retry_count >= DEFAULT_RETRIES
-        sleep DEFAULT_RETRY_SLEEP
+        retry_sleep retry_count
         retry_count += 1
       end
     end
@@ -389,7 +390,7 @@ class TrelloHelper
         end
         break if cl.items.select{|i| i.id == item.id }.empty?
         raise if retry_count >= DEFAULT_RETRIES
-        sleep DEFAULT_RETRY_SLEEP
+        retry_sleep retry_count
         retry_count += 1
       end
     end
@@ -427,7 +428,7 @@ class TrelloHelper
         cl = checklist(card, checklist_name)
         break unless cl.nil?
         raise if retry_count >= DEFAULT_RETRIES
-        sleep DEFAULT_RETRY_SLEEP
+        retry_sleep retry_count
         retry_count += 1
       end
     end
@@ -678,7 +679,7 @@ class TrelloHelper
         request = Trello::Request.new :get, alternate_url, {}, nil
       else
         # don't sleep or increment the counter unless we've tried the workaround
-        sleep DEFAULT_RETRY_SLEEP
+        retry_sleep i
         i += 1
       end
     end
@@ -719,10 +720,13 @@ class TrelloHelper
       rescue Exception => e
         $stderr.puts "Error with #{type}: #{e.message}"
         raise if i >= retries
-        sleep DEFAULT_RETRY_SLEEP
+        retry_sleep i
         i += 1
       end
     end
   end
 
+  def retry_sleep(retry_count)
+    sleep DEFAULT_RETRY_SLEEP + (DEFAULT_RETRY_INC * retry_count)
+  end
 end
