@@ -472,8 +472,8 @@ class TrelloHelper
   def card_labels(card)
     labels = @labels_by_card[card.id]
     return labels if labels
-    trello_do('card_labels') do
-      labels = card.labels
+    labels = card.card_labels.map do |label|
+      Trello::Label.new(label)
     end
     @labels_by_card[card.id] = labels if labels
     labels
