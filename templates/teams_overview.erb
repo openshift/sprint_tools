@@ -176,6 +176,7 @@
         product = release[0]
         release_name = release[1]
         release_complete_sizing_total = 0
+        release_in_progress_sizing_total = 0
         release_remaining_sizing_total = 0
 %>
 <h2 class="anchor" id="<%="#{product ? "#{product}-": ''}#{release_name}"%>"><%="#{product ? "#{product.upcase}-": ''}#{release_name}"%></h2>
@@ -187,6 +188,7 @@
           next unless release_cards
 
           state_complete_sizing_total = 0
+          state_in_progress_sizing_total = 0
           state_remaining_sizing_total = 0
           sorted_by_title = nil
           position_title = nil
@@ -251,6 +253,9 @@
               if status == 'Complete'
                 state_complete_sizing_total += sizing
               else
+                if status == 'In Progress'
+                  state_in_progress_sizing_total += sizing
+                end
                 state_remaining_sizing_total += sizing
               end
             end
@@ -295,6 +300,7 @@
           end
 
           release_complete_sizing_total += state_complete_sizing_total
+          release_in_progress_sizing_total += state_in_progress_sizing_total
           release_remaining_sizing_total += state_remaining_sizing_total
           completed_details = nil
           if state == 'committed'
@@ -312,7 +318,11 @@
 <%
         end
 %>
-<h4 class="anchor" id="<%="#{product ? "#{product}-": ''}#{release_name}"%>_completed_points"><a href="#<%="#{product ? "#{product}-": ''}#{release_name}"%>_completed_points" title="Link to this section"><%="#{product ? "#{product.upcase}-": ''}#{release_name} Completed Points:"%></a> <%="#{release_complete_sizing_total} of #{release_complete_sizing_total + release_remaining_sizing_total}"%></h4>
+<h4 class="anchor" id="<%="#{product ? "#{product}-": ''}#{release_name}"%>_points"><a href="#<%="#{product ? "#{product}-": ''}#{release_name}"%>_points" title="Link to this section"><%="#{product ? "#{product.upcase}-": ''}#{release_name} Point Summary:"%></a></h4>
+<div class="container">
+Completed and In Progress: <%="#{release_complete_sizing_total + release_in_progress_sizing_total} of #{release_complete_sizing_total + release_remaining_sizing_total}"%><br />
+<strong>Completed: <%="#{release_complete_sizing_total} of #{release_complete_sizing_total + release_remaining_sizing_total}"%></strong><br />
+</div>
 </div>
 <br />
 <br />
