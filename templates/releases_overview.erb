@@ -215,8 +215,10 @@
       releases.each do |release|
         release_name = release[0]
         release_complete_sizing_total = 0
+        release_in_progress_sizing_total = 0
         release_remaining_sizing_total = 0
         team_complete_sizing_totals = {}
+        team_in_progress_sizing_totals = {}
         team_remaining_sizing_totals = {}
 %>
 <h2 class="anchor" id="<%=release_name%>"><%=release_name.upcase%></h2>
@@ -228,6 +230,7 @@
           next unless release_cards
 
           state_complete_sizing_total = 0
+          state_in_progress_sizing_total = 0
           state_remaining_sizing_total = 0
           sorted_by_title = nil
           position_title = nil
@@ -294,6 +297,7 @@
             name = card.name.strip
             sizing = nil
             team_complete_sizing_totals[team_name] = 0 unless team_complete_sizing_totals[team_name]
+            team_in_progress_sizing_totals[team_name] = 0 unless team_in_progress_sizing_totals[team_name]
             team_remaining_sizing_totals[team_name] = 0 unless team_remaining_sizing_totals[team_name]
             if name =~ /\((\d+|\?)\)(.*)/
               sizing = $1.to_i
@@ -303,6 +307,10 @@
                 state_complete_sizing_total += sizing
                 team_complete_sizing_totals[team_name] += sizing
               else
+                if status == 'In Progress'
+                  state_in_progress_sizing_total += sizing
+                  team_in_progress_sizing_totals[team_name] += sizing
+                end
                 state_remaining_sizing_total += sizing
                 team_remaining_sizing_totals[team_name] += sizing
               end
@@ -355,6 +363,7 @@
           end
 
           release_complete_sizing_total += state_complete_sizing_total
+          release_in_progress_sizing_total += state_in_progress_sizing_total
           release_remaining_sizing_total += state_remaining_sizing_total
           completed_details = nil
           if state == 'committed'
@@ -372,6 +381,18 @@
 <%
         end
 %>
+<h5 class="anchor" id="<%=release_name%>_completed_points_and_in_progress"><a href="#<%=release_name%>_completed_points_and_in_progress" title="Link to this section"><%=release_name%> Completed and In Progress Points:</a></h5>
+<div class="container">
+<%
+        team_complete_sizing_totals.each do |team_name, complete_sizing|
+%>
+<%=team_name.upcase%>: <%="#{complete_sizing + team_in_progress_sizing_totals[team_name]} of #{complete_sizing + team_remaining_sizing_totals[team_name]}"%><br />
+<%
+        end
+%>
+<strong>Total: <%="#{release_complete_sizing_total + release_in_progress_sizing_total} of #{release_complete_sizing_total + release_remaining_sizing_total}"%></strong><br />
+</div>
+<br />
 <h4 class="anchor" id="<%=release_name%>_completed_points"><a href="#<%=release_name%>_completed_points" title="Link to this section"><%=release_name%> Completed Points:</a></h4>
 <div class="container">
 <%
