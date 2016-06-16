@@ -320,7 +320,7 @@
 %>
 <h4 class="anchor" id="<%="#{product ? "#{product}-": ''}#{release_name}"%>_points"><a href="#<%="#{product ? "#{product}-": ''}#{release_name}"%>_points" title="Link to this section"><%="#{product ? "#{product.upcase}-": ''}#{release_name} Point Summary:"%></a></h4>
 <div class="container">
-Completed and In Progress: <%="#{release_complete_sizing_total + release_in_progress_sizing_total} of #{release_complete_sizing_total + release_remaining_sizing_total}"%><br />
+Completed + In Progress: <%="#{release_complete_sizing_total + release_in_progress_sizing_total} of #{release_complete_sizing_total + release_remaining_sizing_total}"%><br />
 <strong>Completed: <%="#{release_complete_sizing_total} of #{release_complete_sizing_total + release_remaining_sizing_total}"%></strong><br />
 </div>
 </div>
