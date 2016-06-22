@@ -109,7 +109,7 @@ command :backup_org_boards do |c|
       $stderr.puts "Directory #{output_dir} doesn't specify a writable directory."
       exit 1
     end
-    trello.boards.each do |board_id, board|
+    trello.org_boards.each do |board|
       unless board.nil?
         out_filename = "#{board.url.split('/').last}.json"
         out_path = File.join(output_dir, out_filename)
