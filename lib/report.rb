@@ -84,8 +84,8 @@ class Report
         environments = EnvironmentsReport.new
         environments.data = []
         environments.data << {:date => $sprint.int,  :title => "First Push to INT" } if $sprint.int
-        environments.data << {:date => $sprint.prod,  :title => "Push to PROD" } if $sprint.prod
         environments.data << {:date => $sprint.stg,  :title => "Push to STG" } if $sprint.stg
+        environments.data << {:date => $sprint.prod,  :title => "Push to PROD" } if $sprint.prod
         data = data.sort_by{|x| x[:date] }
         data.unshift({
           :report => environments,
