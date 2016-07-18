@@ -118,9 +118,12 @@ class LdapHelper
             users = ldap_users_by_name(first_name, "#{middle_name} #{last_name}")
           end
         end
-        if users.length != 1 && !(allow_multiple && users.length > 1)
-          last_name_users = ldap_users_by_last_name(last_name)
-          users = last_name_users if last_name_users.length == 1
+        if users.length != 1 && !(allow_multiple && users.length > 1) 
+          users = ldap_users_by_name(first_name[0..2], last_name)
+          if users.length != 1 && !(allow_multiple && users.length > 1)
+            last_name_users = ldap_users_by_last_name(last_name)
+            users = last_name_users if last_name_users.length == 1
+          end
         end
       end
     else
