@@ -308,6 +308,9 @@
                 team_complete_sizing_totals[team_name] += sizing
               else
                 if status == 'In Progress'
+                  if TrelloHelper::COMPLETE_STATES.include?(list_name)
+                    status = 'In Progress (on_qe)'
+                  end
                   state_in_progress_sizing_total += sizing
                   team_in_progress_sizing_totals[team_name] += sizing
                 end
