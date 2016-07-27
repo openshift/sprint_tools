@@ -254,12 +254,14 @@
                 state_complete_sizing_total += sizing
               else
                 if status == 'In Progress'
-                  if TrelloHelper::COMPLETE_STATES.include?(list_name)
-                    status = 'In Progress (on_qe)'
-                  end
                   state_in_progress_sizing_total += sizing
                 end
                 state_remaining_sizing_total += sizing
+              end
+            end
+            if status == 'In Progress'
+              if TrelloHelper::COMPLETE_STATES.include?(list_name)
+                status = 'In Progress (on_qe)'
               end
             end
 %>
