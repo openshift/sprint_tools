@@ -471,6 +471,12 @@ class TrelloHelper
     end
   end
 
+  def update_card(card)
+    trello_do('update_card') do
+      card.save
+    end
+  end
+
   def card_labels(card)
     labels = @labels_by_card[card.id]
     return labels if labels
