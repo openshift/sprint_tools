@@ -65,6 +65,12 @@
   <li><strong>Feature Complete:</strong> <%=sprint.feature_complete%></li>
   <%
         end
+        if sprint.code_freeze && sprint.code_freeze < sprint_begin
+  %>
+  <li><strong>Code Freeze (max):</strong> <%=sprint.code_freeze%></li>
+  <li><strong>Final Release Candidate (max):</strong> <%=sprint.code_freeze%></li>
+  <%
+        end
   %>
 </ul>
 <br/>
@@ -77,7 +83,7 @@
 <%
           options.sprints.times do
             addtl_sprint_details = ''
-            if sprint.code_freeze && sprint.code_freeze > sprint_begin
+            if sprint.code_freeze && sprint.code_freeze >= sprint_begin
               if sprint.code_freeze > sprint_end
                 if sprint.stage_one_dep_complete <= sprint_end && sprint.stage_one_dep_complete > sprint_begin
                   addtl_sprint_details = "<strong>Stage 1 Deps Feature Complete:</strong> #{sprint.stage_one_dep_complete}"
