@@ -49,8 +49,6 @@ LINKS = {'roadmap_overview' => 'Roadmap',
          'labels_overview' => 'Labels',
          'sprint_schedule' => 'Sprint Schedule'}
 
-RELEASE_LABEL_REGEX = /^(proposed|targeted|committed)-((\w*)-)*((\d+)(.(\d+))?(.(\d+))?(.(\d+))*)/
-
 def create_releases_overview(out, trello)
   extname = File.extname out
   filename = File.basename out, extname
@@ -251,6 +249,22 @@ command :list_invalid_users do |c|
   end
 end
 
+command :generate_release_json do |c|
+  c.syntax = "#{name} generate_release_json"
+  c.option "--out-dir DIRECTORY", "The dir to output to Ex: /tmp"
+  c.option "--release RELEASE", "Release to build json for Ex: 3.3"
+  c.option "--product PRODUCT", "Product to build json for Ex: myproduct"
+
+  c.description = "Generate json for the cards in a release"
+  c.action do |args, options|
+    release_cards = trello.release_cards(options.product, options.release)
+    if options.out_dir
+      File.open(File.join(options.out_dir, "#{options.product ? options.product + '-' : '' }#{options.release}.json"), 'w') {|f| f.write(JSON.pretty_generate(release_cards)) }
+    else
+      pp JSON.pretty_generate(release_cards)
+    end
+  end
+end
 
 command :generate_trello_login_to_email_json do |c|
   c.syntax = "#{name} generate_trello_login_to_email_json"
@@ -263,9 +277,9 @@ command :generate_trello_login_to_email_json do |c|
     members = trello.org.members
     valid_users = ldap.valid_users(members)
     if options.out
-      File.open(options.out, 'w') {|f| f.write(valid_users.to_json) }
+      File.open(options.out, 'w') {|f| f.write(JSON.pretty_generate(valid_users)) }
     else
-      pp valid_users.to_json
+      pp JSON.pretty_generate(valid_users)
     end
   end
 end
@@ -617,7 +631,7 @@ command :update do |c|
       releases = []
       roadmap_label_colors_by_name = trello.roadmap_label_colors_by_name
       roadmap_label_colors_by_name.each_key do |label_name|
-        if label_name =~ RELEASE_LABEL_REGEX
+        if label_name =~ TrelloHelper::RELEASE_LABEL_REGEX
           releases << label_name
         end
       end
@@ -697,7 +711,7 @@ command :update do |c|
                     card_labels.each do |label|
                       if label.name.start_with? 'epic-'
                         card_tags << label.name
-                      elsif releases.include?(label.name) && label.name =~ RELEASE_LABEL_REGEX
+                      elsif releases.include?(label.name) && label.name =~ TrelloHelper::RELEASE_LABEL_REGEX
                         state = $1
                         product = $3
                         release = $4

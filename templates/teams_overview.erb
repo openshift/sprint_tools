@@ -91,7 +91,7 @@
           labels = trello.card_labels(card)
           label_names = labels.map{ |label| label.name }
           label_names.each do |label_name|
-            if label_name =~ RELEASE_LABEL_REGEX
+            if label_name =~ TrelloHelper::RELEASE_LABEL_REGEX
               state = $1
               product = $3
               release = $4
@@ -182,6 +182,13 @@
 <h2 class="anchor" id="<%="#{product ? "#{product}-": ''}#{release_name}"%>"><%="#{product ? "#{product.upcase}-": ''}#{release_name}"%></h2>
 <div class="container">
 <%
+        release_cards_history_file = File.join('config', 'releases', "#{product ? product + '-' : '' }#{release_name}.json")
+        release_cards_history = nil
+        release_cards_history = JSON.parse(File.read(release_cards_history_file)) if File.exist?(release_cards_history_file)
+        release_cards_history.delete_if{ |card_id, card_info| card_info['team_name'] != team.to_s } if release_cards_history
+        puts release_cards_history.length if release_cards_history
+        cards_added_to_release = []
+
         states = release_data[product][release_name]
         TrelloHelper::RELEASE_STATES.each do |state|
           release_cards = states[state]
@@ -215,6 +222,17 @@
             status = release_card[1]
             list_name = release_card[2]
             orig_state = release_card[3]
+
+            if release_cards_history
+              if !release_cards_history.delete(card.id)
+                cards_added_to_release << {
+                                            'short_url' => card.short_url,
+                                            'name' => card.name,
+                                            'state' => orig_state
+                                          }
+              end
+            end
+
             position += 1
             labels = trello.card_labels(card)
             label_names = labels.map{ |label| label.name }
@@ -228,7 +246,7 @@
                   epic_card = tag_to_epics[label_name].first
                 end
                 epics << [label_name[5..-1], epic_card ? epic_card.url : nil]
-              elsif label_name =~ RELEASE_LABEL_REGEX
+              elsif label_name =~ TrelloHelper::RELEASE_LABEL_REGEX
                 if product != $3
                   addtl_releases << [$3, label_name, $1, $4]
                 end
@@ -316,6 +334,57 @@
 %>
 </table>
 <i><%=completed_details%></i><br />
+<br />
+<br />
+</div>
+</div>
+<%
+        end
+        unless release_cards_history.nil? || release_cards_history.empty?
+%>
+<h5 title="Cards removed from the release after the release began" class="anchor" id="removed-from-<%=release_name%>">Removed from Release (<%=release_name%>)<span class="pficon-help"></span></h5>
+<div class="container">
+<div class="table-responsive">
+<table class="table table-normal table-condensed">
+  <tr><th title="Card Name">Scenario</th><th title="Committed, Targeted, or Proposed">Original Plan State<span class="pficon-help"></span></th></tr>
+<%
+          release_cards_history = release_cards_history.values
+          release_cards_history.sort_by!{ |card_info| [TrelloHelper::RELEASE_STATE_ORDER[card_info['state']], card_info['team_name']] }
+          release_cards_history.each do |card_info|
+%>
+<tr>
+<td><a href='<%=card_info['short_url']%>'><%=card_info['name']%></a></div></td>
+<td><%=card_info['state']%></td>
+</tr>
+<%
+          end
+%>
+</table>
+<br />
+<br />
+</div>
+</div>
+<%
+        end
+        unless cards_added_to_release.empty?
+%>
+<h5 title="Cards added to the release after the release began" class="anchor" id="added-to-<%=release_name%>">Added to Release (<%=release_name%>)<span class="pficon-help"></span></h5>
+<div class="container">
+<div class="table-responsive">
+<table class="table table-normal table-condensed">
+  <tr><th title="Card Name">Scenario</th><th title="Committed, Targeted, or Proposed">Plan State<span class="pficon-help"></span></th></tr>
+<%
+          cards_added_to_release.sort_by!{ |card_info| [TrelloHelper::RELEASE_STATE_ORDER[card_info['state']], card_info['team_name']] }
+          cards_added_to_release.each do |card_info|
+%>
+<tr>
+<td><a href='<%=card_info['short_url']%>'><%=card_info['name']%></a></div></td>
+<td><%=card_info['state']%></td>
+</tr>
+<%
+          end
+%>
+</table>
 <br />
 <br />
 </div>

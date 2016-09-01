@@ -27,6 +27,8 @@ class TrelloHelper
   DONE_REGEX = /^Done: ((\d+)\.(\d+)(.(\d+))?(.(\d+))?)/
   SPRINT_REGEXES = Regexp.union([SPRINT_REGEX, DONE_REGEX])
 
+  RELEASE_LABEL_REGEX = /^(proposed|targeted|committed)-((\w*)-)*((\d+)(.(\d+))?(.(\d+))?(.(\d+))*)/
+
   ACCEPTED_STATES = {
     'Accepted' => true,
     'Done' => true
@@ -654,6 +656,52 @@ class TrelloHelper
 
   def board(board_id)
     boards[board_id]
+  end
+
+  def release_cards(product, release)
+    release_cards = {}
+    search_list_info = []
+    teams.keys.map{ |team_name| team_name.to_s }.each do |team_name|
+      team_boards(team_name).each do |board|
+        board_lists(board).each do |list|
+          search_list_info << [team_name, board, list]
+        end
+      end
+    end
+
+    roadmap_boards.each do |board|
+      board_lists(board).each do |list|
+        if NEW_STATES.include?(list.name)
+          search_list_info << ['roadmap', board, list]
+          break
+        end
+      end
+    end
+
+    search_list_info.each do |list_info|
+      team_name = list_info[0]
+      board = list_info[1]
+      list = list_info[2]
+      cards = list_cards(list)
+      cards.each_with_index do |card, index|
+        labels = card_labels(card)
+        label_names = labels.map{ |label| label.name }
+        label_names.each do |label_name|
+          if label_name =~ RELEASE_LABEL_REGEX
+            if product == $3 && release == $4
+              state = $1
+              release_cards[card.id] = {
+                                         :short_url => card.short_url,
+                                         :name => card.name,
+                                         :team_name => team_name,
+                                         :state => state
+                                       }
+            end
+          end
+        end
+      end
+    end
+    release_cards
   end
 
   def dump_board_json(board)
