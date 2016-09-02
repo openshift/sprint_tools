@@ -186,7 +186,6 @@
         release_cards_history = nil
         release_cards_history = JSON.parse(File.read(release_cards_history_file)) if File.exist?(release_cards_history_file)
         release_cards_history.delete_if{ |card_id, card_info| card_info['team_name'] != team.to_s } if release_cards_history
-        puts release_cards_history.length if release_cards_history
         cards_added_to_release = []
 
         states = release_data[product][release_name]
