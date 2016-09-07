@@ -156,14 +156,39 @@
   <ul>
 <%
         states = release_data[product][release_name]
+        release_cards_history = trello.release_cards_history(product, release_name)
+        release_cards_history.delete_if{ |card_id, card_info| card_info['team_name'] != team.to_s } if release_cards_history
+        added_to_release = false
         TrelloHelper::RELEASE_STATES.each do |state|
           release_cards = states[state]
           next unless release_cards
+          if release_cards_history
+            release_cards.each do |release_card|
+              if !release_cards_history.delete(release_card[0].id)
+                added_to_release = true
+                break
+              end
+            end unless added_to_release
+          end
 %>
     <li><a href='#<%="#{state}-#{product ? "#{product}-": ''}#{release_name}"%>'><%=TrelloHelper::RELEASE_STATE_DISPLAY_NAME[state]%></a> (<%=release_cards.length%> cards)</li>
 <%
         end
+        if release_cards_history
+          removed_from_release = !release_cards_history.empty?
+          if removed_from_release
 %>
+    <li><a href='#removed-from-<%=release_name%>'>Removed From Release</a></li>
+<%
+          end
+          if added_to_release
+%>
+    <li><a href='#added-to-<%=release_name%>'>Added to Release</a></li>
+<%
+          end
+        end
+%>
+    <li><a href='#<%="#{product ? "#{product}-": ''}#{release_name}"%>_points'>Points Summary</a></li>
   </ul>
 <%
       end
@@ -182,9 +207,7 @@
 <h2 class="anchor" id="<%="#{product ? "#{product}-": ''}#{release_name}"%>"><%="#{product ? "#{product.upcase}-": ''}#{release_name}"%></h2>
 <div class="container">
 <%
-        release_cards_history_file = File.join('config', 'releases', "#{product ? product + '-' : '' }#{release_name}.json")
-        release_cards_history = nil
-        release_cards_history = JSON.parse(File.read(release_cards_history_file)) if File.exist?(release_cards_history_file)
+        release_cards_history = trello.release_cards_history(product, release_name)
         release_cards_history.delete_if{ |card_id, card_info| card_info['team_name'] != team.to_s } if release_cards_history
         cards_added_to_release = []
 
@@ -391,7 +414,7 @@
 <%
         end
 %>
-<h4 class="anchor" id="<%="#{product ? "#{product}-": ''}#{release_name}"%>_points"><a href="#<%="#{product ? "#{product}-": ''}#{release_name}"%>_points" title="Link to this section"><%="#{product ? "#{product.upcase}-": ''}#{release_name} Point Summary:"%></a></h4>
+<h4 class="anchor" id="<%="#{product ? "#{product}-": ''}#{release_name}"%>_points"><%="#{product ? "#{product.upcase}-": ''}#{release_name} Point Summary:"%></h4>
 <div class="container">
 Completed + In Progress: <%="#{release_complete_sizing_total + release_in_progress_sizing_total} of #{release_complete_sizing_total + release_remaining_sizing_total}"%><br />
 <strong>Completed: <%="#{release_complete_sizing_total} of #{release_complete_sizing_total + release_remaining_sizing_total}"%></strong><br />
