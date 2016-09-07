@@ -704,6 +704,13 @@ class TrelloHelper
     release_cards
   end
 
+  def release_cards_history(product, release)
+    release_cards_history_file = File.join('config', 'releases', "#{product ? product + '-' : '' }#{release}.json")
+    release_cards_history = nil 
+    release_cards_history = JSON.parse(File.read(release_cards_history_file)) if File.exist?(release_cards_history_file)
+    release_cards_history
+  end
+
   def dump_board_json(board)
     board = board(board) unless board.respond_to? :id
     board_json_url = "#{board.url}.json"

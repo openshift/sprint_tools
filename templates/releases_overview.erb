@@ -182,28 +182,39 @@
   <ul>
 <%
         states = release_data[release_name]
+        release_cards_history = trello.release_cards_history(product, release_name)
+        added_to_release = false
         TrelloHelper::RELEASE_STATES.each do |state|
           release_cards = states[state]
           next unless release_cards
-%>
-    <li><a href='#<%="#{state}-#{release_name}"%>'><%=TrelloHelper::RELEASE_STATE_DISPLAY_NAME[state]%></a> (<%=release_cards.length%> cards)</li>
-    <ul>
-<%
-          previous_team_name = nil
-          release_cards.each do |release_card|
-            team_name = release_card[3]
-            if previous_team_name != team_name
-              previous_team_name = team_name
-%>
-      <li><a href='#<%="#{state}-#{release_name}-#{team_name}"%>'><%=team_name.upcase%></a></li>
-<%
-            end
+          if release_cards_history
+            release_cards.each do |release_card|
+              if !release_cards_history.delete(release_card[0].id)
+                added_to_release = true
+                break
+              end
+            end unless added_to_release
           end
 %>
-    </ul>
+    <li><a href='#<%="#{state}-#{release_name}"%>'><%=TrelloHelper::RELEASE_STATE_DISPLAY_NAME[state]%></a> (<%=release_cards.length%> cards)</li>
 <%
         end
+        if release_cards_history
+          removed_from_release = !release_cards_history.empty?
+          if removed_from_release
 %>
+    <li><a href='#removed-from-<%=release_name%>'>Removed From Release</a></li>
+<%
+          end
+          if added_to_release
+%>
+    <li><a href='#added-to-<%=release_name%>'>Added to Release</a></li>
+<%
+          end
+        end
+%>
+    <li><a href='#<%=release_name%>_completed_points_and_in_progress'>Completed + In Progress Points Summary</a></li>
+    <li><a href='#<%=release_name%>_completed_points'>Completed Points Summary</a></li>
   </ul>
 <%
       end
@@ -223,10 +234,8 @@
 %>
 <h2 class="anchor" id="<%=release_name%>"><%=release_name.upcase%></h2>
 <div class="container">
-<%
-        release_cards_history_file = File.join('config', 'releases', "#{product ? product + '-' : '' }#{release_name}.json")
-        release_cards_history = nil 
-        release_cards_history = JSON.parse(File.read(release_cards_history_file)) if File.exist?(release_cards_history_file)
+<% 
+        release_cards_history = trello.release_cards_history(product, release_name)
         cards_added_to_release = []
 
         states = release_data[release_name]
@@ -405,7 +414,7 @@
         end
         unless release_cards_history.nil? || release_cards_history.empty?
 %>
-<h5 class="anchor" id="removed-from-<%=release_name%>"><a href="#removed-from-<%=release_name%>" title="Cards removed from the release after the release began">Removed from Release (<%=release_name%>)</a></h5>
+<h5 title="Cards removed from the release after the release began" class="anchor" id="removed-from-<%=release_name%>">Removed from Release (<%=release_name%>)<span class="pficon-help"></span></h5>
 <div class="container">
 <div class="table-responsive">
 <table class="table table-normal table-condensed">
@@ -432,7 +441,7 @@
         end
         unless cards_added_to_release.empty?
 %>
-<h5 class="anchor" id="added-to-<%=release_name%>"><a href="#added-to-<%=release_name%>" title="Cards added to the release after the release began">Added to Release (<%=release_name%>)</a></h5>
+<h5 title="Cards added to the release after the release began" class="anchor" id="added-to-<%=release_name%>">Added to Release (<%=release_name%>)<span class="pficon-help"></span></h5>
 <div class="container">
 <div class="table-responsive">
 <table class="table table-normal table-condensed">
@@ -457,7 +466,7 @@
 <%
         end
 %>
-<h5 class="anchor" id="<%=release_name%>_completed_points_and_in_progress"><a href="#<%=release_name%>_completed_points_and_in_progress" title="Link to this section"><%=release_name%> Completed + In Progress Points:</a></h5>
+<h5 class="anchor" id="<%=release_name%>_completed_points_and_in_progress"><%=release_name%> Completed + In Progress Points:</h5>
 <div class="container">
 <%
         team_complete_sizing_totals.each do |team_name, complete_sizing|
@@ -469,7 +478,7 @@
 <strong>Total: <%="#{release_complete_sizing_total + release_in_progress_sizing_total} of #{release_complete_sizing_total + release_remaining_sizing_total}"%></strong><br />
 </div>
 <br />
-<h4 class="anchor" id="<%=release_name%>_completed_points"><a href="#<%=release_name%>_completed_points" title="Link to this section"><%=release_name%> Completed Points:</a></h4>
+<h4 class="anchor" id="<%=release_name%>_completed_points"><%=release_name%> Completed Points:</h4>
 <div class="container">
 <%
         team_complete_sizing_totals.each do |team_name, complete_sizing|
