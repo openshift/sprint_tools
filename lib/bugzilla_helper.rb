@@ -5,7 +5,7 @@ class BugzillaHelper
   # Bugzilla Config
   attr_accessor :username, :password, :products
 
-  attr_accessor :bug
+  attr_accessor :bz
 
   def initialize(opts)
     opts.each do |k,v|
@@ -16,7 +16,7 @@ class BugzillaHelper
     user = Bugzilla::User.new(xmlrpc)
 
     user.login({'login'=>username, 'password'=>Base64.decode64(password), 'remember'=>true})
-    @bug = Bugzilla::Bug.new(xmlrpc)
+    @bz = Bugzilla::Bug.new(xmlrpc)
   end
 
   def bug_status_by_url(url)
@@ -26,7 +26,7 @@ class BugzillaHelper
       tries = 1
       while true
         begin
-          result = bug.get_bugs([id], ::Bugzilla::Bug::FIELDS_DETAILS)
+          result = bz.get_bugs([id], ::Bugzilla::Bug::FIELDS_DETAILS)
           if !result.empty?
             status = result.first['status']
           end
@@ -59,15 +59,9 @@ class BugzillaHelper
       products.each do |product|
         searchopts[:product] = product
         searchopts[:component] = 'RFE'
-        bug.search(searchopts).each do |b|
-          b.each do |inner_b|
-            if inner_b.is_a? Array
-              inner_b.each do |inner_inner_b|
-                #next if inner_inner_b['priority'] == 'low'
-                rfes[inner_inner_b['id']] = inner_inner_b
-              end
-            end
-          end
+        bz.search(searchopts)['bugs'].each do |b|
+          #next if b['priority'] == 'low'
+          rfes[b['id']] = b
         end
       end
     end
