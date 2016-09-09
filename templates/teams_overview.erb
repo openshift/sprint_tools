@@ -73,6 +73,7 @@
         end
       end if team
 
+      cards_by_id = {}
       search_lists.each do |list|
         list_name = list.name
         complete = false
@@ -88,6 +89,7 @@
         pos_adjustment = TrelloHelper::MAX_LIST_POSITION_ADJUSTMENT unless pos_adjustment
         cards = trello.list_cards(list)
         cards.each_with_index do |card, index|
+          cards_by_id[card.id] = card
           labels = trello.card_labels(card)
           label_names = labels.map{ |label| label.name }
           label_names.each do |label_name|
@@ -368,15 +370,39 @@
 <div class="container">
 <div class="table-responsive">
 <table class="table table-normal table-condensed">
-  <tr><th title="Card Name">Scenario</th><th title="Committed, Targeted, or Proposed">Original Plan State<span class="pficon-help"></span></th></tr>
+  <tr><th title="Card Name">Scenario</th><th title="Committed, Targeted, or Proposed">Original Plan State<span class="pficon-help"></span></th><th title="Other Release(s)">Other Release(s)</th></tr>
 <%
-          release_cards_history = release_cards_history.values
-          release_cards_history.sort_by!{ |card_info| [TrelloHelper::RELEASE_STATE_ORDER[card_info['state']], card_info['team_name']] }
-          release_cards_history.each do |card_info|
+          release_cards_history_list = []
+          release_cards_history.each do |id, card_info|
+            card = cards_by_id[id] || trello.find_card(id)
+            other_releases = []
+            if card
+              labels = trello.card_labels(card)
+              label_names = labels.map{ |label| label.name }
+              label_names.each do |label_name|
+                if label_name =~ TrelloHelper::RELEASE_LABEL_REGEX
+                  other_releases << [$3, label_name, $1, $4]
+                end
+              end
+            end
+            card_info['other_releases'] = other_releases
+            release_cards_history_list << card_info
+          end
+          release_cards_history_list.sort_by!{ |card_info| [TrelloHelper::RELEASE_STATE_ORDER[card_info['state']], card_info['team_name']] }
+          release_cards_history_list.each do |card_info|
 %>
 <tr>
 <td><a href='<%=card_info['short_url']%>'><%=card_info['name']%></a></div></td>
 <td><%=card_info['state']%></td>
+<td><%card_info['other_releases'].each_with_index do |release_info, index|
+            p = release_info[0]
+            label = release_info[1]
+            addtl_state = release_info[2]
+            addtl_release = release_info[3]
+            separator = (index == card_info['other_releases'].length - 1) ? '' : ', '
+%>
+<a href='<%="##{addtl_state}-#{p ? "#{p}-": ''}#{addtl_release}"%>'><%=label%></a><%=separator%>
+<%end%></td>
 </tr>
 <%
           end
