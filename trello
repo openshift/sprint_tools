@@ -45,7 +45,6 @@ LINKS = {'roadmap_overview' => 'Roadmap',
          'releases_overview' => 'Releases',
          'teams_overview' => 'Teams',
          'sprints_overview' => 'Sprints',
-         'previous_sprints_overview' => 'Previous Sprints',
          'labels_overview' => 'Labels',
          'sprint_schedule' => 'Sprint Schedule'}
 
@@ -426,7 +425,7 @@ command :generate_default_overviews do |c|
     create_labels_overview(File.join(options.out_dir, 'labels_overview.html'), trello)
     create_teams_overview(File.join(options.out_dir, 'teams_overview.html'), trello)
 
-    options.sprints = options.sprints ? options.sprints.to_i : 8
+    options.sprints = options.sprints ? options.sprints.to_i : 14
     options.offset = options.offset ? options.offset.to_i : 0
 
     erb = ERB.new(File.open('templates/sprints_overview.erb', "rb").read)

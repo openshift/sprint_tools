@@ -68,7 +68,7 @@
       label_data = {}
       trello.teams.keys.map{ |team_name| team_name.to_s }.each do |team_name|
         trello.team_boards(team_name).each do |board|
-          trello.board_lists(board, trello.max_lists_per_board + TrelloHelper::ANCIENT_HISTORY_LIST_ADDITION).each do |list|
+          trello.board_lists(board, trello.max_lists_per_board).each do |list|
             list_name = list.name
             cards = trello.list_cards(list)
               cards.each do |card|

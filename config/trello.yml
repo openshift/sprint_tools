@@ -6,7 +6,7 @@
 :consumer_secret: <consumer_secret>
 :oauth_token: <oauth_token>
 :oauth_token_secret: <oauth_secret>
-:max_lists_per_board: 16
+:max_lists_per_board: 26
 :default_product: product1
 :other_products:
   - product2

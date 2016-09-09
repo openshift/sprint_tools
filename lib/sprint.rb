@@ -145,7 +145,7 @@ class Sprint
 
     trello.boards.each do |board_id, board|
       team_map = trello.board_id_to_team_map[board_id]
-      lists = trello.board_lists(board, trello.max_lists_per_board + TrelloHelper::ANCIENT_HISTORY_LIST_ADDITION)
+      lists = trello.board_lists(board, trello.max_lists_per_board)
       lists.each do |list|
         if TrelloHelper::CURRENT_SPRINT_STATES.include?(list.name)
           cards = trello.list_cards(list)
