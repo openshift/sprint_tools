@@ -200,8 +200,6 @@ Detailed Run Example
     cp /tmp/releases_overview.html /var/www/html/releases_overview.html
     cp /tmp/sprints_overview.html /var/www/html/sprints_overview.html
     cp /tmp/labels_overview.html /var/www/html/labels_overview.html
-    ./trello generate_sprints_overview --out /tmp/previous_sprints_overview.html --sprints 8 --offset 8 --trace
-    cp /tmp/previous_sprints_overview.html /var/www/html/previous_sprints_overview.html
     ./trello generate_sprint_schedule --out /tmp/sprint_schedule.html --sprints 10 --trace
     cp /tmp/sprint_schedule.html /var/www/html/sprint_schedule.html
 

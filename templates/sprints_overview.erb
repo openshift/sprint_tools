@@ -49,7 +49,7 @@
         <div class="navbar-collapse collapse">
           <ul class="nav navbar-nav">
               <% LINKS.each do |page_name, page_title|
-                if page_name != (options.offset > 0 ? 'previous_sprints_overview' : 'sprints_overview') %>
+                if page_name != 'sprints_overview' %>
                   <li><a href='<%=page_name%>.html'><%=page_title%></a></li>
                 <%else%>
                   <li><a class="active" href='<%=page_name%>.html'><%=page_title%></a></li>
