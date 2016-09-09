@@ -68,31 +68,24 @@
       label_data = {}
       trello.teams.keys.map{ |team_name| team_name.to_s }.each do |team_name|
         trello.team_boards(team_name).each do |board|
-          trello.board_lists(board).each do |list|
+          trello.board_lists(board, trello.max_lists_per_board + TrelloHelper::ANCIENT_HISTORY_LIST_ADDITION).each do |list|
             list_name = list.name
-            if TrelloHelper::CURRENT_SPRINT_STATES.include?(list_name)
-              cards = trello.list_cards(list)
+            cards = trello.list_cards(list)
               cards.each do |card|
-                labels = trello.card_labels(card)
-                label_names = labels.map{ |label| label.name }
-                label_names.each do |label_name|
-                  if ['documentation', 'security'].include?(label_name)
-                    break if label_name == 'documentation' && label_names.include?('docs-ack')
-                    label_data[label_name] = [] unless label_data[label_name]
-                    label_data[label_name] << [card, list_name, board]
-                  end
+              labels = trello.card_labels(card)
+              label_names = labels.map{ |label| label.name }
+              label_names.each do |label_name|
+                include = false
+                if 'documentation' == label_name
+                  include = !label_names.include?('docs-ack')
+                elsif TrelloHelper::CURRENT_SPRINT_STATES.include?(list_name) && ('security' == label_name)
+                  include = true
+                elsif list_name !~ TrelloHelper::SPRINT_REGEXES && ['blocked', 'performance', 'ux', 'community'].include?(label_name) 
+                  include = true
                 end
-              end
-            elsif list_name !~ TrelloHelper::SPRINT_REGEXES
-              cards = trello.list_cards(list)
-              cards.each do |card|
-                labels = trello.card_labels(card)
-                label_names = labels.map{ |label| label.name }
-                label_names.each do |label_name|
-                  if ['blocked', 'performance', 'ux', 'community'].include?(label_name)
-                    label_data[label_name] = [] unless label_data[label_name]
-                    label_data[label_name] << [card, list_name, board]
-                  end
+                if include
+                  label_data[label_name] = [] unless label_data[label_name]
+                  label_data[label_name] << [card, list_name, board]
                 end
               end
             end
