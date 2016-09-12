@@ -168,9 +168,8 @@
             release_cards.each do |release_card|
               if !release_cards_history.delete(release_card[0].id)
                 added_to_release = true
-                break
               end
-            end unless added_to_release
+            end
           end
 %>
     <li><a href='#<%="#{state}-#{product ? "#{product}-": ''}#{release_name}"%>'><%=TrelloHelper::RELEASE_STATE_DISPLAY_NAME[state]%></a> (<%=release_cards.length%> cards)</li>
