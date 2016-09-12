@@ -99,6 +99,7 @@ trello = load_conf(TrelloHelper, CONFIG.trello, true)
 command :organize_release_cards do |c|
 
   c.option "--dry-run", "Show what changes would be made without actually making them"
+
   c.syntax = "#{name}"
   c.description = "Rearrange board list cards sorted by release"
   c.action do |args, options|
@@ -106,76 +107,95 @@ command :organize_release_cards do |c|
     trello.boards.values.each do |board|
       trello.board_lists(board).each do |list|
         labels = trello.board_labels(board)
-        if release_states.include? list.name
-
-          puts "\n*** Processing list #{list.name} in board #{trello.board(list.board_id).name}"
-          label_id_to_release_number = {}
-          label_id_to_product = {}
-          labels.each do |label|
-            if label.name =~ TrelloHelper::RELEASE_LABEL_REGEX
-              label_id_to_product[label.id] = $3 if $3
-              label_id_to_release_number[label.id] = Gem::Version.new($4) if $4
-            end
+        next unless release_states.include? list.name
+        puts "\n*** Processing list #{list.name} in board #{trello.board(list.board_id).name}"
+        label_id_to_release_number = {}
+        label_id_to_product = {}
+        # Build mapping of labels (by id) to products and release
+        # numbers. Products and release numbers are extracted from the
+        # labels name named like "targeted-product-release_number",
+        # e.g.:
+        #
+        #   targeted-rhelah-7.2.1
+        labels.each do |label|
+          if label.name =~ TrelloHelper::RELEASE_LABEL_REGEX
+            label_id_to_product[label.id] = $3 if $3
+            label_id_to_release_number[label.id] = Gem::Version.new($4) if $4
           end
-          products = label_id_to_product.values.uniq
-          list_cards = trello.list_cards(list).sort_by { |card| card.pos }
-          if options.dry_run
-            puts ""
-          end
-          release_cards = list_cards.select do |card|
+        end
+        # Build list of each unique product label segment
+        products = label_id_to_product.values.uniq
+        # list_cards contains the cards for this board, sorted by
+        # position (i.e. as they are displayed in the UI)
+        list_cards = trello.list_cards(list).sort_by { |card| card.pos }
+        if options.dry_run
+          puts ""
+        end
+        # Extract the list of cards bearing release labels
+        release_cards = list_cards.select do |card|
+          card_labels = trello.card_labels(card)
+          card_labels.any? { |label| label_id_to_release_number.include? label.id if !label.nil? }
+        end
+        # card_updates accumulates the cards to be repositioned and
+        # the associated position updates
+        card_updates = {}
+        # Sort cards in groups, according to which product they are
+        # labeled for
+        products.each do |product|
+          cards_by_pos = []
+          # Build list containing the subset of release_cards to be
+          # sorted - these are already sorted by position
+          release_cards.sort_by { |card| card.pos }.each do |card|
             card_labels = trello.card_labels(card)
-            card_labels.any? { |label| label_id_to_release_number.include? label.id if !label.nil? }
+            card_label = card_labels.find{ |label| label_id_to_release_number.include? label.id unless label.nil? }
+            next unless card_label
+            card_product = label_id_to_product[card_label.id]
+            card_release = label_id_to_release_number[card_label.id]
+            cards_by_pos << {:card => card, :release => card_release, :product => card_product, :pos => card.pos}
           end
-          card_updates = {}
-          products.each do |product|
-            cards_by_pos = []
-            release_cards.sort_by { |card| card.pos }.each do |card|
-              card_labels = trello.card_labels(card)
-              card_label = card_labels.find{ |label| label_id_to_release_number.include? label.id unless label.nil? }
-              next unless card_label
-              card_product = label_id_to_product[card_label.id]
-              card_release = label_id_to_release_number[card_label.id]
-              cards_by_pos << {:card => card, :release => card_release, :product => card_product, :pos => card.pos}
-            end
-            next if cards_by_pos.empty?
-            cards_by_release = []
-            cards_by_pos.each { |card| cards_by_release << card.dup }
-            cards_by_pos.sort_by! { |card| card[:pos] }
-            cards_by_release.sort_by! { |card| card[:release] }
-            cards_by_pos.each_with_index do |card, index|
-              if cards_by_release[index][:pos] != card[:pos]
-                cards_by_release[index][:pos] = card[:pos]
-                card_updates[cards_by_release[index][:card]] = cards_by_release[index]
-              end
+          # Don't sort an empty list
+          next if cards_by_pos.empty?
+          cards_by_release = []
+          # Copy the contents of cards_by_pos so we can sort and
+          # update cards_by_release[:pos] without also updating
+          # cards_by_pos[:pos]
+          cards_by_pos.each { |card| cards_by_release << card.dup }
+          cards_by_release.sort_by! { |card| card[:release] }
+          # Copy card positions to cards sorted by release
+          cards_by_pos.each_with_index do |card, index|
+            if cards_by_release[index][:pos] != card[:pos]
+              cards_by_release[index][:pos] = card[:pos]
+              card_updates[cards_by_release[index][:card]] = cards_by_release[index]
             end
           end
+        end
 
-          if !card_updates.empty?
-            card_release_prod_strings = {}
-            if options.dry_run
-              puts "Cards in list, pre-sort"
-              list_cards.each do |card|
-                if card_updates.include? card
-                  card_data = card_updates[card]
-                  card_release_prod_strings[card] = " release: #{card_data[:release]} product: #{card_data[:product]}"
-                end
-                puts "  #{card.name}, pos: #{card.pos}#{card_release_prod_strings[card]}"
-              end
+        # Cards are already sorted the way we'd like!
+        next if card_updates.empty?
+        card_release_prod_strings = {}
+        if options.dry_run
+          puts "Cards in list, pre-sort"
+          list_cards.each do |card|
+            if card_updates.include? card
+              card_data = card_updates[card]
+              card_release_prod_strings[card] = " release: #{card_data[:release]} product: #{card_data[:product]}"
             end
-            card_updates.each do |card, update_data|
-              card.pos = update_data[:pos]
-              trello.update_card(card) unless options.dry_run
-            end
-            if options.dry_run
-              list_cards.sort_by! { |card| card.pos }
-              puts "\nCards in list, sorted"
-              list_cards.each do |card|
-                if card_updates.include? card
-                  puts "* #{card.name}, pos: #{card.pos}#{card_release_prod_strings[card]}"
-                else
-                  puts "  #{card.name}, pos: #{card.pos}#{card_release_prod_strings[card]}"
-                end
-              end
+            puts "  #{card.name}, pos: #{card.pos}#{card_release_prod_strings[card]}"
+          end
+        end
+        card_updates.each do |card, update_data|
+          card.pos = update_data[:pos]
+          # Update the card position via trello API
+          trello.update_card(card) unless options.dry_run
+        end
+        if options.dry_run
+          list_cards.sort_by! { |card| card.pos }
+          puts "\nCards in list, sorted"
+          list_cards.each do |card|
+            if card_updates.include? card
+              puts "* #{card.name}, pos: #{card.pos}#{card_release_prod_strings[card]}"
+            else
+              puts "  #{card.name}, pos: #{card.pos}#{card_release_prod_strings[card]}"
             end
           end
         end
@@ -183,6 +203,7 @@ command :organize_release_cards do |c|
     end
   end
 end
+
 
 command :backup_org_boards do |c|
 
