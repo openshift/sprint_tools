@@ -12,7 +12,7 @@ class TrelloHelper
                 :current_release_labels, :default_product, :other_products,
                 :sprint_card
 
-  attr_accessor :boards, :trello_login_to_email, :cards_by_list, :labels_by_card, :list_by_card, :members_by_card, :checklists_by_card, :lists_by_board, :comments_by_card, :board_id_to_team_map
+  attr_accessor :boards, :trello_login_to_email, :cards_by_list, :labels_by_card, :list_by_card, :members_by_card, :members_by_id, :checklists_by_card, :lists_by_board, :comments_by_card, :board_id_to_team_map
 
   DEFAULT_RETRIES = 9
   DEFAULT_RETRY_SLEEP = 2
@@ -56,6 +56,10 @@ class TrelloHelper
 
   NEW_STATES = {
     'New' => true
+  }
+
+  REFERENCE_STATES = {
+    'References' => true
   }
 
   CURRENT_SPRINT_NOT_ACCEPTED_STATES = IN_PROGRESS_STATES.merge(COMPLETE_STATES)
@@ -113,6 +117,7 @@ class TrelloHelper
     @labels_by_card = {}
     @list_by_card = {}
     @members_by_card = {}
+    @members_by_id = {}
     @checklists_by_card = {}
     @lists_by_board = {}
     @comments_by_card = {}
@@ -494,8 +499,15 @@ class TrelloHelper
   def card_members(card)
     members = @members_by_card[card.id]
     return members if members
-    trello_do('card_members') do
-      members = card.members
+    members = card.member_ids.map do |member_id|
+      member = @members_by_id[member_id]
+      unless member
+        trello_do('find_member') do
+          member = Trello::Member.find(member_id)
+        end
+      end
+      @members_by_id[member_id] = member
+      member
     end
     @members_by_card[card.id] = members if members
     members

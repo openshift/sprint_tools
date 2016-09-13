@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title><%= trello.organization_name %> Developers Overview</title>
+<script type='text/javascript' src='https://ajax.googleapis.com/ajax/libs/jquery/1.8.1/jquery.min.js?ver=3.8.1'></script>
+<link href="https://netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css" type="text/css" rel="stylesheet" media="screen">
+<script src="https://netdna.bootstrapcdn.com/bootstrap/3.1.1/js/bootstrap.min.js"></script>
+<link href='https://fonts.googleapis.com/css?family=Open+Sans:400,300,600,800,700' rel='stylesheet' type='text/css'>
+<link href="stylesheets/trello.css" rel="stylesheet" type="text/css">
+<link rel="shortcut icon" href="favicon.ico" type="image/x-icon" />
+<meta name="viewport" content="width=device-width">
+<style type="text/css">
+
+.table>tbody>tr.in-progress>th {
+  background-color: #94cc75;
+  border-top: 1px solid #94cc75;
+}
+.table>tbody>tr.next>th {
+  background-color: #c4e3b3;
+  border-top: 1px solid #c4e3b3;
+}
+.table>tbody>tr.backlog>th {
+  background-color: #dbedfe;
+  border-top: 1px solid #dbedfe;
+}
+.table.table-rows>tbody>tr>th,
+.table.table-rows>tbody>tr>td {
+  padding: 15px;
+}
+
+
+</style>
+
+</head>
+
+<body>
+  <div class="navbar navbar-default navbar-fixed-top" role="navigation">
+      <div class="container">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <div class="brand" style="background: transparent url('<%=trello.logo%>') no-repeat left -5px; background-size: 200px auto">
+          </div>
+        </div>
+        <div class="navbar-collapse collapse">
+          <ul class="nav navbar-nav">
+              <% LINKS.each do |page_name, page_title|
+                if page_name != 'developers_overview' %>
+                  <li><a href='<%=page_name%>.html'><%=page_title%></a></li>
+                <%else%>
+                  <li><a class="active" href='<%=page_name%>.html'><%=page_title%></a></li>
+                <%end
+                end%>
+          </ul>
+        </div><!--/.nav-collapse -->
+      </div>
+    </div>
+
+  <div class="container">
+
+    <h2 class="visible-xs"><%= trello.organization_name %> Developers Overview</h2>
+
+<%
+      developer_data = {}
+      trello.teams.keys.map{ |team_name| team_name.to_s }.each do |team_name|
+        if team.to_s == team_name
+          developer_data[team_name] = {}
+          trello.team_boards(team_name).each do |board|
+            trello.board_lists(board, trello.max_lists_per_board).each do |list|
+              list_name = list.name
+              if list_name !~ TrelloHelper::SPRINT_REGEXES && !TrelloHelper::CURRENT_SPRINT_NOT_IN_PROGRESS_STATES.include?(list_name) && !TrelloHelper::NEW_STATES.include?(list_name) && !TrelloHelper::REFERENCE_STATES.include?(list_name) && !list.closed?
+                cards = trello.list_cards(list)
+                cards.each do |card|
+                  members = trello.card_members(card)
+                  member_names = members.collect{ |member| member.username } 
+                  members.each do |member|
+                    developer_data[team_name][member.username] = [] unless developer_data[team_name][member.username]
+                    developer_data[team_name][member.username] << [card, list_name, member_names - [member.username]]
+                  end
+                end
+              end
+            end
+          end
+        end
+      end
+
+%>
+<h2>Teams</h2>
+<ul>
+<%
+      trello.teams.keys.map{ |team_name| team_name.to_s }.each do |team_name|
+        if team.to_s == team_name
+%>
+  <li><%=team_name.upcase%></li>
+<%
+        else
+%>
+  <li><a href="developers_overview_<%=team_name%>.html"><%=team_name.upcase%></a></li>
+<%
+        end
+      end
+%>
+</ul>
+<%if team%>
+<h2>Team Members</h2>
+<ul>
+<%
+      developer_data.each do |team_name, member_data|
+        sorted_member_names = member_data.keys.sort_by{ |member_name| member_name}
+        sorted_member_names.each do |member_name|
+%>
+    <li><a href='#<%=member_name%>' style="text-transform:uppercase"><%=member_name%></a></li>
+<%
+        end
+      end
+%>
+</ul>
+<br />
+<hr>
+
+<%
+      developer_data.each do |team_name, member_data|
+%>
+<h3 class="anchor" id="<%=team_name%>"><%=team_name.upcase%></h3>
+<div class="container">
+<%
+        previous_member_name = nil
+        developer_sizing_totals = {}
+        sorted_member_names = member_data.keys.sort_by{ |member_name| member_name}
+        sorted_member_names.each do |member_name|
+          card_infos = member_data[member_name]
+%>
+<h5 class="anchor" id="<%=member_name%>"><%=member_name%></h5>
+<div class="container">
+<div class="table-responsive">
+<table class="table table-normal table-condensed">
+  <tr><th>Card</th><th>List</th><th>Other Members</th><th>Release(s)</th><th title="Sizing in Story Points (Developer Rolling Total)">Sizing<span class="pficon-help"></span></th></tr>
+<%
+          card_infos.each do |card_info|
+            card = card_info[0]
+            list_name = card_info[1]
+            other_member_names = card_info[2]
+
+            if previous_member_name != member_name
+              developer_sizing_totals[member_name] = 0 unless developer_sizing_totals[member_name]
+              previous_member_name = member_name
+            end
+
+            name = card.name.strip
+            sizing = nil
+            if name =~ /\((\d+|\?)\)(.*)/
+              sizing = $1.to_i
+              developer_sizing_totals[member_name] += sizing
+              name = $2
+            end
+
+            labels = trello.card_labels(card)
+            label_names = labels.map{ |label| label.name }
+            releases = []
+            label_names.each do |label_name|
+              if label_name =~ TrelloHelper::RELEASE_LABEL_REGEX
+                releases << [$3, label_name, $1, $4]
+              end
+            end
+%>
+<tr>
+<td><a href='<%=card.url%>'><%=name%></a></td>
+<td><%=list_name%></td>
+<td><%=other_member_names.map{ |member_name| "<a href='##{member_name}'>#{member_name}</a>" }.join(', ')%></td>
+<td><%releases.each_with_index do |release_info, index|
+        p = release_info[0]
+        label = release_info[1]
+        state = release_info[2]
+        release = release_info[3]
+        product_release_page = nil
+        if p
+          product_release_page = "releases_overview_#{p}.html##{state}-#{release}"
+        else
+          product_release_page = "releases_overview.html##{state}-#{release}"
+        end
+        separator = (index == releases.length - 1) ? '' : ', '
+%>
+<a href='<%=product_release_page%>'><%=label%></a><%=separator%>
+<%end%></td>
+<td title="Sizing in Story Points (Developer Rolling Total)" nowrap><%=sizing ? "#{sizing} (#{developer_sizing_totals[member_name]})" : ''%></td>
+</tr>
+<%
+            previous_member_name = member_name
+          end
+%>
+</table>
+</div>
+</div>
+<%
+      end
+%>
+</div>
+<%
+    end
+%>
+<%end%>
+  </div><!-- /container -->
+</body>
+</html>
