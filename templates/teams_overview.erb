@@ -236,7 +236,7 @@
 <div class="container">
 <div class="table-responsive">
 <table class="table table-normal table-condensed">
-  <tr><th title="Card Name">Scenario</th><th title="<%=position_title%>">Position<span class="pficon-help"></span></th><th title="Planned, In Progress, or Complete">Status<span class="pficon-help"></span></th><th title="Associated Epics">Epic(s)</th><th title="Additional Release(s)">Additional Release(s)</th><th title="Sizing in Story Points (Rolling Total)">Sizing<span class="pficon-help"></span></th></tr>
+  <tr><th title="Card Name">Scenario</th><th title="<%=position_title%>">Position<span class="pficon-help"></span></th><th title="Planned, In Progress, or Complete">Status<span class="pficon-help"></span></th><th title="Associated Epics">Epic(s)</th><th title="Additional Release(s)">Additional Release(s)</th><th>Members</th><th title="Sizing in Story Points (Rolling Total)">Sizing<span class="pficon-help"></span></th></tr>
 <%
           position = 0
           sizing_total = 0
@@ -305,6 +305,9 @@
                 status = 'In Progress (on_qe)'
               end
             end
+
+            members = trello.card_members(card)
+            member_names = members.collect{ |member| member.username }
 %>
 <tr>
 <td><div>
@@ -340,6 +343,7 @@
 %>
 <a href='<%="##{addtl_state}-#{p ? "#{p}-": ''}#{addtl_release}"%>'><%=label%></a><%=separator%>
 <%end%></td>
+<td><%=member_names.map{ |member_name| "<a href='developers_overview_#{team.to_s}.html##{member_name}'>#{member_name}</a>" }.join(', ')%></td>
 <td title="Sizing in Story Points (Rolling Total)" nowrap><%=sizing ? "#{sizing} (#{sizing_total})" : ''%></td>
 </tr>
 <%
