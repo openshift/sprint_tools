@@ -178,9 +178,9 @@
         release = release_info[3]
         product_release_page = nil
         if p
-          product_release_page = "releases_overview_#{p}.html##{state}-#{release}"
+          product_release_page = "teams_overview_#{team.to_s}.html##{state}-#{p}-#{release}"
         else
-          product_release_page = "releases_overview.html##{state}-#{release}"
+          product_release_page = "teams_overview_#{team.to_s}.html##{state}-#{release}"
         end
         separator = (index == releases.length - 1) ? '' : ', '
 %>
