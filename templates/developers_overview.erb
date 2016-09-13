@@ -138,10 +138,12 @@
         developer_sizing_totals = {}
         sorted_member_names = member_data.keys.sort_by{ |member_name| member_name}
         sorted_member_names.each do |member_name|
+          in_progress_sizing_total = 0
+          sizings_by_release = {} 
           card_infos = member_data[member_name]
           card_infos.sort_by!{ |card_info| card_info[3]}
 %>
-<h5 class="anchor" id="<%=member_name%>"><%=member_name%></h5>
+<h4 class="anchor" id="<%=member_name%>"><%=member_name%></h4>
 <div class="container">
 <div class="table-responsive">
 <table class="table table-normal table-condensed">
@@ -161,6 +163,7 @@
             sizing = nil
             if name =~ /\((\d+|\?)\)(.*)/
               sizing = $1.to_i
+              in_progress_sizing_total += sizing if TrelloHelper::IN_PROGRESS_STATES.include?(list_name)
               developer_sizing_totals[member_name] += sizing
               name = $2
             end
@@ -170,7 +173,14 @@
             releases = []
             label_names.each do |label_name|
               if label_name =~ TrelloHelper::RELEASE_LABEL_REGEX
-                releases << [$3, label_name, $1, $4]
+                product = $3
+                release = $4
+                if sizing
+                  release_key = product ? "#{product}-#{release}" : release
+                  sizings_by_release[release_key] = 0 unless sizings_by_release[release_key] 
+                  sizings_by_release[release_key] += sizing
+                end
+                releases << [product, label_name, $1, release]
               end
             end
 %>
@@ -178,21 +188,26 @@
 <td><a href='<%=card.url%>'><%=name%></a></td>
 <td><%=list_name%></td>
 <td><%=other_member_names.map{ |member_name| "<a href='##{member_name}'>#{member_name}</a>" }.join(', ')%></td>
-<td><%releases.each_with_index do |release_info, index|
-        p = release_info[0]
-        label = release_info[1]
-        state = release_info[2]
-        release = release_info[3]
-        product_release_page = nil
-        if p
-          product_release_page = "teams_overview_#{team.to_s}.html##{state}-#{p}-#{release}"
-        else
-          product_release_page = "teams_overview_#{team.to_s}.html##{state}-#{release}"
-        end
-        separator = (index == releases.length - 1) ? '' : ', '
+<td>
+<%
+            releases.each_with_index do |release_info, index|
+              p = release_info[0]
+              label = release_info[1]
+              state = release_info[2]
+              release = release_info[3]
+              product_release_page = nil
+              if p
+                product_release_page = "teams_overview_#{team.to_s}.html##{state}-#{p}-#{release}"
+              else
+                product_release_page = "teams_overview_#{team.to_s}.html##{state}-#{release}"
+              end
+              separator = (index == releases.length - 1) ? '' : ', '
 %>
 <a href='<%=product_release_page%>'><%=label%></a><%=separator%>
-<%end%></td>
+<%
+            end
+%>
+</td>
 <td title="Sizing in Story Points (Developer Rolling Total)" nowrap><%=sizing ? "#{sizing} (#{developer_sizing_totals[member_name]})" : ''%></td>
 </tr>
 <%
@@ -202,10 +217,26 @@
 </table>
 </div>
 </div>
+<div class="container">
+<h5 class="anchor" id="<%="#{member_name}"%>_totals"><%="Totals:"%></h5>
+<div class="container">
+In Progress: <%=in_progress_sizing_total%><br />
+<%
+          sizings_by_release.each do |release, sizing_total|
+%>
+<%=release%>: <%=sizing_total%><br />
+<%
+          end
+%>
+</div>
+</div>
+<br/>
+<br/>
+<br/>
+<br/>
 <%
       end
 %>
-</div>
 <%
     end
 %>
@@ -215,7 +246,7 @@
     <br/>
     <br/>
     <hr>
-    <i>Generated At: <%=Time.now.strftime("%I:%M%p %Z")%></i>
+    <i>Generated at <%=Time.now.strftime("%I:%M%p %Z")%></i>
   </div><!-- /container -->
 </body>
 </html>
