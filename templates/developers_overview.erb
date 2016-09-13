@@ -73,13 +73,19 @@
             trello.board_lists(board, trello.max_lists_per_board).each do |list|
               list_name = list.name
               if list_name !~ TrelloHelper::SPRINT_REGEXES && !TrelloHelper::CURRENT_SPRINT_NOT_IN_PROGRESS_STATES.include?(list_name) && !TrelloHelper::NEW_STATES.include?(list_name) && !TrelloHelper::REFERENCE_STATES.include?(list_name) && !list.closed?
+                pos_adjustment = TrelloHelper::LIST_POSITION_ADJUSTMENT[list_name]
+                if TrelloHelper::ACCEPTED_STATES.include?(list_name) || list_name =~ TrelloHelper::SPRINT_REGEXES
+                  pos_adjustment = 0
+                end
+                pos_adjustment = TrelloHelper::MAX_LIST_POSITION_ADJUSTMENT unless pos_adjustment
                 cards = trello.list_cards(list)
-                cards.each do |card|
+                cards.each_with_index do |card, index|
+                  pos = index + pos_adjustment
                   members = trello.card_members(card)
-                  member_names = members.collect{ |member| member.username } 
+                  member_names = members.collect{ |member| member.username }
                   members.each do |member|
                     developer_data[team_name][member.username] = [] unless developer_data[team_name][member.username]
-                    developer_data[team_name][member.username] << [card, list_name, member_names - [member.username]]
+                    developer_data[team_name][member.username] << [card, list_name, member_names - [member.username], pos]
                   end
                 end
               end
@@ -113,7 +119,7 @@
         sorted_member_names = member_data.keys.sort_by{ |member_name| member_name}
         sorted_member_names.each do |member_name|
 %>
-    <li><a href='#<%=member_name%>' style="text-transform:uppercase"><%=member_name%></a></li>
+    <li><a href='#<%=member_name%>'><%=member_name%></a></li>
 <%
         end
       end
@@ -133,6 +139,7 @@
         sorted_member_names = member_data.keys.sort_by{ |member_name| member_name}
         sorted_member_names.each do |member_name|
           card_infos = member_data[member_name]
+          card_infos.sort_by!{ |card_info| card_info[3]}
 %>
 <h5 class="anchor" id="<%=member_name%>"><%=member_name%></h5>
 <div class="container">
