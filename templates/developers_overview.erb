@@ -130,10 +130,6 @@
 
 <%
       developer_data.each do |team_name, member_data|
-%>
-<h3 class="anchor" id="<%=team_name%>"><%=team_name.upcase%></h3>
-<div class="container">
-<%
         previous_member_name = nil
         developer_sizing_totals = {}
         sorted_member_names = member_data.keys.sort_by{ |member_name| member_name}
@@ -143,7 +139,7 @@
           card_infos = member_data[member_name]
           card_infos.sort_by!{ |card_info| card_info[3]}
 %>
-<h4 class="anchor" id="<%=member_name%>"><%=member_name%></h4>
+<h3 class="anchor" id="<%=member_name%>"><%=member_name%></h3>
 <div class="container">
 <div class="table-responsive">
 <table class="table table-normal table-condensed">
@@ -218,7 +214,7 @@
 </div>
 </div>
 <div class="container">
-<h5 class="anchor" id="<%="#{member_name}"%>_totals"><%="Totals:"%></h5>
+<h4 class="anchor" id="<%="#{member_name}"%>_totals"><%="Totals:"%></h4>
 <div class="container">
 In Progress: <%=in_progress_sizing_total%><br />
 <%
@@ -235,9 +231,7 @@ In Progress: <%=in_progress_sizing_total%><br />
 <br/>
 <br/>
 <%
-      end
-%>
-<%
+     end
     end
 %>
 <%end%>
