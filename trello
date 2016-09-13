@@ -44,8 +44,8 @@ $tag_to_label_color = {
 LINKS = {'roadmap_overview' => 'Roadmap',
          'releases_overview' => 'Releases',
          'teams_overview' => 'Teams',
-         'sprints_overview' => 'Sprints',
          'developers_overview' => 'Developers',
+         'sprints_overview' => 'Sprints',
          'labels_overview' => 'Labels',
          'sprint_schedule' => 'Sprint Schedule'}
 
