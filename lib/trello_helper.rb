@@ -29,6 +29,8 @@ class TrelloHelper
 
   RELEASE_LABEL_REGEX = /^(proposed|targeted|committed)-((\w*)-)*((\d+)(.(\d+))?(.(\d+))?(.(\d+))*)/
 
+  STAR_LABEL_REGEX = /^([1-5])star$/
+
   ACCEPTED_STATES = {
     'Accepted' => true,
     'Done' => true

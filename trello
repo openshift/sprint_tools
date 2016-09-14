@@ -749,6 +749,7 @@ command :update do |c|
                         minor = $7.to_i
                         patch = $9.to_i
                         hotfix = $11.to_i
+
                         card_releases[product] = [] unless card_releases[product]
                         card_releases[product] << [label, state, release, major, minor, patch, hotfix]
                       end
@@ -817,16 +818,26 @@ command :update do |c|
               accepted = epic_story[5]
               next_card_releases = epic_story[6]
 
+              stars = ''
+              card_labels = trello.card_labels(card)
+              card_labels.each do |label|
+                if label.name =~ TrelloHelper::STAR_LABEL_REGEX
+                  star_level = $1.to_i
+                  stars = ' ' + star_level * ':star:'
+                  break
+                end
+              end
+
               if !next_card_releases.empty?
                 next_card_releases.each do |card_release|
                   cl = trello.create_checklist(epic, card_release)
-                  trello.checklist_add_item(cl, "[#{card.name}](#{card.url}) (#{list.name}) (#{board.name})", accepted, 'bottom')
+                  trello.checklist_add_item(cl, "[#{card.name}](#{card.url}) (#{list.name}) (#{board.name})#{stars}", accepted, 'bottom')
                 end
               else
                 stories_checklist = trello.checklist(epic, checklist_name)
                 if stories_checklist
                   puts "Adding #{card.url}"
-                  trello.checklist_add_item(stories_checklist, "[#{card.name}](#{card.url}) (#{list.name}) (#{board.name})", accepted, 'bottom')
+                  trello.checklist_add_item(stories_checklist, "[#{card.name}](#{card.url}) (#{list.name}) (#{board.name})#{stars}", accepted, 'bottom')
                 end
               end
             end
