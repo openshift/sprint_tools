@@ -823,7 +823,7 @@ command :update do |c|
               card_labels.each do |label|
                 if label.name =~ TrelloHelper::STAR_LABEL_REGEX
                   star_level = $1.to_i
-                  stars = ' ' + star_level * ':star:'
+                  stars = ' ' + (':star:' * star_level)
                   break
                 end
               end
