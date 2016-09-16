@@ -135,6 +135,7 @@
         sorted_member_names = member_data.keys.sort_by{ |member_name| member_name}
         sorted_member_names.each do |member_name|
           in_progress_sizing_total = 0
+          next_sizing_total = 0
           sizings_by_release = {} 
           card_infos = member_data[member_name]
           card_infos.sort_by!{ |card_info| card_info[3]}
@@ -160,6 +161,7 @@
             if name =~ /\((\d+|\?)\)(.*)/
               sizing = $1.to_i
               in_progress_sizing_total += sizing if TrelloHelper::IN_PROGRESS_STATES.include?(list_name)
+              next_sizing_total += sizing if TrelloHelper::NEXT_STATES.include?(list_name)
               developer_sizing_totals[member_name] += sizing
               name = $2
             end
@@ -217,6 +219,7 @@
 <h4 class="anchor" id="<%="#{member_name}"%>_totals"><%="Totals:"%></h4>
 <div class="container">
 In Progress: <%=in_progress_sizing_total%><br />
+Next: <%=next_sizing_total%><br />
 <%
           sizings_by_release.each do |release, sizing_total|
 %>
