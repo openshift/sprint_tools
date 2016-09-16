@@ -160,8 +160,11 @@
             sizing = nil
             if name =~ /\((\d+|\?)\)(.*)/
               sizing = $1.to_i
-              in_progress_sizing_total += sizing if TrelloHelper::IN_PROGRESS_STATES.include?(list_name)
-              next_sizing_total += sizing if TrelloHelper::NEXT_STATES.include?(list_name)
+              if TrelloHelper::IN_PROGRESS_STATES.include?(list_name)
+                in_progress_sizing_total += sizing
+              elsif TrelloHelper::NEXT_STATES.include?(list_name)
+                next_sizing_total += sizing
+              end
               developer_sizing_totals[member_name] += sizing
               name = $2
             end
