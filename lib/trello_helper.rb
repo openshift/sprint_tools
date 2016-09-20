@@ -580,6 +580,7 @@ class TrelloHelper
                   end
 
                   marker_card_tags = card.name.scan(/\[[^\]]+\]/)
+                  marker_card_tags.delete_if{ |tag| card_tags.include?("epic-#{tag[1..-2]}") }
                   checklist_name = (marker_card_tags.include?(FUTURE_TAG) || card_labels.map{|l| l.name }.include?(FUTURE_LABEL)) ? FUTURE_RELEASE : UNASSIGNED_RELEASE
                   card_tags += marker_card_tags
 
