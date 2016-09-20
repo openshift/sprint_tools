@@ -103,6 +103,8 @@ class TrelloHelper
   UNASSIGNED_RELEASE = "Unassigned Release"
   FUTURE_RELEASE = "Future Release"
 
+  NONE_CHECKLIST_NAME = 'Tags without Epics'
+
   def initialize(opts)
     opts.each do |k,v|
       send("#{k}=",v)
@@ -426,6 +428,12 @@ class TrelloHelper
     create_checklist(epic_card, FUTURE_RELEASE)
   end
 
+  def clear_checklist(cl)
+    cl.items.each do |item|
+      checklist_delete_item(cl, item)
+    end
+  end
+
   def create_checklist(card, checklist_name)
     retry_count = 0
     cl = checklist(card, checklist_name)
@@ -455,19 +463,21 @@ class TrelloHelper
         releases << label_name
       end
     end
-    update_roadmaps(roadmap_boards, boards, releases)
+    roadmap_tag_to_epics = tag_to_epics
+    update_roadmaps('roadmap', roadmap_boards, boards, releases, roadmap_tag_to_epics)
     teams.each do |team, team_map|
       team_boards_map = team_boards_map(team_map)
       team_boards = {}
       team_boards_map.each do |b_name, b_id|
         team_boards[b_id] = boards[b_id]
       end
-      update_roadmaps(team_boards.values, team_boards, releases, false, false)
+      update_roadmaps(team, team_boards.values, team_boards, releases, roadmap_tag_to_epics, false, false)
     end
   end
 
-  def update_roadmaps(rm_boards, team_boards, releases, include_accepted=true, include_board_name_in_epic=true)
+  def update_roadmaps(team_name, rm_boards, team_boards, releases, roadmap_tag_to_epics, include_accepted=true, include_board_name_in_epic=true)
     t_to_epics = tag_to_epics(rm_boards)
+    tags_without_epics = {}
     rm_boards.each do |roadmap_board|
       epic_lists = epic_lists(roadmap_board)
       tag_to_epic = {}
@@ -475,14 +485,36 @@ class TrelloHelper
         list_cards(epic_list).each do |epic_card|
           #rename_checklist(epic_card, "Scenarios", UNASSIGNED_RELEASE)
           #rename_checklist(epic_card, "Future Scenarios", FUTURE_RELEASE)
+          epic_tags = {}
           card_labels(epic_card).each do |label|
             if label.name.start_with? 'epic-'
               tag_to_epic[label.name] = epic_card
+              epic_tags[label.name] = true
             end
           end
           epic_card.name.scan(/\[[^\]]+\]/).each do |tag|
             if tag != FUTURE_TAG
               tag_to_epic[tag] = epic_card
+              epic_tags[tag] = true
+            end
+          end
+          unless team_name == 'roadmap'
+            global_epics_to_link = {}
+            epic_tags.each_key do |tag|
+              global_epic_cards = roadmap_tag_to_epics[tag]
+              if global_epic_cards
+                global_epic_cards.each do |global_epic_card|
+                  global_roadmap_board = board(global_epic_card.board_id)
+                  if roadmap_board.prefs['permissionLevel'] == 'org' || global_roadmap_board.prefs['permissionLevel'] == 'public'
+                    global_epics_to_link[global_epic_card.short_url] = true unless epic_card.desc.include?(global_epic_card.short_url)
+                  end
+                end
+              end
+            end
+            unless global_epics_to_link.empty?
+              epic_card.desc = epic_card.desc + "\n\n" + global_epics_to_link.keys.map{ |short_url| "Parent Epic: #{short_url}"}.join("\n")
+              puts "Adding parent epic(s) to local epic: #{epic_card.short_url}"
+              update_card(epic_card)
             end
           end
         end
@@ -493,7 +525,7 @@ class TrelloHelper
       (1..2).each do |accepted_pass|
         break if accepted_pass == 2 && !include_accepted
         team_boards.each do |board_id, board|
-          if roadmap_board.prefs['permissionLevel'] == 'org' || roadmap_board.prefs['permissionLevel'] == board.prefs['permissionLevel']
+          if roadmap_board.prefs['permissionLevel'] == 'org' || (roadmap_board.prefs['permissionLevel'] == board.prefs['permissionLevel'])
             puts "\nBoard Name: #{board.name}"
             all_lists = board_lists(board)
             new_lists = []
@@ -584,6 +616,8 @@ class TrelloHelper
                   checklist_name = (marker_card_tags.include?(FUTURE_TAG) || card_labels.map{|l| l.name }.include?(FUTURE_LABEL)) ? FUTURE_RELEASE : UNASSIGNED_RELEASE
                   card_tags += marker_card_tags
 
+                  card_tags << '[none]' if card_tags.empty?
+
                   card_tags.each do |card_tag|
                     epic = tag_to_epic[card_tag]
                     if epic
@@ -591,11 +625,22 @@ class TrelloHelper
                         epic_stories_by_epic[epic.id] = [] unless epic_stories_by_epic[epic.id]
                         epic_stories_by_epic[epic.id] << [epic, card, list, board, checklist_name, accepted, next_card_releases]
                       end
+                    else
+                      tags_without_epics[card_tag] = true unless team_name == 'roadmap'
                     end
                   end
                 end
               end
             end
+          end
+        end
+        puts "\n#{team_name.upcase} tags without a corresponding epic: #{tags_without_epics.keys.join(', ')}" unless team_name == 'roadmap'
+        none_epic_card = tag_to_epic['[none]']
+        if none_epic_card
+          tags_without_epics_checklist = create_checklist(none_epic_card, NONE_CHECKLIST_NAME)
+          clear_checklist(tags_without_epics_checklist)
+          tags_without_epics.keys.each do |tag|
+            checklist_add_item(tags_without_epics_checklist, tag, false, 'bottom')
           end
         end
       end
@@ -759,6 +804,12 @@ class TrelloHelper
     end
   end
 
+  def update_card(card)
+    trello_do('update_card') do
+      card.save
+    end
+  end
+
   def list_checklists(card)
     checklists = @checklists_by_card[card.id]
     return checklists if checklists
@@ -887,7 +938,15 @@ class TrelloHelper
   end
 
   def board(board_id)
-    boards[board_id]
+    b = boards[board_id]
+    unless b
+      if board_id == public_roadmap_id
+        b = public_roadmap_board
+      elsif board_id == roadmap_id
+        b = roadmap_board
+      end
+    end
+    b
   end
 
   def release_cards(product, release)

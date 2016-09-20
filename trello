@@ -633,7 +633,7 @@ command :convert_markers_to_labels do |c|
                 card_name = card_name.sub card_tag, ''
                 card.name = card_name
                 puts "New card name #{card.name}"
-                card.save
+                trello.update_card(card)
               end
             end
           end
