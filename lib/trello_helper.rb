@@ -304,7 +304,7 @@ class TrelloHelper
             end
           end
           epic_card.name.scan(/\[[^\]]+\]/).each do |tag|
-            if tag != FUTURE_TAG && !tag_to_epics["epic-#{tag[1..-2]}"]
+            if tag != FUTURE_TAG
               tag_to_epics[tag] = [] unless tag_to_epics[tag]
               tag_to_epics[tag] << epic_card
             end
@@ -474,6 +474,8 @@ class TrelloHelper
       tag_to_epic = {}
       epic_lists.each do |epic_list|
         list_cards(epic_list).each do |epic_card|
+          #rename_checklist(epic_card, "Scenarios", UNASSIGNED_RELEASE)
+          #rename_checklist(epic_card, "Future Scenarios", FUTURE_RELEASE)
           card_labels(epic_card).each do |label|
             if label.name.start_with? 'epic-'
               tag_to_epic[label.name] = epic_card
@@ -579,7 +581,6 @@ class TrelloHelper
                   end
 
                   marker_card_tags = card.name.scan(/\[[^\]]+\]/)
-                  marker_card_tags.delete_if{ |tag| card_tags.include?("epic-#{tag}") }
                   checklist_name = (marker_card_tags.include?(FUTURE_TAG) || card_labels.map{|l| l.name }.include?(FUTURE_LABEL)) ? FUTURE_RELEASE : UNASSIGNED_RELEASE
                   card_tags += marker_card_tags
 
