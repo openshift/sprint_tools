@@ -18,8 +18,8 @@ class TrelloHelper
   DEFAULT_RETRY_SLEEP = 2
   DEFAULT_RETRY_INC = 1
 
-  FUTURE_TAG = '[future]'
   FUTURE_LABEL = 'future'
+  FUTURE_TAG = "[#{FUTURE_LABEL}]"
 
   STAGE1_DEP_LABEL = 'stage1-dep'
 
@@ -306,6 +306,7 @@ class TrelloHelper
             end
           end
           epic_card.name.scan(/\[[^\]]+\]/).each do |tag|
+            tag.downcase!
             if tag != FUTURE_TAG
               tag_to_epics[tag] = [] unless tag_to_epics[tag]
               tag_to_epics[tag] << epic_card
@@ -493,6 +494,7 @@ class TrelloHelper
             end
           end
           epic_card.name.scan(/\[[^\]]+\]/).each do |tag|
+            tag.downcase!
             if tag != FUTURE_TAG
               tag_to_epic[tag] = epic_card
               epic_tags[tag] = true
@@ -612,6 +614,7 @@ class TrelloHelper
                   end
 
                   marker_card_tags = card.name.scan(/\[[^\]]+\]/)
+                  marker_card_tags.each{ |tag| tag.downcase! }
                   marker_card_tags.delete_if{ |tag| card_tags.include?("epic-#{tag[1..-2]}") }
                   checklist_name = (marker_card_tags.include?(FUTURE_TAG) || card_labels.map{|l| l.name }.include?(FUTURE_LABEL)) ? FUTURE_RELEASE : UNASSIGNED_RELEASE
                   card_tags += marker_card_tags
@@ -626,7 +629,7 @@ class TrelloHelper
                         epic_stories_by_epic[epic.id] << [epic, card, list, board, checklist_name, accepted, next_card_releases]
                       end
                     else
-                      tags_without_epics[card_tag] = true unless team_name == 'roadmap'
+                      tags_without_epics[card_tag] = true unless roadmap_tag_to_epics[card_tag] || team_name == 'roadmap'
                     end
                   end
                 end

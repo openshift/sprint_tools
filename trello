@@ -617,6 +617,7 @@ command :convert_markers_to_labels do |c|
             card_name = card.name
             card_tags = card_name.scan(/\[[^\]]+\]/)
             card_tags.each do |card_tag|
+              card_tag.downcase!
               if card_tag == TrelloHelper::FUTURE_TAG
                 epic_label_name = TrelloHelper::FUTURE_LABEL
               else
