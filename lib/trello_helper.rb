@@ -291,9 +291,9 @@ class TrelloHelper
     roadmap_label_colors_by_name
   end
 
-  def tag_to_epics
+  def tag_to_epics(rm_boards=roadmap_boards)
     tag_to_epics = {}
-    roadmap_boards.each do |roadmap_board|
+    rm_boards.each do |roadmap_board|
       epic_lists = epic_lists(roadmap_board)
       epic_lists.each do |epic_list|
         list_cards(epic_list).each do |epic_card|
@@ -449,26 +449,25 @@ class TrelloHelper
   end
 
   def update_roadmap
-    update_roadmaps(roadmap_boards, boards)
-    teams.each do |team, team_map|
-      team_boards_map = team_boards_map(team_map)
-      team_boards = {}
-      team_boards_map.each do |b_name, b_id|
-        team_boards[b_id] = boards[b_id]
-      end
-      update_roadmaps(team_boards.values, team_boards, false, false)
-    end
-  end
-
-  def update_roadmaps(rm_boards, team_boards, include_accepted=true, include_board_name_in_epic=true)
     releases = []
     roadmap_label_colors_by_name.each_key do |label_name|
       if label_name =~ RELEASE_LABEL_REGEX
         releases << label_name
       end
     end
+    update_roadmaps(roadmap_boards, boards, releases)
+    teams.each do |team, team_map|
+      team_boards_map = team_boards_map(team_map)
+      team_boards = {}
+      team_boards_map.each do |b_name, b_id|
+        team_boards[b_id] = boards[b_id]
+      end
+      update_roadmaps(team_boards.values, team_boards, releases, false, false)
+    end
+  end
 
-    t_to_epics = tag_to_epics
+  def update_roadmaps(rm_boards, team_boards, releases, include_accepted=true, include_board_name_in_epic=true)
+    t_to_epics = tag_to_epics(rm_boards)
     rm_boards.each do |roadmap_board|
       epic_lists = epic_lists(roadmap_board)
       tag_to_epic = {}
