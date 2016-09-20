@@ -331,9 +331,13 @@ class TrelloHelper
     return lists
   end
 
+  def epic_list_names
+    roadmap_board_lists || ['Epic Backlog', 'Card Groups']
+  end
+
   def epic_lists(board)
     lists = []
-    target_boards = roadmap_board_lists || ['Epic Backlog']
+    target_boards = epic_list_names
     board_lists(board).each do |l|
       if target_boards.include?(l.name)
         lists.push(l)
@@ -409,7 +413,7 @@ class TrelloHelper
     checklists = list_checklists(epic_card)
     checklists.each do |cl|
       cl.items.each do |item|
-        if item.name =~ /\[.*\]\(https?:\/\/trello\.com\/[^\)]+\) \([^\)]+\) \([^\)]+\)/
+        if item.name =~ /\[.*\]\(https?:\/\/trello\.com\/[^\)]+\) \([^\)]+\)/
           begin
             checklist_delete_item(cl, item)
           rescue => e
@@ -442,6 +446,219 @@ class TrelloHelper
       end
     end
     cl
+  end
+
+  def update_roadmap
+    update_roadmaps(roadmap_boards, boards)
+    teams.each do |team, team_map|
+      team_boards_map = team_boards_map(team_map)
+      team_boards = {}
+      team_boards_map.each do |b_name, b_id|
+        team_boards[b_id] = boards[b_id]
+      end
+      update_roadmaps(team_boards.values, team_boards, false, false)
+    end
+  end
+
+  def update_roadmaps(rm_boards, team_boards, include_accepted=true, include_board_name_in_epic=true)
+    releases = []
+    roadmap_label_colors_by_name.each_key do |label_name|
+      if label_name =~ RELEASE_LABEL_REGEX
+        releases << label_name
+      end
+    end
+
+    t_to_epics = tag_to_epics
+    rm_boards.each do |roadmap_board|
+      epic_lists = epic_lists(roadmap_board)
+      tag_to_epic = {}
+      epic_lists.each do |epic_list|
+        list_cards(epic_list).each do |epic_card|
+          card_labels(epic_card).each do |label|
+            if label.name.start_with? 'epic-'
+              tag_to_epic[label.name] = epic_card
+            end
+          end
+          epic_card.name.scan(/\[[^\]]+\]/).each do |tag|
+            if tag != FUTURE_TAG
+              tag_to_epic[tag] = epic_card
+            end
+          end
+        end
+      end
+      puts 'Tags:'
+      puts tag_to_epic.keys.pretty_inspect
+      epic_stories_by_epic = {}
+      (1..2).each do |accepted_pass|
+        break if accepted_pass == 2 && !include_accepted
+        team_boards.each do |board_id, board|
+          if roadmap_board.prefs['permissionLevel'] == 'org' || roadmap_board.prefs['permissionLevel'] == board.prefs['permissionLevel']
+            puts "\nBoard Name: #{board.name}"
+            all_lists = board_lists(board)
+            new_lists = []
+            backlog_lists = []
+            next_lists = []
+            in_progress_lists = []
+            complete_lists = []
+            accepted_lists = []
+            previous_sprint_lists = []
+            other_lists = []
+            all_lists.each do |l|
+              if NEW_STATES.include?(l.name)
+                new_lists << l
+              elsif BACKLOG_STATES.include?(l.name)
+                backlog_lists << l
+              elsif NEXT_STATES.include?(l.name)
+                next_lists << l
+              elsif IN_PROGRESS_STATES.include?(l.name)
+                in_progress_lists << l
+              elsif COMPLETE_STATES.include?(l.name)
+                complete_lists << l
+              elsif ACCEPTED_STATES.include?(l.name)
+                accepted_lists << l
+              elsif l.name =~ SPRINT_REGEXES
+                previous_sprint_lists << l
+              elsif !epic_list_names.include?(l.name)
+                other_lists << l
+              end
+            end
+
+            lists = accepted_lists + complete_lists + in_progress_lists + next_lists + backlog_lists + new_lists
+
+            previous_sprint_lists = previous_sprint_lists.sort_by { |l| [l.name =~ SPRINT_REGEXES ? $1.to_i : 9999999, $3.to_i, $4.to_i, $6.to_i, $8.to_i]}
+            lists += previous_sprint_lists
+            lists += other_lists
+            lists.each do |list|
+              accepted = (list.name.match(SPRINT_REGEXES) || ACCEPTED_STATES.include?(list.name)) ? true : false
+              next if (accepted && accepted_pass == 1) || (!accepted && accepted_pass == 2)
+              cards = list_cards(list)
+              if !cards.empty?
+                puts "\n  List: #{list.name}  (#cards: #{cards.length})"
+                cards.each_with_index do |card, index|
+                  card_tags = []
+                  card_labels = card_labels(card)
+                  next_card_releases = []
+                  card_releases = {}
+                  card_labels.each do |label|
+                    if label.name.start_with? 'epic-'
+                      card_tags << label.name
+                    elsif releases.include?(label.name) && label.name =~ RELEASE_LABEL_REGEX
+                      state = $1
+                      product = $3
+                      release = $4
+                      major = $5.to_i
+                      minor = $7.to_i
+                      patch = $9.to_i
+                      hotfix = $11.to_i
+
+                      card_releases[product] = [] unless card_releases[product]
+                      card_releases[product] << [label, state, release, major, minor, patch, hotfix]
+                    end
+                  end
+
+                  unless card_releases.empty?
+                    card_releases.each do |product, product_card_releases|
+                      if product_card_releases.length > 1
+                        product_card_releases.sort_by!{ |release| [release[3], release[4], release[5], release[6], RELEASE_STATE_ORDER[release[1]]] }
+                        first_release = product_card_releases.first
+                        previous_release = first_release[2]
+                        lowest_state_order = RELEASE_STATE_ORDER[first_release[1]]
+                        product_card_releases[1..-1].each do |release|
+                          state_order = RELEASE_STATE_ORDER[release[1]]
+                          if previous_release == release[2] || lowest_state_order <= state_order
+                            label = release[0]
+                            puts "Removing lower priority release #{label.name} from #{card.name} (#{card.url})"
+                            card.remove_label(label)
+                          end
+                          lowest_state_order = state_order if state_order < lowest_state_order
+                          previous_release = release[2]
+                        end
+                      end
+                      next_card_releases << product_card_releases.first[0].name
+                    end
+                  end
+
+                  marker_card_tags = card.name.scan(/\[[^\]]+\]/)
+                  marker_card_tags.delete_if{ |tag| card_tags.include?("epic-#{tag}") }
+                  checklist_name = (marker_card_tags.include?(FUTURE_TAG) || card_labels.map{|l| l.name }.include?(FUTURE_LABEL)) ? FUTURE_RELEASE : UNASSIGNED_RELEASE
+                  card_tags += marker_card_tags
+
+                  card_tags.each do |card_tag|
+                    epic = tag_to_epic[card_tag]
+                    if epic
+                      if (roadmap_board.prefs['permissionLevel'] == 'org' && t_to_epics[card_tag].length == 1) || (roadmap_board.prefs['permissionLevel'] == board.prefs['permissionLevel'])
+                        epic_stories_by_epic[epic.id] = [] unless epic_stories_by_epic[epic.id]
+                        epic_stories_by_epic[epic.id] << [epic, card, list, board, checklist_name, accepted, next_card_releases]
+                      end
+                    end
+                  end
+                end
+              end
+            end
+          end
+        end
+      end
+
+      epic_lists.each do |epic_list|
+        list_cards(epic_list).each do |epic_card|
+          unless epic_stories_by_epic[epic_card.id]
+            clear_epic_refs(epic_card)
+          end
+        end
+      end
+      epic_stories_by_epic.each_value do |epic_stories|
+        first_epic_story = epic_stories.first
+        if first_epic_story
+          clear_epic_refs(first_epic_story[0])
+          puts "\nAdding cards to #{first_epic_story[0].name}:"
+          epic_stories.each do |epic_story|
+            epic = epic_story[0]
+            card = epic_story[1]
+            list = epic_story[2]
+            board = epic_story[3]
+            checklist_name = epic_story[4]
+            accepted = epic_story[5]
+            next_card_releases = epic_story[6]
+
+            stars = ''
+            card_labels = card_labels(card)
+            card_labels.each do |label|
+              if label.name =~ STAR_LABEL_REGEX
+                star_level = $1.to_i
+                stars = ' ' + (':star:' * star_level)
+                break
+              end
+            end
+
+            checklist_item_name = nil
+            if include_board_name_in_epic
+              checklist_item_name = "[#{card.name}](#{card.url}) (#{list.name}) (#{board.name})#{stars}"
+            else
+              checklist_item_name = "[#{card.name}](#{card.url}) (#{list.name})#{stars}"
+            end
+
+            if !next_card_releases.empty?
+              next_card_releases.each do |card_release|
+                cl = create_checklist(epic, card_release)
+                checklist_add_item(cl, checklist_item_name, accepted, 'bottom')
+              end
+            else
+              stories_checklist = checklist(epic, checklist_name)
+              if stories_checklist
+                puts "Adding #{card.url}"
+                checklist_add_item(stories_checklist, checklist_item_name, accepted, 'bottom')
+              end
+            end
+          end
+        end
+      end
+      # Delete empty epic checklists
+      epic_lists.each do |epic_list|
+        list_cards(epic_list).each do |epic_card|
+          delete_empty_epic_checklists(epic_card)
+        end
+      end
+    end
   end
 
   def rename_checklist(card, old_checklist_name, new_checklist_name)
