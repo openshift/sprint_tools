@@ -45,6 +45,7 @@
       cross_epic_remaining_sizing_total = 0
       cross_epic_card_names = {}
       tag_to_epics = trello.tag_to_epics
+      tag_to_epics.delete_if{ |tag, epics| tag_to_epics.include?("epic-#{tag[1..-2]}") }
 %>
     <h2>Table of Contents</h2>
     <ol>
