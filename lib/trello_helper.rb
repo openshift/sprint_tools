@@ -105,6 +105,8 @@ class TrelloHelper
 
   NONE_CHECKLIST_NAME = 'Tags without Epics'
 
+  ROADMAP = 'roadmap'
+
   def initialize(opts)
     opts.each do |k,v|
       send("#{k}=",v)
@@ -465,7 +467,7 @@ class TrelloHelper
       end
     end
     roadmap_tag_to_epics = tag_to_epics
-    update_roadmaps('roadmap', roadmap_boards, boards, releases, roadmap_tag_to_epics)
+    update_roadmaps(ROADMAP, roadmap_boards, boards, releases, roadmap_tag_to_epics)
     teams.each do |team, team_map|
       team_boards_map = team_boards_map(team_map)
       team_boards = {}
@@ -500,7 +502,7 @@ class TrelloHelper
               epic_tags[tag] = true
             end
           end
-          unless team_name == 'roadmap'
+          unless team_name == ROADMAP
             global_epics_to_link = {}
             epic_tags.each_key do |tag|
               global_epic_cards = roadmap_tag_to_epics[tag]
@@ -629,7 +631,7 @@ class TrelloHelper
                         epic_stories_by_epic[epic.id] << [epic, card, list, board, checklist_name, accepted, next_card_releases]
                       end
                     else
-                      tags_without_epics[card_tag] = true unless roadmap_tag_to_epics[card_tag] || team_name == 'roadmap'
+                      tags_without_epics[card_tag] = true unless roadmap_tag_to_epics[card_tag] || team_name == ROADMAP
                     end
                   end
                 end
@@ -637,7 +639,7 @@ class TrelloHelper
             end
           end
         end
-        puts "\n#{team_name.upcase} tags without a corresponding epic: #{tags_without_epics.keys.join(', ')}" unless team_name == 'roadmap'
+        puts "\n#{team_name.upcase} tags without a corresponding epic: #{tags_without_epics.keys.join(', ')}" unless team_name == ROADMAP
         none_epic_card = tag_to_epic['[none]']
         if none_epic_card
           tags_without_epics_checklist = create_checklist(none_epic_card, NONE_CHECKLIST_NAME)
@@ -966,7 +968,7 @@ class TrelloHelper
     roadmap_boards.each do |board|
       board_lists(board).each do |list|
         if NEW_STATES.include?(list.name)
-          search_list_info << ['roadmap', board, list]
+          search_list_info << [ROADMAP, board, list]
           break
         end
       end
