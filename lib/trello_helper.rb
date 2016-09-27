@@ -9,8 +9,8 @@ class TrelloHelper
                 :documentation_next_list, :docs_planning_id, :organization_name,
                 :sprint_length_in_weeks, :sprint_start_day, :sprint_end_day, :logo,
                 :docs_new_list_name, :roadmap_board_lists, :max_lists_per_board,
-                :current_release_labels, :default_product, :other_products,
-                :sprint_card
+                :current_release_labels, :next_release_labels, :default_product,
+                :other_products, :sprint_card
 
   attr_accessor :boards, :trello_login_to_email, :cards_by_list, :labels_by_card, :list_by_card, :members_by_card, :members_by_id, :checklists_by_card, :lists_by_board, :comments_by_card, :board_id_to_team_map
 

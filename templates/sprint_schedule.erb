@@ -46,13 +46,17 @@
 
       if trello.sprint_card
         current_release = ''
-
         if trello.current_release_labels && !trello.current_release_labels.empty?
           if trello.current_release_labels.first =~ TrelloHelper::RELEASE_LABEL_REGEX
             current_release = "#{$4} "
           end
         end
-
+        next_release = 'Next '
+        if trello.next_release_labels && !trello.next_release_labels.empty?
+          if trello.next_release_labels.first =~ TrelloHelper::RELEASE_LABEL_REGEX
+            next_release = "#{$4} "
+          end
+        end
         if trello.sprint_card.name =~ TrelloHelper::SPRINT_REGEX
           sprint = Sprint.new({:trello => trello, :uninitialized => true})
           sprint_num = $1.to_i
@@ -96,7 +100,7 @@
 <%
           options.sprints.times do
             addtl_sprint_details = ''
-            [[code_freeze, stage_one_dep_complete, feature_complete, current_release], [next_code_freeze, sprint.stage_one_dep_complete(next_code_freeze), sprint.feature_complete(next_code_freeze), 'Next ']].each do |release_milestones|
+            [[code_freeze, stage_one_dep_complete, feature_complete, current_release], [next_code_freeze, sprint.stage_one_dep_complete(next_code_freeze), sprint.feature_complete(next_code_freeze), next_release]].each do |release_milestones|
               cf = release_milestones[0]
               sodc = release_milestones[1]
               fc = release_milestones[2]
