@@ -43,10 +43,23 @@
   <h2 class="visible-xs"><%= trello.organization_name %> Sprint Schedule</h2>
 
 <%
+
       if trello.sprint_card
+        current_release = ''
+
+        if trello.current_release_labels && !trello.current_release_labels.empty?
+          if trello.current_release_labels.first =~ TrelloHelper::RELEASE_LABEL_REGEX
+            current_release = "#{$4} "
+          end
+        end
+
         if trello.sprint_card.name =~ TrelloHelper::SPRINT_REGEX
-          sprint = Sprint.new({:trello => trello})
+          sprint = Sprint.new({:trello => trello, :uninitialized => true})
           sprint_num = $1.to_i
+          code_freeze = sprint.code_freeze
+          next_code_freeze = sprint.next_code_freeze
+          stage_one_dep_complete = sprint.stage_one_dep_complete
+          feature_complete = sprint.feature_complete
           sprint_end = trello.sprint_card.due.to_date
           sprint_end = sprint_end.next(trello.sprint_end_day.to_sym) unless sprint_end.wday == Date.new.next(trello.sprint_end_day.to_sym).wday
           sprint_begin = sprint_end
@@ -54,21 +67,21 @@
 %>
 <section>
 <%
-      if sprint.stage_one_dep_complete && sprint.stage_one_dep_complete < sprint_begin
+      if stage_one_dep_complete && stage_one_dep_complete < sprint_begin
 %>
 <h4>Previous Milestones:</h4>
 <ul>
-  <li><strong>Stage 1 Deps Feature Complete:</strong> <%=sprint.stage_one_dep_complete%></li>
+  <li><strong><%=current_release%>Stage 1 Deps Feature Complete:</strong> <%=stage_one_dep_complete%></li>
   <%
-        if sprint.feature_complete && sprint.feature_complete < sprint_begin
+        if feature_complete && feature_complete < sprint_begin
   %>
-  <li><strong>Feature Complete:</strong> <%=sprint.feature_complete%></li>
+  <li><strong><%=current_release%>Feature Complete:</strong> <%=feature_complete%></li>
   <%
         end
-        if sprint.code_freeze && sprint.code_freeze < sprint_begin
+        if code_freeze && code_freeze < sprint_begin
   %>
-  <li><strong>Code Freeze (max):</strong> <%=sprint.code_freeze%></li>
-  <li><strong>Final Release Candidate (max):</strong> <%=sprint.code_freeze%></li>
+  <li><strong><%=current_release%>Code Freeze (max):</strong> <%=sprint.code_freeze%></li>
+  <li><strong><%=current_release%>Final Release Candidate (max):</strong> <%=sprint.code_freeze%></li>
   <%
         end
   %>
@@ -83,18 +96,23 @@
 <%
           options.sprints.times do
             addtl_sprint_details = ''
-            if sprint.code_freeze && sprint.code_freeze >= sprint_begin
-              if sprint.code_freeze > sprint_end
-                if sprint.stage_one_dep_complete <= sprint_end && sprint.stage_one_dep_complete > sprint_begin
-                  addtl_sprint_details = "<strong>Stage 1 Deps Feature Complete:</strong> #{sprint.stage_one_dep_complete}"
-                elsif sprint.feature_complete <= sprint_end && sprint.feature_complete > sprint_begin
-                  addtl_sprint_details = "<strong>Feature Complete:</strong> #{sprint.feature_complete}<br/><strong>First Release Candidate (max):</strong> #{sprint.feature_complete.next(trello.sprint_end_day.to_sym)}"
+            [[code_freeze, stage_one_dep_complete, feature_complete, current_release], [next_code_freeze, sprint.stage_one_dep_complete(next_code_freeze), sprint.feature_complete(next_code_freeze), 'Next ']].each do |release_milestones|
+              cf = release_milestones[0]
+              sodc = release_milestones[1]
+              fc = release_milestones[2]
+              release = release_milestones[3]
+              if cf && cf >= sprint_begin
+                if cf > sprint_end
+                  if sodc <= sprint_end && sodc > sprint_begin
+                    addtl_sprint_details = "<strong>#{release}Stage 1 Deps Feature Complete:</strong> #{sodc}"
+                  elsif fc <= sprint_end && fc > sprint_begin
+                    addtl_sprint_details = "<strong>#{release}Feature Complete:</strong> #{fc}<br/><strong>#{release}First Release Candidate (max):</strong> #{fc.next(trello.sprint_end_day.to_sym)}"
+                  end
+                elsif cf <= sprint_end
+                  addtl_sprint_details = "<strong>#{release}Code Freeze (max):</strong> #{cf}<br/><strong>#{release}Final Release Candidate (max):</strong> #{cf}"
                 end
-              elsif sprint.code_freeze <= sprint_end
-                addtl_sprint_details = "<strong>Code Freeze (max):</strong> #{sprint.code_freeze}<br/><strong>Final Release Candidate (max):</strong> #{sprint.code_freeze}"
               end
             end
-
 %>
 <tr>
 <td>

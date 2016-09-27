@@ -5,11 +5,11 @@ require 'core_ext/date'
 
 class Sprint
   # Calendar related attributes
-  attr_accessor :start, :finish, :prod, :stg, :int, :code_freeze, :feature_complete, :stage_one_dep_complete
+  attr_accessor :start, :finish, :prod, :stg, :int, :code_freeze, :next_code_freeze
   # Trello related attributes
   attr_accessor :trello
   # UserStory related attributes
-  attr_accessor :sprint_stories, :not_accepted_stories, :accepted_and_after_stories, :all_stories, :rfes, :processed, :results
+  attr_accessor :sprint_stories, :not_accepted_stories, :accepted_and_after_stories, :all_stories, :rfes, :processed, :results, :uninitialized
 
   attr_accessor :debug
 
@@ -17,8 +17,10 @@ class Sprint
     opts.each do |k,v|
       send("#{k}=",v)
     end
-    init_stories
-    init_rfes
+    unless uninitialized
+      init_stories
+      init_rfes
+    end
   end
 
   def day
@@ -48,9 +50,8 @@ class Sprint
     sc = trello.sprint_card
     if sc
       sc.desc.each_line do |line|
-        if line =~ /(\d*-\d*-\d*).*-.*#{str}/i
+        if line =~ /(\d*-\d*-\d*)\s*-\s*#{str}/i
           return Date.parse($1)
-          break
         end
       end
     end
@@ -99,28 +100,32 @@ class Sprint
     @code_freeze
   end
 
-  def feature_complete
-    return @feature_complete if @feature_complete
-    @feature_complete = sprint_card_date("Feature Complete")
-    unless @feature_complete
-      @feature_complete = code_freeze
-      trello.sprint_length_in_weeks.times do
-        @feature_complete = @feature_complete.previous(trello.sprint_end_day.to_sym)
-      end if @feature_complete
-    end
-    @feature_complete
+  def next_code_freeze
+    return @next_code_freeze if @next_code_freeze
+    @next_code_freeze = sprint_card_date("Next Release Code Freeze")
+    @next_code_freeze
   end
 
-  def stage_one_dep_complete
-    return @stage_one_dep_complete if @stage_one_dep_complete
-    @stage_one_dep_complete = sprint_card_date("Stage 1 Dep Complete")
-    unless @stage_one_dep_complete
-      @stage_one_dep_complete = code_freeze
-      ((trello.sprint_length_in_weeks * 2) + 2).times do
-        @stage_one_dep_complete = @stage_one_dep_complete.previous(trello.sprint_end_day.to_sym)
-      end if @stage_one_dep_complete
+  def feature_complete(cf=code_freeze)
+    feature_complete = sprint_card_date("Feature Complete")
+    unless feature_complete
+      feature_complete = cf
+      trello.sprint_length_in_weeks.times do
+        feature_complete = feature_complete.previous(trello.sprint_end_day.to_sym)
+      end if feature_complete
     end
-    @stage_one_dep_complete
+    feature_complete
+  end
+
+  def stage_one_dep_complete(cf=code_freeze)
+    stage_one_dep_complete = sprint_card_date("Stage 1 Dep Complete")
+    unless stage_one_dep_complete
+      stage_one_dep_complete = cf
+      ((trello.sprint_length_in_weeks * 2) + 2).times do
+        stage_one_dep_complete = stage_one_dep_complete.previous(trello.sprint_end_day.to_sym)
+      end if stage_one_dep_complete
+    end
+    stage_one_dep_complete
   end
 
   def title(short = false)
