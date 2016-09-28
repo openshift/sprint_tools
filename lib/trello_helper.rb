@@ -273,10 +273,19 @@ class TrelloHelper
     end
   end
 
-  def find_card(card_id)
-    trello_do('find_card') do
-      return Trello::Card.find(card_id)
+  def find_card(card_id, retry_on_error=true)
+    card = nil
+    begin
+      if retry_on_error
+        trello_do('find_card') do
+          card = Trello::Card.find(card_id)
+        end
+      else
+        card = Trello::Card.find(card_id)
+      end
+    rescue
     end
+    card
   end
 
   def roadmap_boards
@@ -921,10 +930,7 @@ class TrelloHelper
     # https://trello.com/c/6EhPEbM4
     if card_url =~ /^https?:\/\/trello\.com\/c\/([[:alnum:]]+)/
       card_id = $1
-      begin
-        card = find_card(card_id)
-      rescue
-      end
+      card = find_card(card_id)
     end
     card
   end

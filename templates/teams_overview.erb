@@ -377,7 +377,7 @@
 <%
           release_cards_history_list = []
           release_cards_history.each do |id, card_info|
-            card = cards_by_id[id] || trello.find_card(id)
+            card = cards_by_id[id] || trello.find_card(id, false)
             other_releases = []
             if card
               labels = trello.card_labels(card)
