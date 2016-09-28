@@ -651,8 +651,13 @@ class TrelloHelper
         puts "\n#{team_name.upcase} tags without a corresponding epic: #{tags_without_epics.keys.join(', ')}" unless team_name == ROADMAP
         none_epic_card = tag_to_epic['[none]']
         if none_epic_card
-          tags_without_epics_checklist = create_checklist(none_epic_card, NONE_CHECKLIST_NAME)
-          clear_checklist(tags_without_epics_checklist)
+          tags_without_epics_checklist = nil
+          if tags_without_epics.empty?
+            tags_without_epics_checklist = checklist(none_epic_card, NONE_CHECKLIST_NAME)
+          else
+            tags_without_epics_checklist = create_checklist(none_epic_card, NONE_CHECKLIST_NAME)
+          end
+          clear_checklist(tags_without_epics_checklist) if tags_without_epics_checklist
           tags_without_epics.keys.each do |tag|
             checklist_add_item(tags_without_epics_checklist, tag, false, 'bottom')
           end
