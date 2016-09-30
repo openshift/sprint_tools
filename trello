@@ -627,7 +627,7 @@ command :convert_markers_to_labels do |c|
                 unless trello.card_labels(card).map{|c| c.name }.include?(epic_label_name)
                   epic_label = board_labels_by_name[epic_label_name]
                   puts "Adding #{epic_label.name} to #{card.name} (#{card.url})"
-                  card.add_label(epic_label)
+                  trello.add_label_to_card(card, epic_label)
                 end
                 card_name = card_name.sub "#{card_tag} ", ''
                 card_name = card_name.sub " #{card_tag}", ''
@@ -656,7 +656,7 @@ command :update do |c|
 
   c.description = "An assortment of Trello modification utilities"
   c.action do |args, options|
-    doc_descriptions = []
+    doc_cards = []
     if options.update_roadmap
       trello.update_roadmap
     end
@@ -668,7 +668,7 @@ command :update do |c|
           puts "\n  List: #{list.name}  (#cards #{cards.length})"
           cards.each_with_index do |card, index|
             if !(card.name =~ TrelloHelper::SPRINT_REGEX && !card.due.nil?)
-              doc_descriptions << card.desc if options.add_doc_cards
+              doc_cards << card
             end
           end
         end
@@ -679,7 +679,16 @@ command :update do |c|
       if options.update_bug_tasks
         bugzilla = load_conf(BugzillaHelper, CONFIG.bugzilla, true)
       end
+      documentation_board_labels = nil
+      if options.add_doc_cards
+        documentation_board_labels = trello.target(trello.board_labels(trello.documentation_board))
+        documentation_board_labels_by_name = {}
+        documentation_board_labels.each do |board_label|
+          documentation_board_labels_by_name[board_label.name] = board_label
+        end
+      end
       trello.boards.each do |board_id, board|
+        next if board_id == trello.documentation_board.id
         puts "\nBoard Name: #{board.name}"
         lists = trello.board_lists(board)
         lists.each do |list|
@@ -691,19 +700,52 @@ command :update do |c|
                 if options.add_task_checklists || options.add_bug_checklists || options.add_doc_cards
                   if !(card.name =~ TrelloHelper::SPRINT_REGEX && !card.due.nil?)
                     labels = trello.card_labels(card)
+                    label_names = labels.map{|l| l.name }
                     checklists = []
                     checklists << 'Tasks' if options.add_task_checklists
-                    checklists << 'Bugs' if options.add_bug_checklists && !labels.map{|l| l.name }.include?('no-qe')
+                    checklists << 'Bugs' if options.add_bug_checklists && !label_names.include?('no-qe')
 
-                    if options.add_doc_cards && labels.map{|l| l.name }.include?('documentation') && doc_descriptions.any?
-                      found = false
-                      doc_descriptions.each do |desc|
-                        if desc.include?(card.short_url)
-                          found = true
+                    if options.add_doc_cards && label_names.include?('documentation') && doc_cards.any?
+                      docs_card = nil
+                      doc_cards.each do |d_card|
+                        if d_card.desc.include?(card.short_url)
+                          docs_card = d_card
                           break
                         end
                       end
-                      unless found
+                      if docs_card
+                        # Sync release labels from the dev card to the docs card
+                        release_labels = []
+                        label_names.each do |label_name|
+                          if label_name =~ TrelloHelper::RELEASE_LABEL_REGEX
+                            release_labels << label_name
+                          end
+                        end
+                        docs_card_labels = trello.card_labels(docs_card)
+                        docs_card_label_names = docs_card_labels.map{|l| l.name }
+                        docs_card_release_labels = []
+                        docs_card_label_names.each do |docs_card_label_name|
+                          if docs_card_label_name =~ TrelloHelper::RELEASE_LABEL_REGEX
+                            docs_card_release_labels << docs_card_label_name
+                          end
+                        end
+                        labels_to_remove = docs_card_release_labels - release_labels
+                        labels_to_add = release_labels - docs_card_release_labels
+                        labels_to_remove.each do |label_name|
+                          label = documentation_board_labels_by_name[label_name]
+                          if label
+                            puts "Removing #{label_name} from #{docs_card.name} (#{docs_card.url})"
+                            trello.remove_label_from_card(docs_card, label, false)
+                          end
+                        end
+                        labels_to_add.each do |label_name|
+                          label = documentation_board_labels_by_name[label_name]
+                          if label
+                            puts "Adding #{label_name} to #{docs_card.name} (#{docs_card.url})"
+                            trello.add_label_to_card(docs_card, label, false)
+                          end
+                        end
+                      else
                         name = card.name
                         if card.name =~ TrelloHelper::CARD_NAME_REGEX
                           name = $2.strip

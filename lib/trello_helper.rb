@@ -814,6 +814,24 @@ class TrelloHelper
     end
   end
 
+  def add_label_to_card(card, label, retry_on_error=true)
+    begin
+      trello_do('add_label_to_card', retry_on_error ? 2 : 0) do
+        card.add_label(label)
+      end
+    rescue
+    end
+  end
+
+  def remove_label_from_card(card, label, retry_on_error=true)
+    begin
+      trello_do('remove_label_from_card', retry_on_error ? 2 : 0) do
+        card.remove_label(label)
+      end
+    rescue
+    end
+  end
+
   def update_card(card)
     trello_do('update_card') do
       card.save
