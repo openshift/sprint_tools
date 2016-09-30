@@ -716,7 +716,7 @@ command :update do |c|
                       end
                       unless found
                         name = card.name
-                        if card.name =~ /\((\d+|\?)\)(.*)/
+                        if card.name =~ TrelloHelper::CARD_NAME_REGEX
                           name = $2.strip
                         end
                         c = Trello::Card.create(:name => "Document: #{name}", :desc => "Corresponding Development Card: #{card.short_url}", :list_id => trello.documentation_next_list.id)

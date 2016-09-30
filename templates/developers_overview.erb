@@ -158,7 +158,7 @@
 
             name = card.name.strip
             sizing = nil
-            if name =~ /\((\d+|\?)\)(.*)/
+            if name =~ TrelloHelper::CARD_NAME_REGEX
               sizing = $1.to_i
               if TrelloHelper::IN_PROGRESS_STATES.include?(list_name)
                 in_progress_sizing_total += sizing

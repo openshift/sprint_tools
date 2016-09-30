@@ -31,6 +31,8 @@ class TrelloHelper
 
   STAR_LABEL_REGEX = /^([1-5])star$/
 
+  CARD_NAME_REGEX = /\((\d+|\?)\)(.*)/
+
   ACCEPTED_STATES = {
     'Accepted' => true,
     'Done' => true

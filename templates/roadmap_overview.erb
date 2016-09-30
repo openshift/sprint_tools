@@ -114,7 +114,7 @@ Corresponding Private Roadmap Board Epic: <a href='<%=secondary_epic_card.url%>'
             releases = card[4]
             sizing = ''
 
-            if name =~ /\((\d+|\?)\)(.*)/
+            if name =~ TrelloHelper::CARD_NAME_REGEX
               sizing = $1
               name = $2
 

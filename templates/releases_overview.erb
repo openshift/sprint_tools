@@ -327,7 +327,7 @@
             team_complete_sizing_totals[team_name] = 0 unless team_complete_sizing_totals[team_name]
             team_in_progress_sizing_totals[team_name] = 0 unless team_in_progress_sizing_totals[team_name]
             team_remaining_sizing_totals[team_name] = 0 unless team_remaining_sizing_totals[team_name]
-            if name =~ /\((\d+|\?)\)(.*)/
+            if name =~ TrelloHelper::CARD_NAME_REGEX
               sizing = $1.to_i
               team_sizing_totals[team_name] += sizing
               name = $2
@@ -414,12 +414,13 @@
 <%
         end
         unless release_cards_history.nil? || release_cards_history.empty?
+          removed_sizing_total = 0
 %>
 <h5 title="Cards removed from the release after the release began" class="anchor" id="removed-from-<%=release_name%>">Removed from Release (<%=release_name%>)<span class="pficon-help"></span></h5>
 <div class="container">
 <div class="table-responsive">
 <table class="table table-normal table-condensed">
-  <tr><th title="Card Name">Scenario</th><th title="Team">Team</th><th title="Committed, Targeted, or Proposed">Original Plan State<span class="pficon-help"></span></th><th title="Other Release(s)">Other Release(s)</th></tr>
+  <tr><th title="Card Name">Scenario</th><th title="Team">Team</th><th title="Committed, Targeted, or Proposed">Original Plan State<span class="pficon-help"></span></th><th title="Other Release(s)">Other Release(s)</th><th title="Sizing in Story Points">Sizing</th></tr>
 <%
           release_cards_history_list = []
           release_cards_history.each do |id, card_info|
@@ -435,6 +436,12 @@
               end
             end
             card_info['other_releases'] = other_releases
+            if card_info['name'] =~ TrelloHelper::CARD_NAME_REGEX
+              sizing = $1.to_i
+              card_info['sizing'] = sizing
+              card_info['name'] = $2
+              removed_sizing_total += sizing
+            end
             release_cards_history_list << card_info
           end
           release_cards_history_list.sort_by!{ |card_info| [TrelloHelper::RELEASE_STATE_ORDER[card_info['state']], card_info['team_name']] }
@@ -459,11 +466,13 @@
 %>
 <a href='<%=product_release_page%>'><%=label%></a><%=separator%>
 <%end%></td>
+<td><%=card_info['sizing']%></td>
 </tr>
 <%
           end
 %>
 </table>
+<i>Total Points (removed): <%=removed_sizing_total%></i><br />
 <br />
 <br />
 </div>
@@ -471,25 +480,34 @@
 <%
         end
         unless cards_added_to_release.empty?
+          added_sizing_total = 0
 %>
 <h5 title="Cards added to the release after the release began" class="anchor" id="added-to-<%=release_name%>">Added to Release (<%=release_name%>)<span class="pficon-help"></span></h5>
 <div class="container">
 <div class="table-responsive">
 <table class="table table-normal table-condensed">
-  <tr><th title="Card Name">Scenario</th><th title="Team">Team</th><th title="Committed, Targeted, or Proposed">Plan State<span class="pficon-help"></span></th></tr>
+  <tr><th title="Card Name">Scenario</th><th title="Team">Team</th><th title="Committed, Targeted, or Proposed">Plan State<span class="pficon-help"></span></th><th title="Sizing in Story Points">Sizing</th></tr>
 <%
           cards_added_to_release.sort_by!{ |card_info| [TrelloHelper::RELEASE_STATE_ORDER[card_info['state']], card_info['team_name']] }
           cards_added_to_release.each do |card_info|
+            if card_info['name'] =~ TrelloHelper::CARD_NAME_REGEX
+              sizing = $1.to_i
+              card_info['sizing'] = sizing
+              card_info['name'] = $2
+              added_sizing_total += sizing
+            end
 %>
 <tr>
 <td><a href='<%=card_info['short_url']%>'><%=card_info['name']%></a></div></td>
 <td><%=card_info['team_name']%></td>
 <td><%=card_info['state']%></td>
+<td><%=card_info['sizing']%></td>
 </tr>
 <%
           end
 %>
 </table>
+<i>Total Points (added): <%=added_sizing_total%></i><br />
 <br />
 <br />
 </div>
