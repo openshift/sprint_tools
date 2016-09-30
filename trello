@@ -713,44 +713,43 @@ command :update do |c|
                           break
                         end
                       end
-                      if docs_card
-                        # Sync release labels from the dev card to the docs card
-                        release_labels = []
-                        label_names.each do |label_name|
-                          if label_name =~ TrelloHelper::RELEASE_LABEL_REGEX
-                            release_labels << label_name
-                          end
-                        end
-                        docs_card_labels = trello.card_labels(docs_card)
-                        docs_card_label_names = docs_card_labels.map{|l| l.name }
-                        docs_card_release_labels = []
-                        docs_card_label_names.each do |docs_card_label_name|
-                          if docs_card_label_name =~ TrelloHelper::RELEASE_LABEL_REGEX
-                            docs_card_release_labels << docs_card_label_name
-                          end
-                        end
-                        labels_to_remove = docs_card_release_labels - release_labels
-                        labels_to_add = release_labels - docs_card_release_labels
-                        labels_to_remove.each do |label_name|
-                          label = documentation_board_labels_by_name[label_name]
-                          if label
-                            puts "Removing #{label_name} from #{docs_card.name} (#{docs_card.url})"
-                            trello.remove_label_from_card(docs_card, label, false)
-                          end
-                        end
-                        labels_to_add.each do |label_name|
-                          label = documentation_board_labels_by_name[label_name]
-                          if label
-                            puts "Adding #{label_name} to #{docs_card.name} (#{docs_card.url})"
-                            trello.add_label_to_card(docs_card, label, false)
-                          end
-                        end
-                      else
+                      unless docs_card
                         name = card.name
                         if card.name =~ TrelloHelper::CARD_NAME_REGEX
                           name = $2.strip
                         end
-                        c = Trello::Card.create(:name => "Document: #{name}", :desc => "Corresponding Development Card: #{card.short_url}", :list_id => trello.documentation_next_list.id)
+                        docs_card = Trello::Card.create(:name => "Document: #{name}", :desc => "Corresponding Development Card: #{card.short_url}", :list_id => trello.documentation_next_list.id)
+                      end
+                      # Sync release labels from the dev card to the docs card
+                      release_labels = []
+                      label_names.each do |label_name|
+                        if label_name =~ TrelloHelper::RELEASE_LABEL_REGEX
+                          release_labels << label_name
+                        end
+                      end
+                      docs_card_labels = trello.card_labels(docs_card)
+                      docs_card_label_names = docs_card_labels.map{|l| l.name }
+                      docs_card_release_labels = []
+                      docs_card_label_names.each do |docs_card_label_name|
+                        if docs_card_label_name =~ TrelloHelper::RELEASE_LABEL_REGEX
+                          docs_card_release_labels << docs_card_label_name
+                        end
+                      end
+                      labels_to_remove = docs_card_release_labels - release_labels
+                      labels_to_add = release_labels - docs_card_release_labels
+                      labels_to_remove.each do |label_name|
+                        label = documentation_board_labels_by_name[label_name]
+                        if label
+                          puts "Removing #{label_name} from #{docs_card.name} (#{docs_card.url})"
+                          trello.remove_label_from_card(docs_card, label, false)
+                        end
+                      end
+                      labels_to_add.each do |label_name|
+                        label = documentation_board_labels_by_name[label_name]
+                        if label
+                          puts "Adding #{label_name} to #{docs_card.name} (#{docs_card.url})"
+                          trello.add_label_to_card(docs_card, label, false)
+                        end
                       end
                     end
 
