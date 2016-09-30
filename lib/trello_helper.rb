@@ -6,7 +6,7 @@ class TrelloHelper
   attr_accessor :consumer_key, :consumer_secret, :oauth_token, :oauth_token_secret, :teams,
                 :documentation_id, :organization_id, :roadmap_board, :roadmap_id,
                 :public_roadmap_id, :public_roadmap_board, :documentation_board,
-                :documentation_next_list, :docs_planning_id, :organization_name,
+                :documentation_next_list, :organization_name,
                 :sprint_length_in_weeks, :sprint_start_day, :sprint_end_day, :logo,
                 :docs_new_list_name, :roadmap_board_lists, :max_lists_per_board,
                 :current_release_labels, :next_release_labels, :default_product,
@@ -238,17 +238,6 @@ class TrelloHelper
     @documentation_board
   end
 
-  def docs_planning_board
-    unless @docs_planning_board
-      if docs_planning_id
-        @docs_planning_board = find_board(docs_planning_id)
-      else
-        @docs_planning_board = documentation_board
-      end
-    end
-    @docs_planning_board
-  end
-
   def roadmap_board
     if roadmap_id
       @roadmap_board = find_board(roadmap_id) unless @roadmap_board
@@ -364,8 +353,8 @@ class TrelloHelper
 
   def documentation_next_list
     unless @documentation_next_list
-      new_list_name = docs_new_list_name || 'Next Sprint'
-      board_lists(docs_planning_board).each do |l|
+      new_list_name = docs_new_list_name || 'New'
+      board_lists(documentation_board).each do |l|
         if l.name == new_list_name
           @documentation_next_list = l
           break

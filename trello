@@ -679,17 +679,6 @@ command :update do |c|
       if options.update_bug_tasks
         bugzilla = load_conf(BugzillaHelper, CONFIG.bugzilla, true)
       end
-      if options.add_doc_cards && (trello.documentation_board.id != trello.docs_planning_board.id)
-        lists = trello.board_lists(trello.docs_planning_board)
-        lists.each do |list|
-          cards = trello.list_cards(list)
-          if !cards.empty?
-            cards.each_with_index do |card, index|
-              doc_descriptions << card.desc
-            end
-          end
-        end
-      end
       trello.boards.each do |board_id, board|
         puts "\nBoard Name: #{board.name}"
         lists = trello.board_lists(board)
