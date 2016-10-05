@@ -25,7 +25,8 @@ class TrelloHelper
 
   SPRINT_REGEX = /^Sprint (\d+)/
   DONE_REGEX = /^Done: ((\d+)\.(\d+)(.(\d+))?(.(\d+))?)/
-  SPRINT_REGEXES = Regexp.union([SPRINT_REGEX, DONE_REGEX])
+  RELEASE_COMPLETE_REGEX = /^Complete ((\d+)\.(\d+)(.(\d+))?(.(\d+))?)/
+  SPRINT_REGEXES = Regexp.union([SPRINT_REGEX, DONE_REGEX, RELEASE_COMPLETE_REGEX])
 
   RELEASE_LABEL_REGEX = /^(proposed|targeted|committed)-((\w*)-)*((\d+)(.(\d+))?(.(\d+))?(.(\d+))*)/
 
