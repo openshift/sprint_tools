@@ -328,7 +328,7 @@ class TrelloHelper
       trello_do('lists') do
         lists = board.lists(:filter => [:all])
         lists = lists.delete_if{ |list| list.name !~ TrelloHelper::SPRINT_REGEXES && list.closed? }
-        lists.sort_by!{ |list| [list.name =~ TrelloHelper::SPRINT_REGEXES ? ($1.to_i) : 9999999, $3.to_i, $4.to_i, $6.to_i, $8.to_i]}
+        lists.sort_by!{ |list| [list.name =~ TrelloHelper::SPRINT_REGEXES ? ($1.to_i) : 9999999, $3 ? $3.to_i : $10.to_i, $4 ? $4.to_i : $11.to_i, $6 ? $6.to_i : $13.to_i, $8 ? $8.to_i : $15.to_i]}
         lists.reverse!
       end
     end
@@ -563,7 +563,7 @@ class TrelloHelper
 
             lists = accepted_lists + complete_lists + in_progress_lists + next_lists + backlog_lists + new_lists
 
-            previous_sprint_lists = previous_sprint_lists.sort_by { |l| [l.name =~ SPRINT_REGEXES ? $1.to_i : 9999999, $3.to_i, $4.to_i, $6.to_i, $8.to_i]}
+            previous_sprint_lists = previous_sprint_lists.sort_by { |l| [l.name =~ SPRINT_REGEXES ? $1.to_i : 9999999, $3 ? $3.to_i : $10.to_i, $4 ? $4.to_i : $11.to_i, $6 ? $6.to_i : $13.to_i, $8 ? $8.to_i : $15.to_i]}
             lists += previous_sprint_lists
             lists += other_lists
             lists.each do |list|
