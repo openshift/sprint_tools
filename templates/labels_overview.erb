@@ -78,9 +78,7 @@
               label_names = labels.map{ |label| label.name }
               label_names.each do |label_name|
                 include = false
-                if 'documentation' == label_name
-                  include = !label_names.include?('docs-ack')
-                elsif TrelloHelper::CURRENT_SPRINT_STATES.include?(list_name) && ('security' == label_name)
+                if TrelloHelper::CURRENT_SPRINT_STATES.include?(list_name) && ('security' == label_name)
                   include = true
                 elsif list_name !~ TrelloHelper::SPRINT_REGEXES && !list.closed? && (['blocked', 'performance', 'ux', 'community'].include?(label_name) || label_name =~ TrelloHelper::STAR_LABEL_REGEX) 
                   include = true
