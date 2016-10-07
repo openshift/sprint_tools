@@ -40,7 +40,8 @@ class TrelloHelper
   }
 
   COMPLETE_STATES = {
-    'Complete' => true
+    'Complete' => true,
+    'Complete Upstream' => true
   }
 
   IN_PROGRESS_STATES = {
