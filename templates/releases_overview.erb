@@ -551,7 +551,7 @@
     <br/>
     <br/>
     <hr>
-    <i>Generated at <%=Time.now.strftime("%I:%M%p %Z")%></i>
+    <i>Generated at <%=Time.now.strftime("%I:%M%p %Z")%></i><%if trello.archive_path%> - <a href="<%=trello.archive_path%>">archives</a><%end%>
   </div><!-- /container -->
 </body>
 </html>
