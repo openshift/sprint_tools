@@ -157,7 +157,7 @@
             if card.name =~ TrelloHelper::SPRINT_REGEX
               sprint_end = card.due.to_date
             elsif sprint_num < 9999990 && card.name =~ TrelloHelper::CARD_NAME_REGEX
-              sizing = $1
+              sizing = $2
               if sizing != '?'
                 team_total_sizing += sizing.to_i
               end
