@@ -716,7 +716,7 @@ command :update do |c|
                       unless docs_card
                         name = card.name
                         if card.name =~ TrelloHelper::CARD_NAME_REGEX
-                          name = $2.strip
+                          name = $3.strip
                         end
                         docs_card = Trello::Card.create(:name => "Document: #{name}", :desc => "Corresponding Development Card: #{card.short_url}", :list_id => trello.documentation_next_list.id)
                       end

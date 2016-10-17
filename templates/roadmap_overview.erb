@@ -115,8 +115,8 @@ Corresponding Private Roadmap Board Epic: <a href='<%=secondary_epic_card.url%>'
             sizing = ''
 
             if name =~ TrelloHelper::CARD_NAME_REGEX
-              sizing = $1
-              name = $2
+              sizing = $2
+              name = $3
 
               if list && sizing != '?'
                 sizing_i = sizing.to_i

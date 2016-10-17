@@ -328,9 +328,9 @@
             team_in_progress_sizing_totals[team_name] = 0 unless team_in_progress_sizing_totals[team_name]
             team_remaining_sizing_totals[team_name] = 0 unless team_remaining_sizing_totals[team_name]
             if name =~ TrelloHelper::CARD_NAME_REGEX
-              sizing = $1.to_i
+              sizing = $2.to_i
               team_sizing_totals[team_name] += sizing
-              name = $2
+              name = $3
               if status == 'Complete'
                 state_complete_sizing_total += sizing
                 team_complete_sizing_totals[team_name] += sizing
@@ -437,9 +437,9 @@
             end
             card_info['other_releases'] = other_releases
             if card_info['name'] =~ TrelloHelper::CARD_NAME_REGEX
-              sizing = $1.to_i
+              sizing = $2.to_i
               card_info['sizing'] = sizing
-              card_info['name'] = $2
+              card_info['name'] = $3
               removed_sizing_total += sizing
             end
             release_cards_history_list << card_info
@@ -491,9 +491,9 @@
           cards_added_to_release.sort_by!{ |card_info| [TrelloHelper::RELEASE_STATE_ORDER[card_info['state']], card_info['team_name']] }
           cards_added_to_release.each do |card_info|
             if card_info['name'] =~ TrelloHelper::CARD_NAME_REGEX
-              sizing = $1.to_i
+              sizing = $2.to_i
               card_info['sizing'] = sizing
-              card_info['name'] = $2
+              card_info['name'] = $3
               added_sizing_total += sizing
             end
 %>
