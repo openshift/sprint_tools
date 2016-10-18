@@ -135,6 +135,16 @@ Commands
         List the potentially invalid users
 
 
+**organize_release_cards**
+
+    DESCRIPTION:
+        Rearrange board list cards sorted by release
+
+    OPTIONS:
+        --dry-run
+          Show what changes would be made without actually making them
+
+
 **report**
 
     DESCRIPTION:

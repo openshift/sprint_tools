@@ -112,6 +112,157 @@ end
 
 trello = load_conf(TrelloHelper, CONFIG.trello, true)
 
+# Generate a formatted string representing the sortable card for
+# dry-run output
+def card_data_string(card)
+  labeldata = if card.release
+    label_text = "%-30s" % "#{card.state}-#{card.product}-#{card.release}"
+  else
+    " " * 30
+  end
+  "#{labeldata} %-4d pos: %-20s name: [%-30s]" % [card.card.short_id, "#{card.new_pos}", card.card.name[0..29]]
+end
+
+# Sort only the release cards by their release label, release number
+# Sort only the cards in TrelloHelper::NEXT_STATES and TrelloHelper::BACKLOG_STATES
+command :organize_release_cards do |c|
+
+  c.option "--dry-run", "Show what changes would be made without actually making them"
+
+  c.syntax = "#{name}"
+  c.description = "Rearrange board list cards sorted by release"
+  c.action do |args, options|
+    release_states = TrelloHelper::NEXT_STATES.keys + TrelloHelper::BACKLOG_STATES.keys
+    trello.boards.values.each do |board|
+      trello.board_lists(board).each do |list|
+        next unless release_states.include? list.name
+        puts "\n*** Processing list #{list.name} in board #{trello.board(list.board_id).name}"
+        # *** Set up for sorting list
+        # list_cards contains the cards for this board, sorted by
+        # position (i.e. as they are displayed in the UI)
+        sortable_cards = trello.sortable_cards(list)
+        next unless sortable_cards
+        puts "\nCards in list, pre-sort"
+        sortable_cards.each do |card|
+          labeldata = card_data_string(card)
+          puts "  #{labeldata}"
+        end
+        puts "Sorting.\n"
+        sortcount = 0
+        needs_sorting = true
+        # *** Start sort logic
+        while needs_sorting do
+          needs_sorting = false
+          sortcount += 1
+          puts "Still sorting..." if (sortcount % 10) == 0
+          last_card = nil
+          ooo = nil
+          sortable_cards.each do |card|
+            next unless card.release
+            if last_card
+              if ooo
+                if !trello.cards_in_order(ooo, card) && !trello.cards_equal(ooo, card)
+                  ooo = card
+                  needs_sorting = true
+                end
+              else
+                if !trello.cards_in_order(last_card, card) && !trello.cards_equal(last_card, card)
+                  ooo = card
+                  needs_sorting = true
+                end
+              end
+            end
+            last_card = card
+          end
+          if needs_sorting
+            insert_before = nil
+            sortable_cards[0..(sortable_cards.index(ooo) - 1)].reverse_each do |card|
+              next unless card.release
+              if trello.cards_in_order(ooo, card)
+                if insert_before
+                  if trello.cards_in_order(card, insert_before)
+                    insert_before = card
+                  end
+                else
+                  insert_before = card
+                end
+              end
+            end
+            if insert_before
+              delete_index = sortable_cards.index { |card| card == ooo }
+              sortable_cards.delete_at(delete_index)
+              insert_index = sortable_cards.index { |card| card == insert_before }
+              sortable_cards.insert(insert_index, ooo)
+            end
+          end
+        end
+
+        bounding_card_ids_by_id = trello.bounding_card_ids_by_id(sortable_cards)
+
+        puts "Cards in list, post-sort"
+        sortable_cards.each do |card|
+          labeldata = card_data_string(card)
+          if bounding_card_ids_by_id.include? card.card.id
+            marker = "*"
+          else
+            marker = " "
+          end
+          puts "#{marker} #{labeldata}"
+        end
+        puts "\nUpdating cards."
+
+        # For each card that needs renumbering, use the bounding card
+        # IDs to find the positions of the previous (adjacent,
+        # in-order) and following in-order cards to calculate a new
+        # position that is guaranteed to be strictly increasing.
+        bounding_card_ids_by_id.each do |card_id, bounding_card_ids|
+          list_cards = trello.list_cards(list)
+          card = list_cards.find { |c| c.id == card_id }
+          before_card = nil
+          after_card = nil
+          # "top" and "bottom" have special meaning for Trello card
+          # positions - i.e. "before the start of list" and "after the
+          # end of list" - we use them so we don't honk up the
+          # renumbering algorithms on the server side.
+          if bounding_card_ids[:before].nil?
+            card.pos = 'top'
+          elsif bounding_card_ids[:after].nil?
+            card.pos = 'bottom'
+          else
+            # If we're not headed to either end of the list, put us
+            # between the appropriate pair of in-order cards.
+            before_card = list_cards.find { |c| c.id == bounding_card_ids[:before] }
+            after_card = list_cards.find { |c| c.id == bounding_card_ids[:after] }
+            card.pos = Float(before_card.pos + after_card.pos) / 2
+          end
+          if options.dry_run
+            # Make sure we have the cards we need now, even if we didn't before.
+            before_card = list_cards.find { |c| c.id == bounding_card_ids[:before] } if before_card.nil?
+            after_card = list_cards.find { |c| c.id == bounding_card_ids[:after] } if after_card.nil?
+            if card.pos == 'top' && after_card
+              # Fake the top card position for future faking (since we
+              # will do math with it)
+              card.pos = Float(after_card.pos) / 2
+            elsif card.pos == 'bottom' && before_card
+              # Fake the bottom card position for future faking (since
+              # we will do math with it)
+              card.pos += TrelloHelper::TRELLO_CARD_INCREMENT
+            end
+            puts "  Would update: #{labeldata = card_data_string(trello.sortable_card(card))}"
+          else
+            puts "  Updating: #{labeldata = card_data_string(trello.sortable_card(card))}"
+            trello.update_card(card)
+            # We want to get updated card positions for the next run,
+            # so we force reloading the cards for this list.
+            trello.cards_by_list.delete(list.id)
+          end
+        end
+      end
+    end
+  end
+end
+
+
 command :backup_org_boards do |c|
 
   c.option "--out-dir DIRECTORY", "Directory to dump backup json to"

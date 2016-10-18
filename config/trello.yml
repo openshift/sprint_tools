@@ -11,6 +11,10 @@
 :other_products:
   - product2
   - product3
+:product_order:
+  - product1
+  - product2
+  - product3
 :teams:
   :team1:
     :boards:

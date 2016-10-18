@@ -10,7 +10,7 @@ class TrelloHelper
                 :sprint_length_in_weeks, :sprint_start_day, :sprint_end_day, :logo,
                 :docs_new_list_name, :roadmap_board_lists, :max_lists_per_board,
                 :current_release_labels, :next_release_labels, :default_product,
-                :other_products, :sprint_card, :archive_path
+                :other_products, :product_order, :sprint_card, :archive_path
 
   attr_accessor :boards, :trello_login_to_email, :cards_by_list, :labels_by_card, :list_by_card, :members_by_card, :members_by_id, :checklists_by_card, :lists_by_board, :comments_by_card, :board_id_to_team_map
 
@@ -111,6 +111,10 @@ class TrelloHelper
 
   ROADMAP = 'roadmap'
 
+  TRELLO_CARD_INCREMENT = 16384.0
+
+  SortableCard = Struct.new(:card, :new_pos, :state, :product, :release)
+
   def initialize(opts)
     opts.each do |k,v|
       send("#{k}=",v)
@@ -131,6 +135,7 @@ class TrelloHelper
     @checklists_by_card = {}
     @lists_by_board = {}
     @comments_by_card = {}
+    @sortable_card_labels = {}
   end
 
   def board_ids
@@ -144,6 +149,159 @@ class TrelloHelper
     return board_ids
   end
 
+  # Associate sortable metadata to one trello card
+  def sortable_card(card)
+    sortable_card_labels = card_labels(card).map { |label| sortable_card_label(label) }.select { |label| !label.nil? }
+    if !sortable_card_labels.empty?
+      label_data = sortable_card_labels.first
+      sortable_card_labels[1..-1].each do |label|
+        if labels_in_order(label_data, label)
+          label_data = label
+        end
+      end
+    end
+    label_data = label_data ? label_data.dup : SortableCard.new
+    label_data.card = card
+    label_data.new_pos = card.pos
+    label_data
+  end
+
+  # generate a list of SortableCard objects from a list of cards
+  def sortable_cards(list)
+    sortable_cards = []
+    needs_sorting = false
+    last_card = nil
+    list_cards(list).sort_by { |card| card.pos }.each do |card|
+      card = sortable_card(card)
+      if card.release
+        if last_card
+          if !cards_in_order(last_card, card) && !cards_equal(last_card, card)
+            needs_sorting = true
+          end
+        end
+        last_card = card
+      end
+      sortable_cards << card
+    end
+    needs_sorting ? sortable_cards : nil
+  end
+
+
+  # O(n log n) implementation cribbed shamelessly from
+  # https://en.wikipedia.org/wiki/Longest_increasing_subsequence
+  def longest_increasing_sequence(a)
+    pile = []
+    middle_vals = []
+    longest = 0
+    a.each_index do |i|
+      lo = 1
+      hi = longest
+      while lo <= hi
+        mid = Float((lo+hi)/2).ceil
+        if a[middle_vals[mid]] < a[i]
+          lo = mid + 1
+        else
+          hi = mid - 1
+        end
+      end
+      pile[i] = middle_vals[lo - 1]
+      middle_vals[lo] = i
+      if lo > longest
+        longest = lo
+      end
+    end
+    longest_sequence = []
+    k = middle_vals[longest]
+    (0..(longest - 1)).reverse_each do |i|
+      longest_sequence[i] = a[k]
+      k = pile[k]
+    end
+    return longest_sequence
+  end
+
+  # For each card which needs to be updated, find the ids of cards
+  # before and after it which should be used in calculating its new
+  # position. Handle edge cases where the card is at going to be at
+  # the start or end of the list
+  #
+  # The end of the run is always selected as the "after" card, since
+  # in the caller, we calculate the new position as halfway between
+  # the "before" card position and the "after" card position.
+  # Selecting the end of the run makes sure that the calculated
+  # position is strictly increasing, even if Trello renumbers the
+  # cards
+  def bounding_card_ids_by_id(cards)
+    lis = longest_increasing_sequence(cards.map { |c| c.card.pos })
+    run_start = -1
+    run_end = -1
+    cards_between_bounding = {}
+    # Iterate over the cards to find contiguous runs of cards which need
+    # their position attribute updated
+    cards.each_with_index do |card, index|
+      if !lis.include? card.card.pos
+        if run_start == -1
+          run_start = index
+        end
+        run_end = index
+      end
+      # Check if we're in a run of cards that need updating
+      if run_start != -1
+        # Check if we've reached the end of the run
+        if (lis.include? card.card.pos) || (index == (cards.length - 1))
+          # Find the position of the in-order card preceding the run,
+          # use that to determine the lower bound for the run of cards
+          # needing updates.
+          #
+          # Determine before and after card ids. After_index will
+          # always be the same - we want the card to be between the
+          # previous card and the end of the run, so it's always
+          # properly ordered regardless how trello renumbers the list.
+          after_index = (run_end == (cards.length - 1)) ? nil : cards[run_end + 1].card.id
+          (run_start..run_end).each do |run_index|
+            bounding_card_ids = {}
+            bounding_card_ids[:before] = (run_index == 0) ? nil : cards[run_index - 1].card.id
+            bounding_card_ids[:after] = after_index
+            cards_between_bounding[cards[run_index].card.id] = bounding_card_ids
+          end
+          run_start = -1
+          run_end = -1
+        end
+      end
+    end
+    cards_between_bounding
+  end
+
+  def product_to_order
+    @product_to_order ||= Hash[product_order.map.with_index{ |v,i| [v,i] }]
+  end
+
+  # Return true if the product labels for SortableCard objects card1
+  # and card2 are in order
+  def labels_in_order(card1, card2)
+    product_to_order[card1.product] < product_to_order[card2.product]
+  end
+
+  # Return true if the SortableCard objects card1 and card2 are in
+  # order
+  def cards_in_order(card1, card2)
+    if card1.release < card2.release
+      return true
+    elsif card1.release == card2.release
+      if RELEASE_STATE_ORDER[card1.state] < RELEASE_STATE_ORDER[card2.state]
+        return true
+      end
+    end
+    if card1.product != card2.product
+      return true
+    end
+    return false
+  end
+
+  # Return true if the SortableCard objects card1 and card2 are equal
+  def cards_equal(card1, card2)
+    ((RELEASE_STATE_ORDER[card1.state] == RELEASE_STATE_ORDER[card2.state]) &&
+     (card1.release == card2.release))
+  end
 
   def board_id_to_team_map
     return @board_id_to_team_map if @board_id_to_team_map
@@ -1116,5 +1274,20 @@ class TrelloHelper
 
   def retry_sleep(retry_count)
     sleep DEFAULT_RETRY_SLEEP + (DEFAULT_RETRY_INC * retry_count)
+  end
+
+  private
+
+  # Parse out sortable/prioritizable metadata from card label
+  def sortable_card_label(label)
+    label_data = @sortable_card_labels[label.name]
+    if label_data.nil? && label.name =~ TrelloHelper::RELEASE_LABEL_REGEX
+      label_data = SortableCard.new()
+      label_data.state = $1 if $1
+      label_data.product = $3 ? $3 : 'ocp'
+      label_data.release = Gem::Version.new($4) if $4
+      @sortable_card_labels[label.name] = label_data
+    end
+    label_data
   end
 end
