@@ -246,7 +246,7 @@ command :organize_release_cards do |c|
             elsif card.pos == 'bottom' && before_card
               # Fake the bottom card position for future faking (since
               # we will do math with it)
-              card.pos += TrelloHelper::TRELLO_CARD_INCREMENT
+              card.pos = before_card.pos + TrelloHelper::TRELLO_CARD_INCREMENT
             end
             puts "  Would update: #{labeldata = card_data_string(trello.sortable_card(card))}"
           else
