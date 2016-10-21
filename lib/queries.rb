@@ -56,7 +56,7 @@ class Sprint
       },
       :qe_ready => {
         :parent => :needs_qe,
-        :function => lambda{ |card| has_comment?(card, ['tcms', 'goo.gl', 'case']) }
+        :function => lambda{ |card| has_comment?(card, ['tcms', 'goo.gl']) }
       },
       :approved => {
         :parent   => :qe_ready,
