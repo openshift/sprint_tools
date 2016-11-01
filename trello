@@ -840,6 +840,7 @@ command :update do |c|
       end
       trello.boards.each do |board_id, board|
         next if board_id == trello.documentation_board.id
+        team_map = trello.board_id_to_team_map[board_id]
         puts "\nBoard Name: #{board.name}"
         lists = trello.board_lists(board)
         lists.each do |list|
@@ -856,7 +857,7 @@ command :update do |c|
                     checklists << 'Tasks' if options.add_task_checklists
                     checklists << 'Bugs' if options.add_bug_checklists && !label_names.include?('no-qe')
 
-                    if options.add_doc_cards && label_names.include?('documentation') && doc_cards.any?
+                    if options.add_doc_cards && label_names.include?('documentation') && doc_cards.any? && !team_map[:exclude_from_documentation_board]
                       docs_card = nil
                       doc_cards.each do |d_card|
                         if d_card.desc.include?(card.short_url)
