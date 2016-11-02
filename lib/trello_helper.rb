@@ -1187,6 +1187,19 @@ class TrelloHelper
     release_cards_history
   end
 
+  def state_title(state, product, release)
+    title = nil
+    product_release = ((product.nil? || product.empty?) ? '' : "#{product}-") + release
+    if state == 'committed'
+      title = "Committed in plan to be delivered (i.e. label=committed-#{product_release}) and/or already complete (i.e. card is in an Accepted list or after on a team board, even if card was originally targeted or proposed)"
+    elsif state == 'targeted'
+      title = "Targeted to be delivered (i.e. label=targeted-#{product_release}) but not yet complete (i.e. card hasn't made it to the Accepted list or after on a team board)"
+    else
+      title = "Proposed to be delivered (i.e. label=proposed-#{product_release}) and awaiting approval"
+    end
+    title
+  end
+
   def dump_board_json(board)
     board = board(board) unless board.respond_to? :id
     board_json_url = "#{board.url}.json"

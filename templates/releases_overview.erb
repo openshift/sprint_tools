@@ -136,12 +136,6 @@
       rfes = bugzilla.rfes
 
       releases.sort_by!{ |release| [release[1], release[2], release[3], release[4]] }
-
-      state_titles = {
-        'committed' => "Committed in plan to be delivered and/or already complete",
-        'targeted' => "Targeted to be delivered but not yet committed",
-        'proposed' => "Proposed to be delivered and awaiting approval",
-      }
 %>
 <%
       if trello.other_products && !trello.other_products.empty?
@@ -259,7 +253,7 @@
             position_title = 'Team Position'
           end
 %>
-<h5 title="<%="#{state_titles[state]} #{sorted_by_title}"%>" class="anchor" id="<%="#{state}-#{release_name}"%>"><%=TrelloHelper::RELEASE_STATE_DISPLAY_NAME[state]%> (<%=release_name%>)<span class="pficon-help"></span></h5>
+<h5 title="<%="#{trello.state_title(state, product, release_name)} #{sorted_by_title}"%>" class="anchor" id="<%="#{state}-#{release_name}"%>"><%=TrelloHelper::RELEASE_STATE_DISPLAY_NAME[state]%> (<%=release_name%>)<span class="pficon-help"></span></h5>
 <div class="container">
 <div class="table-responsive">
 <table class="table table-normal table-condensed">
