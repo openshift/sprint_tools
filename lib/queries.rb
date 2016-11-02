@@ -87,7 +87,7 @@ class Sprint
         :type => 'rfes'
       },
       :complete_rfes => {
-        :function => lambda{ |rfe| has_referencing_card?(rfe, accepted_and_after_stories)},
+        :function => lambda{ |rfe| !(rfe['status'] == 'POST') && has_referencing_card?(rfe, accepted_and_after_stories)},
         :type => 'rfes'
       },
       :unplanned_rfes => {
