@@ -108,12 +108,15 @@
               if cf && cf >= sprint_begin
                 if cf > sprint_end
                   if sodc <= sprint_end && sodc > sprint_begin
-                    addtl_sprint_details = "<strong>#{release}Stage 1 Deps Feature Complete:</strong> #{sodc}"
+                    addtl_sprint_details += '<br/>' unless addtl_sprint_details.empty?
+                    addtl_sprint_details += "<strong>#{release}Stage 1 Deps Feature Complete:</strong> #{sodc}"
                   elsif fc <= sprint_end && fc > sprint_begin
-                    addtl_sprint_details = "<strong>#{release}Feature Complete:</strong> #{fc}<br/><strong>#{release}First Release Candidate (max):</strong> #{fc.next(trello.sprint_end_day.to_sym)}"
+                    addtl_sprint_details += '<br/>' unless addtl_sprint_details.empty?
+                    addtl_sprint_details += "<strong>#{release}Feature Complete:</strong> #{fc}<br/><strong>#{release}First Release Candidate (max):</strong> #{fc.next(trello.sprint_end_day.to_sym)}"
                   end
                 elsif cf <= sprint_end
-                  addtl_sprint_details = "<strong>#{release}Code Freeze (max):</strong> #{cf}<br/><strong>#{release}Final Release Candidate (max):</strong> #{cf}"
+                  addtl_sprint_details += '<br/>' unless addtl_sprint_details.empty?
+                  addtl_sprint_details += "<strong>#{release}Code Freeze (max):</strong> #{cf}<br/><strong>#{release}Final Release Candidate (max):</strong> #{cf}"
                 end
               end
             end
