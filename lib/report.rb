@@ -36,7 +36,6 @@ class Report
 
   def process(user = nil)
     stats = StatsReport.new
-
     data = required_reports.map do |r|
       rows = r.rows(user)
       hash = {
@@ -71,6 +70,9 @@ class Report
         deadlines = DeadlinesReport.new
         deadlines.data = reports.select{|x| !(x.required? || x.first_day?) }.map{|x| {:date => x.due_date, :title => x.friendly || x.title} }
         deadlines.data << {:date => $sprint.finish, :title => "Last Day of Sprint" }
+        deadlines.data << {:date => $sprint.stage_one_dep_complete, :title => "Stage 1 Deps Feature Complete" }
+        deadlines.data << {:date => $sprint.feature_complete, :title => "Feature Complete" }
+        deadlines.data << {:date => $sprint.code_freeze, :title => "Release Code Freeze" }
         deadlines.data = deadlines.data.sort_by{|x| x[:date] }
         data.unshift({
           :report => deadlines,
@@ -81,20 +83,20 @@ class Report
           }
         })
 
-        environments = EnvironmentsReport.new
-        environments.data = []
-        environments.data << {:date => $sprint.int,  :title => "First Push to INT" } if $sprint.int
-        environments.data << {:date => $sprint.stg,  :title => "Push to STG" } if $sprint.stg
-        environments.data << {:date => $sprint.prod,  :title => "Push to PROD" } if $sprint.prod
-        data = data.sort_by{|x| x[:date] }
-        data.unshift({
-          :report => environments,
-          :data => {
-            :title => environments.title,
-            :headings => environments.columns.map{|col| col.header},
-            :rows => environments.rows
-          }
-        })
+        #environments = EnvironmentsReport.new
+        #environments.data = []
+        #environments.data << {:date => $sprint.int,  :title => "First Push to INT" } if $sprint.int
+        #environments.data << {:date => $sprint.stg,  :title => "Push to STG" } if $sprint.stg
+        #environments.data << {:date => $sprint.prod,  :title => "Push to PROD" } if $sprint.prod
+        #data = data.sort_by{|x| x[:date] }
+        #data.unshift({
+        #  :report => environments,
+        #  :data => {
+        #    :title => environments.title,
+        #    :headings => environments.columns.map{|col| col.header},
+        #    :rows => environments.rows
+        #  }
+        #})
       end
 
       if story_reports_included

@@ -205,7 +205,7 @@ class DeadlinesReport
 
   def initialize
     super({
-      :title => "Upcoming Deadlines",
+      :title => "Deadlines",
       :function => :upcoming,
       :headings => [
         {:header => "Date"},
