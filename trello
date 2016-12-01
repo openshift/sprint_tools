@@ -378,6 +378,26 @@ command :days_until_code_freeze do |c|
   end
 end
 
+command :days_until_feature_complete do |c|
+  c.syntax = "#{name} days_until_feature_complete"
+
+  c.description = "Print the number of days left until feature_complete"
+  c.action do |args, options|
+    sprint = Sprint.new({:trello => trello, :uninitialized => true})
+    print (sprint.feature_complete.to_time - Time.new).to_i / (60*60*24)
+  end
+end
+
+command :days_until_stage_one_dep_complete do |c|
+  c.syntax = "#{name} days_until_stage_one_dep_complete"
+
+  c.description = "Print the number of days left until stage_one_dep_complete"
+  c.action do |args, options|
+    sprint = Sprint.new({:trello => trello, :uninitialized => true})
+    print (sprint.stage_one_dep_complete.to_time - Time.new).to_i / (60*60*24)
+  end
+end
+
 command :card_ref_from_url do |c|
   c.syntax = "#{name} card_ref_from_url"
 
