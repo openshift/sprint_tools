@@ -80,7 +80,7 @@
                 include = false
                 if TrelloHelper::CURRENT_SPRINT_STATES.include?(list_name) && ('security' == label_name)
                   include = true
-                elsif list_name !~ TrelloHelper::SPRINT_REGEXES && !list.closed? && (['blocked', 'performance', 'ux', 'community'].include?(label_name) || label_name =~ TrelloHelper::STAR_LABEL_REGEX) 
+                elsif list_name !~ TrelloHelper::SPRINT_REGEXES && !list.closed? && (['blocked', 'performance', 'ux', 'community', 'stage1-dep'].include?(label_name) || label_name =~ TrelloHelper::STAR_LABEL_REGEX) 
                   include = true
                 end
                 if include
