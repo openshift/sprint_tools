@@ -359,6 +359,19 @@ command :sprint_identifier do |c|
   end
 end
 
+command :release_identifier do |c|
+  c.syntax = "#{name} release_identifier"
+
+  c.description = "Print the release identifier"
+  c.action do |args, options|
+    if trello.current_release_labels && !trello.current_release_labels.empty?
+      if trello.current_release_labels.first =~ TrelloHelper::RELEASE_LABEL_REGEX
+        print "#{$4}"
+      end
+    end
+  end
+end
+
 command :days_left_in_sprint do |c|
   c.syntax = "#{name} days_left_in_sprint"
 
