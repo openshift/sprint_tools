@@ -145,6 +145,7 @@
         sprint_end = nil
 
         sprints.each do |sprint|
+          sprint_total_sizing = 0
           sprint_id = sprint.keys.first
           while sprint_id.last == 0
             sprint_id.pop
@@ -156,10 +157,11 @@
           sprint.values.first.each do |card|
             if card.name =~ TrelloHelper::SPRINT_REGEX
               sprint_end = card.due.to_date
-            elsif sprint_num < 9999990 && card.name =~ TrelloHelper::CARD_NAME_REGEX
+            elsif card.name =~ TrelloHelper::CARD_NAME_REGEX
               sizing = $2
               if sizing != '?'
-                team_total_sizing += sizing.to_i
+                team_total_sizing += sizing.to_i if sprint_num < 9999990
+                sprint_total_sizing += sizing.to_i
               end
             end
           end
@@ -193,7 +195,7 @@
 %>
 <tr class="<%=sprint_backlog%> <%=sprint_in_progress%> <%=sprint_next%>">
 
-<th><%=sprint_name%><div class="sprint-date"><%=sprint_dates%></div></th>
+<th><%=sprint_name%> <span class="sprint-points">(<%=sprint_total_sizing%> pts)</span><div class="sprint-date"><%=sprint_dates%></div></th>
 <%
           if sprint_end
             sprint_begin = sprint_end.next(trello.sprint_start_day)

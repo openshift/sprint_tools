@@ -54,6 +54,9 @@ p {margin: 0 0 15px;}
   font-weight: 400;
   font-size: 12px
 }
+.sprint-points {
+  font-weight: 400;
+}
 
 pre {
   border:none;
