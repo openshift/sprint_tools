@@ -195,7 +195,7 @@
 %>
 <tr class="<%=sprint_backlog%> <%=sprint_in_progress%> <%=sprint_next%>">
 
-<th><%=sprint_name%> <span class="sprint-points">(<%=sprint_total_sizing%> pts)</span><div class="sprint-date"><%=sprint_dates%></div></th>
+<th nowrap><%=sprint_name%> <span class="sprint-points">(<%=sprint_total_sizing%> pts)</span><div class="sprint-date"><%=sprint_dates%></div></th>
 <%
           if sprint_end
             sprint_begin = sprint_end.next(trello.sprint_start_day)
