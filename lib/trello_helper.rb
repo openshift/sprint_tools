@@ -34,38 +34,40 @@ class TrelloHelper
 
   CARD_NAME_REGEX = /^(\((\d+|\?)\))?(.*)/
 
+  EPIC_REF_REGEX = /\[.*\]\(https?:\/\/trello\.com\/[^\)]+\) \([^\)]+\)/
+
   ACCEPTED_STATES = {
-    'Accepted' => true,
-    'Done' => true
+    'Accepted' => 1,
+    'Done' => 2
   }
 
   COMPLETE_STATES = {
-    'Complete' => true,
-    'Complete Upstream' => true
+    'Complete Upstream' => 1,
+    'Complete' => 2
   }
 
   IN_PROGRESS_STATES = {
-    'In Progress' => true,
-    'Design' => true,
-    'Pending Upstream' => true,
-    'Pending Merge' => true
+    'Design' => 1,
+    'In Progress' => 2,
+    'Pending Upstream' => 3,
+    'Pending Merge' => 4
   }
 
   NEXT_STATES = {
-    'Stalled' => true,
-    'Next' => true
+    'Stalled' => 1,
+    'Next' => 2
   }
 
   BACKLOG_STATES = {
-    'Backlog' => true
+    'Backlog' => 1
   }
 
   NEW_STATES = {
-    'New' => true
+    'New' => 1
   }
 
   REFERENCE_STATES = {
-    'References' => true
+    'References' => 1
   }
 
   CURRENT_SPRINT_NOT_ACCEPTED_STATES = IN_PROGRESS_STATES.merge(COMPLETE_STATES)
@@ -577,18 +579,42 @@ class TrelloHelper
   def clear_epic_refs(epic_card)
     checklists = list_checklists(epic_card)
     checklists.each do |cl|
-      cl.items.each do |item|
-        if item.name =~ /\[.*\]\(https?:\/\/trello\.com\/[^\)]+\) \([^\)]+\)/
-          begin
-            checklist_delete_item(cl, item)
-          rescue => e
-            $stderr.puts "Error deleting checklist item: #{e.message}"
-          end
+      clear_checklist_epic_refs(cl)
+    end
+  end
+
+  def clear_checklist_epic_refs(cl)
+    cl.items.each do |item|
+      if item.name =~ EPIC_REF_REGEX
+        begin
+          checklist_delete_item(cl, item)
+        rescue => e
+          $stderr.puts "Error deleting checklist item: #{e.message}"
         end
       end
     end
-    create_checklist(epic_card, UNASSIGNED_RELEASE)
-    create_checklist(epic_card, FUTURE_RELEASE)
+  end
+
+  def checklist_to_checklist_item_names(epic_card)
+    checklist_to_cins = {}
+    checklists = list_checklists(epic_card)
+    checklists.each do |cl|
+      cl.items.each do |item|
+        if item.name =~ EPIC_REF_REGEX
+          checklist_to_cins[cl.name] = [] unless checklist_to_cins[cl.name]
+          checklist_to_cins[cl.name] << [item.name, item.complete?]
+        end
+      end
+    end
+    checklist_to_cins
+  end
+
+  def checklist_item_names(cl)
+    cins = []
+    cl.items.each do |item|
+      cins << item.name
+    end
+    cins
   end
 
   def clear_checklist(cl)
@@ -720,6 +746,20 @@ class TrelloHelper
               end
             end
 
+            accepted_lists.sort_by!{ |l| ACCEPTED_STATES[l.name] }
+            accepted_lists.reverse!
+            complete_lists.sort_by!{ |l| COMPLETE_STATES[l.name] }
+            complete_lists.reverse!
+            in_progress_lists.sort_by!{ |l| IN_PROGRESS_STATES[l.name] }
+            in_progress_lists.reverse!
+            next_lists.sort_by!{ |l| NEXT_STATES[l.name] }
+            next_lists.reverse!
+            backlog_lists.sort_by!{ |l| BACKLOG_STATES[l.name] }
+            backlog_lists.reverse!
+            new_lists.sort_by!{ |l| NEW_STATES[l.name] }
+            new_lists.reverse!
+            other_lists.sort_by!{ |l| l.name }
+            
             lists = accepted_lists + complete_lists + in_progress_lists + next_lists + backlog_lists + new_lists
 
             previous_sprint_lists = previous_sprint_lists.sort_by { |l| [l.name =~ SPRINT_REGEXES ? $1.to_i : 9999999, $3 ? $3.to_i : $9.to_i, $5 ? $5.to_i : $10.to_i, $7 ? $7.to_i : $12.to_i, $14.to_i]}
@@ -808,9 +848,15 @@ class TrelloHelper
           else
             tags_without_epics_checklist = create_checklist(none_epic_card, NONE_CHECKLIST_NAME)
           end
-          clear_checklist(tags_without_epics_checklist) if tags_without_epics_checklist
-          tags_without_epics.keys.each do |tag|
-            checklist_add_item(tags_without_epics_checklist, tag, false, 'bottom')
+
+          tags_without_epics_keys = tags_without_epics.keys
+          tags_without_epics_keys.sort_by!{ |tag| tag }
+
+          if checklist_item_names(tags_without_epics_checklist) != tags_without_epics_keys
+            clear_checklist(tags_without_epics_checklist)
+            tags_without_epics_keys.each do |tag|
+              checklist_add_item(tags_without_epics_checklist, tag, false, 'bottom')
+            end
           end
         end
       end
@@ -825,8 +871,8 @@ class TrelloHelper
       epic_stories_by_epic.each_value do |epic_stories|
         first_epic_story = epic_stories.first
         if first_epic_story
-          clear_epic_refs(first_epic_story[0])
-          puts "\nAdding cards to #{first_epic_story[0].name}:"
+          epic_card = first_epic_story[0]
+          checklist_to_cins = {}
           epic_stories.each do |epic_story|
             epic = epic_story[0]
             card = epic_story[1]
@@ -846,28 +892,44 @@ class TrelloHelper
               end
             end
 
-            checklist_item_name = nil
-            if include_board_name_in_epic
-              checklist_item_name = "[#{card.name}](#{card.url}) (#{list.name}) (#{board.name})#{stars}"
-            else
-              checklist_item_name = "[#{card.name}](#{card.url}) (#{list.name})#{stars}"
-            end
+            cin = checklist_item_name(card, list, board, stars, include_board_name_in_epic)
 
             if !next_card_releases.empty?
               next_card_releases.each do |card_release|
-                cl = create_checklist(epic, card_release)
-                checklist_add_item(cl, checklist_item_name, accepted, 'bottom')
+                checklist_to_cins[card_release] = [] unless checklist_to_cins[card_release]
+                checklist_to_cins[card_release] << [cin, accepted]
               end
             else
-              stories_checklist = checklist(epic, checklist_name)
-              if stories_checklist
-                puts "Adding #{card.url}"
-                checklist_add_item(stories_checklist, checklist_item_name, accepted, 'bottom')
-              end
+              checklist_to_cins[checklist_name] = [] unless checklist_to_cins[checklist_name]
+              checklist_to_cins[checklist_name] << [cin, accepted]
+            end
+          end
+
+          puts "\nAdding cards to #{epic_card.name}:"
+
+          existing_checklist_to_cins = checklist_to_checklist_item_names(epic_card)
+          existing_checklist_to_cins.each do |checklist_name, cins|
+            if cins == checklist_to_cins[checklist_name]
+              puts "#{checklist_name} is unchanged"
+              checklist_to_cins.delete(checklist_name)
+            elsif checklist_to_cins[checklist_name]
+              puts "#{checklist_name} is changed"
+            end
+          end
+
+          checklist_to_cins.each do |checklist_name, cins|
+            cl = create_checklist(epic_card, checklist_name)
+            clear_checklist_epic_refs(cl)
+            cins.each do |cin_info|
+              cin = cin_info[0]
+              accepted = cin_info[1]
+              puts "Adding #{cin} to #{checklist_name}"
+              checklist_add_item(cl, cin, accepted, 'bottom')
             end
           end
         end
       end
+
       # Delete empty epic checklists
       epic_lists.each do |epic_list|
         list_cards(epic_list).each do |epic_card|
@@ -890,7 +952,6 @@ class TrelloHelper
   def delete_empty_epic_checklists(epic_card)
     checklists = list_checklists(epic_card)
     checklists.each do |cl|
-      next if [UNASSIGNED_RELEASE, FUTURE_RELEASE].include? cl.name
       if cl.items.empty?
         begin
           trello_do('checklist') do
@@ -1290,6 +1351,16 @@ class TrelloHelper
   end
 
   private
+
+  def checklist_item_name(card, list, board, stars, include_board_name_in_epic)
+    cin = nil
+    if include_board_name_in_epic
+      cin = "[#{card.name}](#{card.url}) (#{list.name}) (#{board.name})#{stars}"
+    else
+      cin = "[#{card.name}](#{card.url}) (#{list.name})#{stars}"
+    end
+    cin
+  end
 
   # Parse out sortable/prioritizable metadata from card label
   def sortable_card_label(label)
