@@ -882,17 +882,7 @@ class TrelloHelper
             accepted = epic_story[5]
             next_card_releases = epic_story[6]
 
-            stars = ''
-            card_labels = card_labels(card)
-            card_labels.each do |label|
-              if label.name =~ STAR_LABEL_REGEX
-                star_level = $1.to_i
-                stars = ' ' + (':star:' * star_level)
-                break
-              end
-            end
-
-            cin = checklist_item_name(card, list, board, stars, include_board_name_in_epic)
+            cin = checklist_item_name(card, list, board, include_board_name_in_epic)
 
             if !next_card_releases.empty?
               next_card_releases.each do |card_release|
@@ -1352,8 +1342,17 @@ class TrelloHelper
 
   private
 
-  def checklist_item_name(card, list, board, stars, include_board_name_in_epic)
+  def checklist_item_name(card, list, board, include_board_name_in_epic)
     cin = nil
+    stars = ''
+    card_labels = card_labels(card)
+    card_labels.each do |label|
+      if label.name =~ STAR_LABEL_REGEX
+        star_level = $1.to_i
+        stars = ' ' + (':star:' * star_level)
+        break
+      end
+    end
     if include_board_name_in_epic
       cin = "[#{card.name}](#{card.url}) (#{list.name}) (#{board.name})#{stars}"
     else
