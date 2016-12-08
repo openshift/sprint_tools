@@ -407,7 +407,7 @@ command :days_until_stage_one_dep_complete do |c|
   c.description = "Print the number of days left until stage_one_dep_complete"
   c.action do |args, options|
     sprint = Sprint.new({:trello => trello, :uninitialized => true})
-    print ((sprint.stage_one_dep_complete.to_time - Time.new)) / (60*60*24).ceil
+    print ((sprint.stage_one_dep_complete.to_time - Time.new) / (60*60*24)).ceil
   end
 end
 
