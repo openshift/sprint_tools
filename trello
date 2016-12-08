@@ -387,7 +387,6 @@ command :days_until_code_freeze do |c|
   c.description = "Print the number of days left until the next code freeze"
   c.action do |args, options|
     sprint = Sprint.new({:trello => trello, :uninitialized => true})
-    puts sprint.code_freeze.to_time - Time.new
     print ((sprint.code_freeze.to_time - Time.new) / (60*60*24)).ceil
   end
 end
