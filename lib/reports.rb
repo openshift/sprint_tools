@@ -67,7 +67,7 @@ module SprintReport
 
   def required?
     if days_before_code_freeze && sprint.code_freeze
-      return (sprint.code_freeze.to_time - Time.new).to_i / (60*60*24) <= days_before_code_freeze
+      return ((sprint.code_freeze.to_time - Time.new) / (60*60*24)).ceil <= days_before_code_freeze
     elsif day.nil?
       return true
     else

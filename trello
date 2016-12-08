@@ -377,7 +377,7 @@ command :days_left_in_sprint do |c|
 
   c.description = "Print the number of days left in the sprint"
   c.action do |args, options|
-    print (trello.sprint_card.due.to_time - Time.new).to_i / (60*60*24)
+    print ((trello.sprint_card.due.to_time - Time.new) / (60*60*24)).ceil
   end
 end
 
@@ -387,7 +387,8 @@ command :days_until_code_freeze do |c|
   c.description = "Print the number of days left until the next code freeze"
   c.action do |args, options|
     sprint = Sprint.new({:trello => trello, :uninitialized => true})
-    print (sprint.code_freeze.to_time - Time.new).to_i / (60*60*24)
+    puts sprint.code_freeze.to_time - Time.new
+    print ((sprint.code_freeze.to_time - Time.new) / (60*60*24)).ceil
   end
 end
 
@@ -397,7 +398,7 @@ command :days_until_feature_complete do |c|
   c.description = "Print the number of days left until feature_complete"
   c.action do |args, options|
     sprint = Sprint.new({:trello => trello, :uninitialized => true})
-    print (sprint.feature_complete.to_time - Time.new).to_i / (60*60*24)
+    print ((sprint.feature_complete.to_time - Time.new) / (60*60*24)).ceil
   end
 end
 
@@ -407,7 +408,7 @@ command :days_until_stage_one_dep_complete do |c|
   c.description = "Print the number of days left until stage_one_dep_complete"
   c.action do |args, options|
     sprint = Sprint.new({:trello => trello, :uninitialized => true})
-    print (sprint.stage_one_dep_complete.to_time - Time.new).to_i / (60*60*24)
+    print ((sprint.stage_one_dep_complete.to_time - Time.new)) / (60*60*24).ceil
   end
 end
 
