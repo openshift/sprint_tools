@@ -2,6 +2,10 @@ require 'bugzilla'
 require 'base64'
 
 class BugzillaHelper
+  DEFAULT_RETRIES = 5
+  DEFAULT_RETRY_SLEEP = 2
+  DEFAULT_RETRY_INC = 1
+
   # Bugzilla Config
   attr_accessor :username, :password, :products
 
@@ -19,24 +23,35 @@ class BugzillaHelper
     @bz = Bugzilla::Bug.new(xmlrpc)
   end
 
+  def retry_sleep(retry_count)
+    sleep DEFAULT_RETRY_SLEEP + (DEFAULT_RETRY_INC * retry_count)
+  end
+
+  def retry_on_exception(retries=DEFAULT_RETRIES)
+    i = 0
+    while true
+      begin
+        yield
+        break
+      rescue e
+        $stderr.puts "#Exception {e.class} with bugzilla search: #{e.message}"
+        raise if i >= retries
+        retry_sleep i
+        i += 1
+      end
+    end
+  end
+
   def bug_status_by_url(url)
     status = 'NOTFOUND'
     if url =~ /https?:\/\/bugzilla\.redhat\.com\/show_bug\.cgi\?id=(\d+)/
       id = $1
       tries = 1
-      while true
-        begin
-          result = bz.get_bugs([id], ::Bugzilla::Bug::FIELDS_DETAILS)
-          if !result.empty?
-            status = result.first['status']
-          end
-          break
-        rescue
-          if tries == 3
-            $stderr.puts "Error getting: #{url}"
-            raise
-          end
-          tries += 1
+      result = nil
+      retry_on_exception do
+        result = bz.get_bugs([id], ::Bugzilla::Bug::FIELDS_DETAILS)
+        if !result.empty?
+          status = result.first['status']
         end
       end
     end
@@ -59,7 +74,11 @@ class BugzillaHelper
       products.each do |product|
         searchopts[:product] = product
         searchopts[:component] = 'RFE'
-        bz.search(searchopts)['bugs'].each do |b|
+        bugs = nil
+        retry_on_exception do
+          bugs = bz.search(searchopts)["bugs"]
+        end
+        bugs.each do |b|
           #next if b['priority'] == 'low'
           rfes[b['id']] = b
         end
