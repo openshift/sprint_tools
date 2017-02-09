@@ -33,7 +33,7 @@ class BugzillaHelper
       begin
         yield
         break
-      rescue e
+      rescue => e
         $stderr.puts "#Exception {e.class} with bugzilla search: #{e.message}"
         raise if i >= retries
         retry_sleep i
