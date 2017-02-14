@@ -1,4 +1,5 @@
 #!/usr/bin/env ruby
+# coding: utf-8
 
 $LOAD_PATH.unshift(File.dirname(__FILE__) + '/lib') unless $LOAD_PATH.include?(File.dirname(__FILE__) + '/lib')
 
@@ -15,6 +16,20 @@ require 'commander/import'
 require 'bugzilla_helper'
 
 Encoding.default_external = "UTF-8"
+
+I18n.backend.store_translations(:en,
+                                :i18n => {
+                                  :transliterate => {
+                                    :rule => {
+                                      'ö' => 'oe',
+                                      'ü' => 'ue',
+                                      'Ö' => 'Oe',
+                                      'Ü' => 'Ue',
+                                      'ß' => 'ss',
+                                    }
+                                  }
+                                })
+I18n.config.enforce_available_locales = false
 
 name="#{__FILE__}"
 
