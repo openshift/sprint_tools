@@ -452,12 +452,12 @@ command :list_invalid_users do |c|
     ldap = load_conf(LdapHelper, CONFIG.ldap, true)
     puts "Potential Invalid Organization Users:"
     valid_user_names = {}
-    invalid_user_names = ldap.print_invalid_members(trello.org.members, valid_user_names, invalid_user_names)
+    invalid_user_names = ldap.print_invalid_members(trello.org_members, valid_user_names, invalid_user_names)
     puts "\n\nPotential Invalid Board Users:"
     trello.org_boards.each do |board|
       unless board.closed?
         puts "\n#{board.name}:"
-        ldap.print_invalid_members(board.members, valid_user_names, invalid_user_names.clone)
+        ldap.print_invalid_members(trello.board_members(board), valid_user_names, invalid_user_names.clone)
       end
     end
     puts "\n\nValid Logins:"
@@ -490,8 +490,7 @@ command :generate_trello_login_to_email_json do |c|
   c.action do |args, options|
     require 'ldap_helper'
     ldap = load_conf(LdapHelper, CONFIG.ldap, true)
-    members = trello.org.members
-    valid_users = ldap.valid_users(members)
+    valid_users = ldap.valid_users(trello.org_members)
     if options.out
       File.open(options.out, 'w') {|f| f.write(JSON.pretty_generate(valid_users)) }
     else

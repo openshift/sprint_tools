@@ -500,6 +500,12 @@ class TrelloHelper
     return lists
   end
 
+  def board_members(board)
+    trello_do('board_members') do
+      return target(board.members)
+    end
+  end
+
   def epic_list_names
     roadmap_board_lists || ['Epic Backlog', 'Card Groups']
   end
@@ -1176,6 +1182,12 @@ class TrelloHelper
   def org_boards
     trello_do('org_boards') do
       return target(org.boards)
+    end
+  end
+
+  def org_members
+    trello_do('org_members') do
+      return target(org.members)
     end
   end
 
