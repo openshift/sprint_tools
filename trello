@@ -855,22 +855,26 @@ command :update do |c|
 
   c.description = "An assortment of Trello modification utilities"
   c.action do |args, options|
-    doc_cards = []
+    doc_cards_by_documentation_id = {}
     if options.update_roadmap
       trello.update_roadmap
     end
     if options.add_doc_cards
-      lists = trello.board_lists(trello.documentation_board)
-      lists.each do |list|
-        cards = trello.list_cards(list)
-        if !cards.empty?
-          puts "\n  List: #{list.name}  (#cards #{cards.length})"
-          cards.each_with_index do |card, index|
-            if !(card.name =~ TrelloHelper::SPRINT_REGEX && !card.due.nil?)
-              doc_cards << card
+      trello.documentation_board_ids.each do |documentation_id|
+        doc_cards = []
+        lists = trello.board_lists(trello.documentation_board(documentation_id))
+        lists.each do |list|
+          cards = trello.list_cards(list)
+          if !cards.empty?
+            puts "\n  List: #{list.name}  (#cards #{cards.length})"
+            cards.each_with_index do |card, index|
+              if !(card.name =~ TrelloHelper::SPRINT_REGEX && !card.due.nil?)
+                doc_cards << card
+              end
             end
           end
         end
+        doc_cards_by_documentation_id[documentation_id] = doc_cards
       end
     end
     if options.add_task_checklists || options.add_bug_checklists || options.update_bug_tasks || options.add_doc_tasks || options.add_doc_cards
@@ -879,16 +883,22 @@ command :update do |c|
         bugzilla = load_conf(BugzillaHelper, CONFIG.bugzilla, true)
       end
       documentation_board_labels = nil
+      # Build a labels reference for each documentation board
+      documentation_board_labels_by_name = {}
       if options.add_doc_cards
-        documentation_board_labels = trello.target(trello.board_labels(trello.documentation_board))
-        documentation_board_labels_by_name = {}
-        documentation_board_labels.each do |board_label|
-          documentation_board_labels_by_name[board_label.name] = board_label
+        trello.documentation_board_ids.each do |documentation_id|
+          documentation_board_labels = trello.target(trello.board_labels(trello.boards[documentation_id]))
+          documentation_board_labels_by_name[documentation_id] = {}
+          documentation_board_labels.each do |board_label|
+            documentation_board_labels_by_name[documentation_id][board_label.name] = board_label
+          end
         end
       end
       trello.boards.each do |board_id, board|
-        next if board_id == trello.documentation_board.id
+        next if trello.documentation_board_ids.include? board_id
         team_map = trello.board_id_to_team_map[board_id]
+        # Use the team docs board if set, default to global docs board
+        documentation_id = team_map[:documentation_id] || trello.documentation_board.id
         puts "\nBoard Name: #{board.name}"
         lists = trello.board_lists(board)
         lists.each do |list|
@@ -905,9 +915,9 @@ command :update do |c|
                     checklists << 'Tasks' if options.add_task_checklists
                     checklists << 'Bugs' if options.add_bug_checklists && !label_names.include?('no-qe')
 
-                    if options.add_doc_cards && label_names.include?('documentation') && doc_cards.any? && !team_map[:exclude_from_documentation_board]
+                    if options.add_doc_cards && label_names.include?('documentation') && doc_cards_by_documentation_id[documentation_id].any? && !team_map[:exclude_from_documentation_board]
                       docs_card = nil
-                      doc_cards.each do |d_card|
+                      doc_cards_by_documentation_id[documentation_id].each do |d_card|
                         if d_card.desc.include?(card.short_url)
                           docs_card = d_card
                           break
@@ -918,7 +928,8 @@ command :update do |c|
                         if card.name =~ TrelloHelper::CARD_NAME_REGEX
                           name = $3.strip
                         end
-                        docs_card = Trello::Card.create(:name => "Document: #{name}", :desc => "Corresponding Development Card: #{card.short_url}", :list_id => trello.documentation_next_list.id)
+                        # Update the next list on the appropriate docs board
+                        docs_card = Trello::Card.create(:name => "Document: #{name}", :desc => "Corresponding Development Card: #{card.short_url}", :list_id => trello.documentation_next_list(documentation_id).id)
                       end
                       # Sync release labels from the dev card to the docs card
                       release_labels = []
@@ -938,14 +949,14 @@ command :update do |c|
                       labels_to_remove = docs_card_release_labels - release_labels
                       labels_to_add = release_labels - docs_card_release_labels
                       labels_to_remove.each do |label_name|
-                        label = documentation_board_labels_by_name[label_name]
+                        label = documentation_board_labels_by_name[documentation_id][label_name]
                         if label
                           puts "Removing #{label_name} from #{docs_card.name} (#{docs_card.url})"
                           trello.remove_label_from_card(docs_card, label, false)
                         end
                       end
                       labels_to_add.each do |label_name|
-                        label = documentation_board_labels_by_name[label_name]
+                        label = documentation_board_labels_by_name[documentation_id][label_name]
                         if label
                           puts "Adding #{label_name} to #{docs_card.name} (#{docs_card.url})"
                           trello.add_label_to_card(docs_card, label, false)

@@ -138,6 +138,8 @@ class TrelloHelper
     @lists_by_board = {}
     @comments_by_card = {}
     @sortable_card_labels = {}
+    @documentation_board = {}
+    @documentation_next_list = {}
   end
 
   def board_ids
@@ -395,9 +397,9 @@ class TrelloHelper
     nil
   end
 
-  def documentation_board
-    @documentation_board = find_board(documentation_id) unless @documentation_board
-    @documentation_board
+  def documentation_board(documentation_board_id=documentation_id)
+    @documentation_board[documentation_board_id] = find_board(documentation_board_id) unless @documentation_board[documentation_board_id]
+    @documentation_board[documentation_board_id]
   end
 
   def roadmap_board
@@ -513,17 +515,21 @@ class TrelloHelper
     lists
   end
 
-  def documentation_next_list
-    unless @documentation_next_list
+  def documentation_board_ids
+    @documentation_board_ids ||= [documentation_board.id] + teams.select{|k,v| v.include? :documentation_id}.map{|t,v| v[:documentation_id]}
+  end
+
+  def documentation_next_list(documentation_board_id=documentation_board.id)
+    unless @documentation_next_list[documentation_board_id]
       new_list_name = docs_new_list_name || 'New'
-      board_lists(documentation_board).each do |l|
+      board_lists(boards[documentation_board_id]).each do |l|
         if l.name == new_list_name
-          @documentation_next_list = l
+          @documentation_next_list[documentation_board_id] = l
           break
         end
       end
     end
-    @documentation_next_list
+    @documentation_next_list[documentation_board_id]
   end
 
   def checklist(card, checklist_name)
