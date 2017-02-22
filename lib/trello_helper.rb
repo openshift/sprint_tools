@@ -916,6 +916,9 @@ class TrelloHelper
               checklist_to_cins.delete(checklist_name)
             elsif checklist_to_cins[checklist_name]
               puts "#{checklist_name} is changed"
+            else
+              puts "#{checklist_name} has no valid epic refs"
+              clear_checklist_epic_refs(checklist(epic_card, checklist_name))
             end
           end
 
@@ -955,15 +958,19 @@ class TrelloHelper
     checklists = list_checklists(epic_card)
     checklists.each do |cl|
       if cl.items.empty?
-        begin
-          trello_do('checklist') do
-            cl.delete
-            @checklists_by_card.delete(epic_card.id)
-          end
-        rescue => e
-          $stderr.puts "Error deleting checklist: #{e.message}"
-        end
+        delete_checklist(cl, epic_card)
       end
+    end
+  end
+
+  def delete_checklist(cl, card)
+    begin
+      trello_do('checklist') do
+        cl.delete
+        @checklists_by_card.delete(card.id)
+      end
+    rescue => e
+      $stderr.puts "Error deleting checklist: #{e.message}"
     end
   end
 
