@@ -69,9 +69,10 @@
       search_list_info = []
       trello.teams.keys.map{ |team_name| team_name.to_s }.each do |team_name|
         trello.team_boards(team_name).each do |board|
+          team_map = trello.board_id_to_team_map[board.id]
           trello.board_lists(board).each do |list|
             search_list_info << [team_name, board, list]
-          end
+          end unless team_map[:exclude_from_releases_overview]
         end
       end
 
