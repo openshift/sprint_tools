@@ -1219,7 +1219,7 @@ class TrelloHelper
         board_lists(board).each do |list|
           search_list_info << [team_name, board, list]
         end
-      end unless team_map[:exclude_from_releases_overview]
+      end
     end
 
     roadmap_boards.each do |board|

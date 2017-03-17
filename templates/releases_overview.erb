@@ -67,13 +67,13 @@
       release_data = {}
       releases = []
       search_list_info = []
-      trello.teams.keys.map{ |team_name| team_name.to_s }.each do |team_name|
+      trello.teams.each do |team_name, team_map|
+        team_name = team_name.to_s
         trello.team_boards(team_name).each do |board|
-          team_map = trello.board_id_to_team_map[board.id]
           trello.board_lists(board).each do |list|
             search_list_info << [team_name, board, list]
-          end unless team_map[:exclude_from_releases_overview]
-        end
+          end
+        end unless team_map[:exclude_from_releases_overview]
       end
 
       trello.roadmap_boards.each do |board|
@@ -180,6 +180,7 @@
 <%
         states = release_data[release_name]
         release_cards_history = trello.release_cards_history(product, release_name)
+        release_cards_history.delete_if{ |id, card_info| team_map = trello.teams[card_info['team_name'].to_sym]; team_map && team_map[:exclude_from_releases_overview] } if release_cards_history
         added_to_release = false
         TrelloHelper::RELEASE_STATES.each do |state|
           release_cards = states[state]
@@ -232,6 +233,8 @@
 <div class="container">
 <% 
         release_cards_history = trello.release_cards_history(product, release_name)
+        release_cards_history.delete_if{ |id, card_info| team_map = trello.teams[card_info['team_name'].to_sym]; team_map && team_map[:exclude_from_releases_overview] } if release_cards_history
+
         cards_added_to_release = []
 
         states = release_data[release_name]
