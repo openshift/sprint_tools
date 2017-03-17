@@ -1213,12 +1213,13 @@ class TrelloHelper
   def release_cards(product, release)
     release_cards = {}
     search_list_info = []
-    teams.keys.map{ |team_name| team_name.to_s }.each do |team_name|
+    teams.each do |team_name, team_map|
+      team_name = team_name.to_s
       team_boards(team_name).each do |board|
         board_lists(board).each do |list|
           search_list_info << [team_name, board, list]
         end
-      end
+      end unless team_map[:exclude_from_releases_overview]
     end
 
     roadmap_boards.each do |board|
