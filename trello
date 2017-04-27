@@ -847,179 +847,49 @@ command :update do |c|
 
   c.option "--add-task-checklists", "Add task checklists to stories"
   c.option "--add-bug-checklists", "Add checklists to stories"
-  c.option "--add-doc-tasks", "Add documentation tasks to documentation labeled stories"
-  c.option "--add-doc-cards", "Add documentation cards for documentation labeled dev cards"
+  c.option "--add-dependent-tasks", "Add dependent work tasks (e.g. documentation tasks) to corresponding labeled stories"
+  c.option "--add-dependent-cards", "Add dependent work cards (e.g. documentation cards) for corresponding labeled dev cards"
   c.option "--update-bug-tasks", "Update closed/verified bug tasks"
   c.option "--update-roadmap", "Update the roadmap board with progress from teams.  Note: Existing checklist items will be removed."
 
   c.description = "An assortment of Trello modification utilities"
   c.action do |args, options|
-    doc_cards_by_documentation_id = {}
     if options.update_roadmap
       trello.update_roadmap
     end
-    if options.add_doc_cards
-      trello.documentation_board_ids.each do |documentation_id|
-        doc_cards = []
-        lists = trello.board_lists(trello.documentation_board(documentation_id))
-        lists.each do |list|
-          cards = trello.list_cards(list)
-          if !cards.empty?
-            puts "\n  List: #{list.name}  (#cards #{cards.length})"
-            cards.each_with_index do |card, index|
-              if !(card.name =~ TrelloHelper::SPRINT_REGEX && !card.due.nil?)
-                doc_cards << card
-              end
-            end
-          end
-        end
-        doc_cards_by_documentation_id[documentation_id] = doc_cards
-      end
-    end
-    if options.add_task_checklists || options.add_bug_checklists || options.update_bug_tasks || options.add_doc_tasks || options.add_doc_cards
-      bugzilla = nil
-      if options.update_bug_tasks
-        bugzilla = load_conf(BugzillaHelper, CONFIG.bugzilla, true)
-      end
-      documentation_board_labels = nil
-      # Build a labels reference for each documentation board
-      documentation_board_labels_by_name = {}
-      if options.add_doc_cards
-        trello.documentation_board_ids.each do |documentation_id|
-          documentation_board_labels = trello.target(trello.board_labels(trello.boards[documentation_id]))
-          documentation_board_labels_by_name[documentation_id] = {}
-          documentation_board_labels.each do |board_label|
-            documentation_board_labels_by_name[documentation_id][board_label.name] = board_label
-          end
-        end
-      end
+    if options.add_task_checklists || options.add_bug_checklists || options.update_bug_tasks || options.add_dependent_tasks || options.add_dependent_cards
+      # Build a labels reference for each dependent work board
       trello.boards.each do |board_id, board|
-        next if trello.documentation_board_ids.include? board_id
+        next if trello.dependent_work_board_ids.include? board_id
         team_map = trello.board_id_to_team_map[board_id]
-        # Use the team docs board if set, default to global docs board
-        documentation_id = team_map[:documentation_id] || trello.documentation_board.id
-        puts "\nBoard Name: #{board.name}"
-        lists = trello.board_lists(board)
-        lists.each do |list|
-          if TrelloHelper::CURRENT_SPRINT_NOT_ACCEPTED_STATES.include?(list.name)
-            cards = trello.list_cards(list)
-            if !cards.empty?
-              puts "\n  List: #{list.name}  (#cards #{cards.length})"
-              cards.each_with_index do |card, index|
-                if options.add_task_checklists || options.add_bug_checklists || options.add_doc_cards
-                  if !(card.name =~ TrelloHelper::SPRINT_REGEX && !card.due.nil?)
-                    labels = trello.card_labels(card)
-                    label_names = labels.map{|l| l.name }
-                    checklists = []
-                    checklists << 'Tasks' if options.add_task_checklists
-                    checklists << 'Bugs' if options.add_bug_checklists && !label_names.include?('no-qe')
-
-                    if options.add_doc_cards && label_names.include?('documentation') && doc_cards_by_documentation_id[documentation_id].any? && !team_map[:exclude_from_documentation_board]
-                      docs_card = nil
-                      doc_cards_by_documentation_id[documentation_id].each do |d_card|
-                        if d_card.desc.include?(card.short_url)
-                          docs_card = d_card
-                          break
-                        end
+        # Use the team dependent work boards if set, default to global
+        # dependent work boards
+        dependent_work_boards = team_map[:dependent_work_boards] || trello.dependent_work_boards
+        dependent_work_boards.each do |dep_work_board_id, dep_work_board_params|
+          puts "\nBoard Name: #{board.name}"
+          lists = trello.board_lists(board)
+          lists.each do |list|
+            if TrelloHelper::CURRENT_SPRINT_NOT_ACCEPTED_STATES.include?(list.name)
+              cards = trello.list_cards(list)
+              if !cards.empty?
+                puts "\n  List: #{list.name}  (#cards #{cards.length})"
+                cards.each_with_index do |card, index|
+                  if options.add_task_checklists || options.add_bug_checklists || options.add_dependent_cards
+                    if !(card.name =~ TrelloHelper::SPRINT_REGEX && !card.due.nil?)
+                      labels = trello.card_labels(card)
+                      label_names = labels.map{|l| l.name }
+                      if options.add_dependent_cards
+                        trello.add_dependent_cards(card, dep_work_board_id, dep_work_board_params, label_names, team_map)
                       end
-                      unless docs_card
-                        name = card.name
-                        if card.name =~ TrelloHelper::CARD_NAME_REGEX
-                          name = $3.strip
-                        end
-                        # Update the next list on the appropriate docs board
-                        docs_card = Trello::Card.create(:name => "Document: #{name}", :desc => "Corresponding Development Card: #{card.short_url}", :list_id => trello.documentation_next_list(documentation_id).id)
-                      end
-                      # Sync release labels from the dev card to the docs card
-                      release_labels = []
-                      label_names.each do |label_name|
-                        if label_name =~ TrelloHelper::RELEASE_LABEL_REGEX
-                          release_labels << label_name
-                        end
-                      end
-                      docs_card_labels = trello.card_labels(docs_card)
-                      docs_card_label_names = docs_card_labels.map{|l| l.name }
-                      docs_card_release_labels = []
-                      docs_card_label_names.each do |docs_card_label_name|
-                        if docs_card_label_name =~ TrelloHelper::RELEASE_LABEL_REGEX
-                          docs_card_release_labels << docs_card_label_name
-                        end
-                      end
-                      labels_to_remove = docs_card_release_labels - release_labels
-                      labels_to_add = release_labels - docs_card_release_labels
-                      labels_to_remove.each do |label_name|
-                        label = documentation_board_labels_by_name[documentation_id][label_name]
-                        if label
-                          puts "Removing #{label_name} from #{docs_card.name} (#{docs_card.url})"
-                          trello.remove_label_from_card(docs_card, label, false)
-                        end
-                      end
-                      labels_to_add.each do |label_name|
-                        label = documentation_board_labels_by_name[documentation_id][label_name]
-                        if label
-                          puts "Adding #{label_name} to #{docs_card.name} (#{docs_card.url})"
-                          trello.add_label_to_card(docs_card, label, false)
-                        end
-                      end
-                    end
-
-                    trello.list_checklists(card).each do |checklist|
-                      checklists.delete(checklist.name)
-                      break if checklists.empty?
-                    end if !checklists.empty?
-
-                    if checklists.any?
-                      puts "Adding #{checklists.pretty_inspect.chomp} to #{card.name}"
-                      checklists.each do |checklist_name|
-                        trello.create_checklist(card, checklist_name)
-                      end
+                      trello.update_card_checklists(card, label_names, options.add_task_checklists, options.add_bug_checklists)
                     end
                   end
-                end
-                if options.update_bug_tasks
-                  ['Bugs', 'Tasks'].each do |cl|
-                    bugs_checklist = trello.checklist(card, cl)
-                    if bugs_checklist
-                      bugs_checklist.items.each do |item|
-                        item_name = item.name.strip
-                        if item_name =~ TrelloHelper::BUGZILLA_REGEX
-                          bug_url = $1
-                          status = bugzilla.bug_status_by_url(bug_url)
-                          if status == 'VERIFIED' || status == 'CLOSED'
-                            if !item.complete?
-                              puts "Marking complete: #{item_name}"
-                              trello.checklist_add_item(bugs_checklist, item_name, true, 'bottom')
-                              trello.checklist_delete_item(bugs_checklist, item)
-                            end
-                          else
-                            if item.complete?
-                              puts "Marking incomplete: #{item_name}"
-                              trello.checklist_add_item(bugs_checklist, item_name, false, 'top')
-                              trello.checklist_delete_item(bugs_checklist, item)
-                            end
-                          end
-                        end
-                      end
-                    end
+                  if options.update_bug_tasks
+                    bugzilla = load_conf(BugzillaHelper, CONFIG.bugzilla, true)
+                    trello.update_bug_tasks(card, bugzilla)
                   end
-                end
-                if options.add_doc_tasks
-                  if trello.card_labels(card).map{|label| label.name }.include?("documentation")
-                    tasks_checklist = trello.checklist(card, 'Tasks')
-                    if tasks_checklist
-                      doc_reminder = "Update this card (in the description or in a comment) with details about what needs to be documented."
-                      found = false
-                      tasks_checklist.items.each do |item|
-                        if item.name.include? doc_reminder
-                          found = true
-                          break
-                        end
-                      end
-                      unless found
-                        puts "Adding documentation reminder: #{card.name}"
-                        trello.checklist_add_item(tasks_checklist, doc_reminder, false, 'bottom')
-                      end
-                    end
+                  if options.add_dependent_tasks && dep_work_board_params.include?(:task_reminder_text)
+                    trello.add_dependent_tasks_reminder(card, dep_work_board_params[:task_reminder_text], dep_work_board_params[:label])
                   end
                 end
               end
