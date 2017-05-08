@@ -4,13 +4,13 @@ require 'kramdown'
 class TrelloHelper
   # Trello Config
   attr_accessor :consumer_key, :consumer_secret, :oauth_token, :oauth_token_secret, :teams,
-                :documentation_id, :organization_id, :roadmap_board, :roadmap_id,
-                :public_roadmap_id, :public_roadmap_board, :documentation_board,
-                :documentation_next_list, :organization_name,
+                :organization_id, :roadmap_board, :roadmap_id,
+                :public_roadmap_id, :public_roadmap_board,
+                :next_dependent_work_list, :organization_name,
                 :sprint_length_in_weeks, :sprint_start_day, :sprint_end_day, :logo,
-                :docs_new_list_name, :roadmap_board_lists, :max_lists_per_board,
+                :roadmap_board_lists, :max_lists_per_board,
                 :current_release_labels, :next_release_labels, :default_product,
-                :other_products, :product_order, :sprint_card, :archive_path
+                :other_products, :product_order, :sprint_card, :archive_path, :dependent_work_boards
 
   attr_accessor :boards, :trello_login_to_email, :cards_by_list, :labels_by_card, :list_by_card, :members_by_card, :members_by_id, :checklists_by_card, :lists_by_board, :comments_by_card, :board_id_to_team_map
 
@@ -138,8 +138,8 @@ class TrelloHelper
     @lists_by_board = {}
     @comments_by_card = {}
     @sortable_card_labels = {}
-    @documentation_board = {}
-    @documentation_next_list = {}
+    @dependent_work_board = {}
+    @next_dependent_work_list = {}
   end
 
   def board_ids
@@ -397,9 +397,9 @@ class TrelloHelper
     nil
   end
 
-  def documentation_board(documentation_board_id=documentation_id)
-    @documentation_board[documentation_board_id] = find_board(documentation_board_id) unless @documentation_board[documentation_board_id]
-    @documentation_board[documentation_board_id]
+  def dependent_work_board(board_id=dependent_work_board_id)
+    @dependent_work_board[board_id] = find_board(board_id) unless @dependent_work_board[board_id]
+    @dependent_work_board[board_id]
   end
 
   def roadmap_board
@@ -521,21 +521,20 @@ class TrelloHelper
     lists
   end
 
-  def documentation_board_ids
-    @documentation_board_ids ||= [documentation_board.id] + teams.select{|k,v| v.include? :documentation_id}.map{|t,v| v[:documentation_id]}
+  def dependent_work_board_ids
+    @dependent_work_board_ids ||= dependent_work_boards.keys + teams.select{|k,v| v.include? :dependent_work_boards}.map{|t,v| v[:dependent_work_boards].keys}.flatten
   end
 
-  def documentation_next_list(documentation_board_id=documentation_board.id)
-    unless @documentation_next_list[documentation_board_id]
-      new_list_name = docs_new_list_name || 'New'
-      board_lists(boards[documentation_board_id]).each do |l|
+  def next_dependent_work_list(board_id=dependent_work_board.id, new_list_name='New')
+    unless @next_dependent_work_list[board_id]
+      board_lists(boards[board_id]).each do |l|
         if l.name == new_list_name
-          @documentation_next_list[documentation_board_id] = l
+          @next_dependent_work_list[board_id] = l
           break
         end
       end
     end
-    @documentation_next_list[documentation_board_id]
+    @next_dependent_work_list[board_id]
   end
 
   def checklist(card, checklist_name)
@@ -638,7 +637,7 @@ class TrelloHelper
   def create_checklist(card, checklist_name)
     retry_count = 0
     cl = checklist(card, checklist_name)
-    puts "Adding #{checklist_name} to #{card.name}" if cl.nil?
+    puts "Adding #{checklist_name} to #{card.name} (#{card.id})" if cl.nil?
     while cl.nil?
       begin
         cl = Trello::Checklist.create({:name => checklist_name, :board_id => card.board_id, :card_id => card.id})
@@ -1345,6 +1344,158 @@ class TrelloHelper
 
   def markdown_to_html(text)
     Kramdown::Document.new(text).to_html
+  end
+
+  def dependent_cards_by_board_id()
+    return @dependent_cards_by_board_id if @dependent_cards_by_board_id
+    @dependent_cards_by_board_id = {}
+    dependent_work_board_ids.each do |board_id|
+      dependent_cards = []
+      lists = board_lists(dependent_work_board(board_id))
+      lists.each do |list|
+        cards = list_cards(list)
+        if !cards.empty?
+          puts "\n  List: #{list.name}  (#cards #{cards.length})"
+          cards.each_with_index do |card, index|
+            if !(card.name =~ SPRINT_REGEX && !card.due.nil?)
+              dependent_cards << card
+            end
+          end
+        end
+      end
+      @dependent_cards_by_board_id[board_id] = dependent_cards
+    end
+    @dependent_cards_by_board_id
+  end
+
+  def dependent_work_board_labels_by_name()
+    return @dependent_work_board_labels_by_name if @dependent_work_board_labels_by_name
+    @dependent_work_board_labels_by_name = {}
+    dependent_work_board_ids.each do |dependent_work_board_id|
+      dependent_work_board_labels = target(board_labels(boards[dependent_work_board_id]))
+      @dependent_work_board_labels_by_name[dependent_work_board_id] = {}
+      dependent_work_board_labels.each do |board_label|
+        @dependent_work_board_labels_by_name[dependent_work_board_id][board_label.name] = board_label
+      end
+    end
+    @dependent_work_board_labels_by_name
+  end
+
+  def add_dependent_cards(card, dependent_work_board_id, params, label_names, team_map)
+    if label_names.include?(params[:label]) && dependent_cards_by_board_id.include?(dependent_work_board_id) && !team_map[:exclude_from_dependent_work_board]
+      dependent_card = nil
+      dependent_cards_by_board_id[dependent_work_board_id].each do |d_card|
+        if d_card.desc.include?(card.short_url)
+          dependent_card = d_card
+          break
+        end
+      end
+      unless dependent_card
+        name = card.name
+        if card.name =~ CARD_NAME_REGEX
+          name = $3.strip
+        end
+        # Update the next list on the appropriate dependent work board
+        dependent_card = Trello::Card.create(:name => "#{params[:card_name_prefix]}: #{name}", :desc => "#{params[:card_desc_prefix]}: #{card.short_url}", :list_id => next_dependent_work_list(dependent_work_board_id, params[:new_list_name]).id)
+      end
+      # Sync release labels from the dev card to the dependent work card
+      # TODO Make this configurable?
+      release_labels = []
+      label_names.each do |label_name|
+        if label_name =~ RELEASE_LABEL_REGEX
+          release_labels << label_name
+        end
+      end
+      dependent_card_labels = card_labels(dependent_card)
+      dependent_card_label_names = dependent_card_labels.map {|l| l.name}
+      dependent_card_release_labels = []
+      dependent_card_label_names.each do |dependent_card_label_name|
+        if dependent_card_label_name =~ RELEASE_LABEL_REGEX
+          dependent_card_release_labels << dependent_card_label_name
+        end
+      end
+      labels_to_remove = dependent_card_release_labels - release_labels
+      labels_to_add = release_labels - dependent_card_release_labels
+      labels_to_remove.each do |label_name|
+        label = dependent_work_board_labels_by_name[dependent_work_board_id][label_name]
+        if label
+          puts "Removing #{label_name} from #{dependent_card.name} (#{dependent_card.url})"
+          remove_label_from_card(dependent_card, label, false)
+        end
+      end
+      labels_to_add.each do |label_name|
+        label = dependent_work_board_labels_by_name[dependent_work_board_id][label_name]
+        if label
+          puts "Adding #{label_name} to #{dependent_card.name} (#{dependent_card.url})"
+          add_label_to_card(dependent_card, label, false)
+        end
+      end
+    end
+  end
+
+  def update_bug_tasks(card, bugzilla)
+    ['Bugs', 'Tasks'].each do |cl|
+      bugs_checklist = checklist(card, cl)
+      if bugs_checklist
+        bugs_checklist.items.each do |item|
+          item_name = item.name.strip
+          if item_name =~ BUGZILLA_REGEX
+            bug_url = $1
+            status = bugzilla.bug_status_by_url(bug_url)
+            if status == 'VERIFIED' || status == 'CLOSED'
+              if !item.complete?
+                puts "Marking complete: #{item_name}"
+                checklist_add_item(bugs_checklist, item_name, true, 'bottom')
+                checklist_delete_item(bugs_checklist, item)
+              end
+            else
+              if item.complete?
+                puts "Marking incomplete: #{item_name}"
+                checklist_add_item(bugs_checklist, item_name, false, 'top')
+                checklist_delete_item(bugs_checklist, item)
+              end
+            end
+          end
+        end
+      end
+    end
+  end
+
+  def add_dependent_tasks_reminder(card, reminder, label)
+    if card_labels(card).map {|l| l.name}.include?(label)
+      tasks_checklist = checklist(card, 'Tasks')
+      if tasks_checklist
+        found = false
+        tasks_checklist.items.each do |item|
+          if item.name.include? reminder
+            found = true
+            break
+          end
+        end
+        unless found
+          puts "Adding dependent work reminder: #{card.name}"
+          checklist_add_item(tasks_checklist, reminder, false, 'bottom')
+        end
+      end
+    end
+  end
+
+  def update_card_checklists(card, label_names, add_task_checklists=false, add_bug_checklists=false)
+    checklists = []
+    checklists << 'Tasks' if add_task_checklists
+    checklists << 'Bugs' if add_bug_checklists && !label_names.include?('no-qe')
+
+    list_checklists(card).each do |checklist|
+      checklists.delete(checklist.name)
+      break if checklists.empty?
+    end if !checklists.empty?
+
+    if checklists.any?
+      puts "Adding #{checklists.pretty_inspect.chomp} to #{card.name}"
+      checklists.each do |checklist_name|
+        create_checklist(card, checklist_name)
+      end
+    end
   end
 
   def trello_do(type, retries=DEFAULT_RETRIES)

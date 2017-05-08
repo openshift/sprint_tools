@@ -179,10 +179,10 @@ Commands
             Add task checklists to stories
         --add-bug-checklists
             Add checklists to stories
-        --add-doc-tasks
-            Add documentation tasks to documentation labeled stories
-        --add-doc-cards
-            Add documentation cards for documentation labeled dev cards
+        --add-dependent-tasks
+            Add dependent work tasks (e.g. documentation tasks) to corresponding labeled stories
+        --add-dependent-cards
+            Add dependent work cards (e.g. documentation cards) for corresponding labeled dev cards
         --update-bug-tasks
             Update closed/verified bug tasks
         --update-roadmap
@@ -204,7 +204,7 @@ Commands
 Detailed Run Example
 ===
     ./trello update --update-roadmap --trace
-    ./trello update --add-task-checklists --add-bug-checklists --update-bug-tasks --add-doc-tasks --add-doc-cards --trace
+    ./trello update --add-task-checklists --add-bug-checklists --update-bug-tasks --add-dependent-tasks --add-dependent-cards --trace
     ./trello generate_default_overviews --out /tmp --trace
     cp /tmp/roadmap_overview.html /var/www/html/roadmap_overview.html
     cp /tmp/releases_overview.html /var/www/html/releases_overview.html
