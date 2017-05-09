@@ -857,6 +857,7 @@ command :update do |c|
     if options.update_roadmap
       trello.update_roadmap
     end
+    bugzilla = load_conf(BugzillaHelper, CONFIG.bugzilla, true) if options.update_bug_tasks
     if options.add_task_checklists || options.add_bug_checklists || options.update_bug_tasks || options.add_dependent_tasks || options.add_dependent_cards
       # Build a labels reference for each dependent work board
       trello.boards.each do |board_id, board|
@@ -885,7 +886,6 @@ command :update do |c|
                     end
                   end
                   if options.update_bug_tasks
-                    bugzilla = load_conf(BugzillaHelper, CONFIG.bugzilla, true)
                     trello.update_bug_tasks(card, bugzilla)
                   end
                   if options.add_dependent_tasks && dep_work_board_params.include?(:task_reminder_text)
