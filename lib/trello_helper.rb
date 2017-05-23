@@ -1157,6 +1157,13 @@ class TrelloHelper
     end
   end
 
+  def print_labels(board=roadmap_board)
+    label_names = board_labels(board).map{ |l| l.name }
+    puts "\n  Board: #{board.name}  (#labels #{label_names.length})"
+    puts "    Labels:"
+    label_names.sort.each { |n| puts "      #{n}" }
+  end
+
   def card_by_ref(card_ref)
     card = nil
     if card_ref =~ /^(\w+)_(\d+)/i
