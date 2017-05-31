@@ -28,7 +28,7 @@ class TrelloHelper
   RELEASE_COMPLETE_REGEX = /^Complete ((\d+)\.(\d+)(.(\d+))?(.(\d+))?)/
   SPRINT_REGEXES = Regexp.union([SPRINT_REGEX, DONE_REGEX, RELEASE_COMPLETE_REGEX])
 
-  RELEASE_LABEL_REGEX = /^(proposed|targeted|committed)-((\w*)-)*((\d+)(.(\d+))?(.(\d+))?(.(\d+))*)/
+  RELEASE_LABEL_REGEX = /^(proposed|targeted|committed)-((\w*)-)*((?:fy)?(\d+)(.((?:q)?\d+))?(.(\d+))?(.(\d+))*)/
 
   STAR_LABEL_REGEX = /^([1-5])star$/
 
@@ -1157,6 +1157,13 @@ class TrelloHelper
     end
   end
 
+  def print_labels(board=roadmap_board)
+    label_names = board_labels(board).map{ |l| l.name }
+    puts "\n  Board: #{board.name}  (#labels #{label_names.length})"
+    puts "    Labels:"
+    label_names.sort.each { |n| puts "      #{n}" }
+  end
+
   def card_by_ref(card_ref)
     card = nil
     if card_ref =~ /^(\w+)_(\d+)/i
@@ -1545,8 +1552,12 @@ class TrelloHelper
       label_data = SortableCard.new()
       label_data.state = $1 if $1
       label_data.product = $3 ? $3 : 'ocp'
-      label_data.release = Gem::Version.new($4) if $4
-      @sortable_card_labels[label.name] = label_data
+      if $4
+        version = $4
+        version.gsub!(/^fy/, "0.")
+        label_data.release = Gem::Version.new(version)
+      end
+    @sortable_card_labels[label.name] = label_data
     end
     label_data
   end

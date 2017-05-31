@@ -361,6 +361,24 @@ command :list do |c|
   end
 end
 
+command :list_roadmap_labels do |c|
+  c.syntax = "#{name} list"
+
+  c.option "--board board_name", "List labels on a particular board (defaults to Private AtomicOpenShift Roadmap)"
+  c.action do |args, options|
+    if options.board_name
+      board = trello.boards.find { |b| b.name == options.board_name }
+      if board
+        trello.print_labels(board)
+      else
+        puts "Couldn't find board named \"#{options.board_name}\""
+      end
+    else
+      trello.print_labels
+    end
+  end
+end
+
 command :sprint_identifier do |c|
   c.syntax = "#{name} sprint_identifier"
 
@@ -788,6 +806,27 @@ command :rename_label do |c|
         puts "  Updating label #{from} to #{to}"
         board_label.name = options.to
         trello.update_label(board_label)
+      end
+    end
+  end
+end
+
+command :create_roadmap_labels do |c|
+  c.syntax = "#{name} create_roadmap_labels LABEL1 LABEL2 ..."
+  c.description = "creates each of LABEL1 LABEL2 ... as labels on the roadmap board"
+  c.action do |args, options|
+    puts "args: #{args} options: #{options}"
+    roadmap_label_names = trello.board_labels(trello.roadmap_board).map{|l| l.name}
+    args.each do |new_label_name|
+      if roadmap_label_names.include? new_label_name
+        puts "Not creating duplicate label: #{new_label_name}"
+      else
+        puts "Creating label: #{new_label_name}"
+        begin
+          trello.create_label(new_label_name, nil, trello.roadmap_id)
+        rescue Exception => e
+          $stderr.puts "Error while creating label named #{new_label_name} on board #{trello.roadmap_board.name}: #{e.message}"
+        end
       end
     end
   end
