@@ -34,7 +34,7 @@ class TrelloHelper
 
   CARD_NAME_REGEX = /^(\((\d+|\?)\))?(.*)/
 
-  EPIC_REF_REGEX = /\[.*\]\(https?:\/\/trello\.com\/[^\)]+\) \([^\)]+\)/
+  EPIC_REF_REGEX = /\[.*\]\(https?:\/\/trello\.com\/.+\) \([^\)]+\)/
 
   ACCEPTED_STATES = {
     'Accepted' => 1,
