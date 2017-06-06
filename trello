@@ -64,7 +64,7 @@ LINKS = {'roadmap_overview' => 'Roadmap',
          'labels_overview' => 'Labels',
          'sprint_schedule' => 'Sprint Schedule'}
 
-def create_releases_overview(out, trello)
+def create_releases_overview(out, trello, bugzilla)
   extname = File.extname out
   filename = File.basename out, extname
   dirname = File.dirname out
@@ -81,7 +81,7 @@ def create_releases_overview(out, trello)
   end
 end
 
-def create_teams_overview(out, trello)
+def create_teams_overview(out, trello, bugzilla)
   extname = File.extname out
   filename = File.basename out, extname
   dirname = File.dirname out
@@ -628,8 +628,10 @@ command :generate_releases_overview do |c|
 
   c.description = "Generate the releases overview"
   c.action do |args, options|
+    bugzilla = load_conf(BugzillaHelper, CONFIG.bugzilla, true)
+
     options.out ||= '/tmp/releases_overview.html'
-    create_releases_overview(options.out, trello)
+    create_releases_overview(options.out, trello, bugzilla)
   end
 end
 
@@ -640,8 +642,10 @@ command :generate_teams_overview do |c|
 
   c.description = "Generate the teams overview"
   c.action do |args, options|
+    bugzilla = load_conf(BugzillaHelper, CONFIG.bugzilla, true)
+
     options.out ||= '/tmp/teams_overview.html'
-    create_teams_overview(options.out, trello)
+    create_teams_overview(options.out, trello, bugzilla)
   end
 end
 
@@ -664,12 +668,14 @@ command :generate_default_overviews do |c|
 
   c.description = "Generate the default overviews"
   c.action do |args, options|
+    bugzilla = load_conf(BugzillaHelper, CONFIG.bugzilla, true)
+
     options.out_dir ||= '/tmp'
 
     create_roadmap_overview(File.join(options.out_dir, 'roadmap_overview.html'), trello)
-    create_releases_overview(File.join(options.out_dir, 'releases_overview.html'), trello)
+    create_releases_overview(File.join(options.out_dir, 'releases_overview.html'), trello, bugzilla)
     create_labels_overview(File.join(options.out_dir, 'labels_overview.html'), trello)
-    create_teams_overview(File.join(options.out_dir, 'teams_overview.html'), trello)
+    create_teams_overview(File.join(options.out_dir, 'teams_overview.html'), trello, bugzilla)
     create_developers_overview(File.join(options.out_dir, 'developers_overview.html'), trello)
 
     options.sprints = options.sprints ? options.sprints.to_i : 14
