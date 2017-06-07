@@ -21,6 +21,7 @@ class BugzillaHelper
 
     user.login({'login'=>username, 'password'=>Base64.decode64(password), 'remember'=>true})
     @bz = Bugzilla::Bug.new(xmlrpc)
+    @bug_status_by_url = {}
   end
 
   def retry_sleep(retry_count)
@@ -43,48 +44,41 @@ class BugzillaHelper
   end
 
   def bug_status_by_url(url)
-    status = 'NOTFOUND'
-    if url =~ /https?:\/\/bugzilla\.redhat\.com\/show_bug\.cgi\?id=(\d+)/
-      id = $1
-      tries = 1
-      result = nil
-      retry_on_exception do
-        result = bz.get_bugs([id], ::Bugzilla::Bug::FIELDS_DETAILS)
-        if !result.empty?
-          status = result.first['status']
+    @bug_status_by_url[url] ||= begin
+      status = 'NOTFOUND'
+      if url =~ /https?:\/\/bugzilla\.redhat\.com\/show_bug\.cgi\?id=(\d+)/
+        id = $1
+        tries = 1
+        result = nil
+        retry_on_exception do
+          result = bz.get_bugs([id], ::Bugzilla::Bug::FIELDS_DETAILS)
+          if !result.empty?
+            status = result.first['status']
+          end
         end
       end
+      status
     end
-    return status
   end
 
   def rfes
-    severity_rank = {
-      'urgent' => 0,
-      'high' => 1,
-      'medium' => 2,
-      'low' => 3,
-      'unspecified' => 4
-    }
-
-    rfes = {}
-    ['ASSIGNED', 'NEW', 'MODIFIED', 'POST'].each do |status|
+    if !@rfes
+      @rfes = {}
+      #['ASSIGNED', 'NEW', 'MODIFIED', 'POST'].each do |status|
       searchopts = {}
-      searchopts[:status] = status
-      products.each do |product|
-        searchopts[:product] = product
-        searchopts[:component] = 'RFE'
-        bugs = nil
-        retry_on_exception do
-          bugs = bz.search(searchopts)["bugs"]
-        end
-        bugs.each do |b|
-          #next if b['priority'] == 'low'
-          rfes[b['id']] = b
-        end
+      searchopts[:status] = ['ASSIGNED', 'NEW', 'MODIFIED', 'POST']
+      searchopts[:product] = products
+      searchopts[:component] = 'RFE'
+      bugs = nil
+      retry_on_exception do
+        bugs = bz.search(searchopts)["bugs"]
+      end
+      bugs.each do |b|
+        #next if b['priority'] == 'low'
+        @rfes[b['id']] = b
       end
     end
-    rfes
+    @rfes
   end
 
 end
