@@ -82,10 +82,9 @@
                 cards.each_with_index do |card, index|
                   pos = index + pos_adjustment
                   members = trello.card_members(card)
-                  member_names = members.collect{ |member| member.username }
                   members.each do |member|
-                    developer_data[team_name][member.username] = [] unless developer_data[team_name][member.username]
-                    developer_data[team_name][member.username] << [card, list_name, member_names - [member.username], pos]
+                    developer_data[team_name][member] = [] unless developer_data[team_name][member]
+                    developer_data[team_name][member] << [card, list_name, members - [member], pos]
                   end
                 end
               end
@@ -116,10 +115,10 @@
 <ul>
 <%
       developer_data.each do |team_name, member_data|
-        sorted_member_names = member_data.keys.sort_by{ |member_name| member_name}
-        sorted_member_names.each do |member_name|
+        sorted_members = member_data.keys.sort_by{ |member| member.full_name}
+        sorted_members.each do |member|
 %>
-    <li><a href='#<%=member_name%>'><%=member_name%></a></li>
+    <li><a href='#<%=member.username%>'><%="#{member.full_name} (#{member.username})"%></a></li>
 <%
         end
       end
@@ -130,17 +129,17 @@
 
 <%
       developer_data.each do |team_name, member_data|
-        previous_member_name = nil
-        developer_sizing_totals = {}
-        sorted_member_names = member_data.keys.sort_by{ |member_name| member_name}
-        sorted_member_names.each do |member_name|
+        previous_member = nil
+        developer_sizing_totals = Hash.new { |h,k| h[k] = 0}
+        sorted_members = member_data.keys.sort_by{ |member| member.full_name}
+        sorted_members.each do |member|
           in_progress_sizing_total = 0
           next_sizing_total = 0
-          sizings_by_release = {} 
-          card_infos = member_data[member_name]
+          sizings_by_release = {}
+          card_infos = member_data[member]
           card_infos.sort_by!{ |card_info| card_info[3]}
 %>
-<h3 class="anchor" id="<%=member_name%>"><%=member_name%></h3>
+<h3 class="anchor" id="<%=member.username%>"><%="#{member.full_name} (#{member.username})"%></h3>
 <div class="container">
 <div class="table-responsive">
 <table class="table table-normal table-condensed">
@@ -149,11 +148,11 @@
           card_infos.each do |card_info|
             card = card_info[0]
             list_name = card_info[1]
-            other_member_names = card_info[2]
+            other_members = card_info[2]
 
-            if previous_member_name != member_name
-              developer_sizing_totals[member_name] = 0 unless developer_sizing_totals[member_name]
-              previous_member_name = member_name
+            if previous_member && previous_member.username != member.username
+              developer_sizing_totals[member] = 0 unless developer_sizing_totals[member]
+              previous_member = member
             end
 
             name = card.name.strip
@@ -165,7 +164,7 @@
               elsif TrelloHelper::NEXT_STATES.include?(list_name)
                 next_sizing_total += sizing
               end
-              developer_sizing_totals[member_name] += sizing
+              developer_sizing_totals[member] += sizing
               name = $3
             end
 
@@ -178,7 +177,7 @@
                 release = $4
                 if sizing
                   release_key = product ? "#{product}-#{release}" : release
-                  sizings_by_release[release_key] = 0 unless sizings_by_release[release_key] 
+                  sizings_by_release[release_key] = 0 unless sizings_by_release[release_key]
                   sizings_by_release[release_key] += sizing
                 end
                 releases << [product, label_name, $1, release]
@@ -188,7 +187,7 @@
 <tr>
 <td><a href='<%=card.url%>'><%=name%></a></td>
 <td><%=list_name%></td>
-<td><%=other_member_names.map{ |member_name| "<a href='##{member_name}'>#{member_name}</a>" }.join(', ')%></td>
+<td><%=other_members.map{ |member| "<a href='##{member.username}'>#{member.full_name} (#{member.username})</a>" }.join(', ')%></td>
 <td>
 <%
             releases.each_with_index do |release_info, index|
@@ -209,17 +208,17 @@
             end
 %>
 </td>
-<td title="Sizing in Story Points (Developer Rolling Total)" nowrap><%=sizing ? "#{sizing} (#{developer_sizing_totals[member_name]})" : ''%></td>
+<td title="Sizing in Story Points (Developer Rolling Total)" nowrap><%=sizing ? "#{sizing} (#{developer_sizing_totals[member]})" : ''%></td>
 </tr>
 <%
-            previous_member_name = member_name
+            previous_member = member
           end
 %>
 </table>
 </div>
 </div>
 <div class="container">
-<h4 class="anchor" id="<%="#{member_name}"%>_totals"><%="Totals:"%></h4>
+<h4 class="anchor" id="<%="#{member.username}"%>_totals"><%="Totals:"%></h4>
 <div class="container">
 In Progress: <%=in_progress_sizing_total%><br />
 Next: <%=next_sizing_total%><br />
