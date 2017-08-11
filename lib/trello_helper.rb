@@ -23,7 +23,7 @@ class TrelloHelper
 
   STAGE1_DEP_LABEL = 'stage1-dep'
 
-  SPRINT_REGEX = /^Sprint (\d+)/
+  SPRINT_REGEX = /^Sprint (\d+)$/
   DONE_REGEX = /^Done: ((\d+)(.(\d+))?(.(\d+))?)/
   RELEASE_COMPLETE_REGEX = /^Complete ((\d+)\.(\d+)(.(\d+))?(.(\d+))?)/
   SPRINT_REGEXES = Regexp.union([SPRINT_REGEX, DONE_REGEX, RELEASE_COMPLETE_REGEX])
