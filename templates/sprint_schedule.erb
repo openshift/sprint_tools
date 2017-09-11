@@ -47,14 +47,14 @@
       if trello.sprint_card
         current_release = ''
         if trello.current_release_labels && !trello.current_release_labels.empty?
-          if trello.current_release_labels.first =~ TrelloHelper::RELEASE_LABEL_REGEX
-            current_release = "#{$4} "
+          TrelloHelper::RELEASE_LABEL_REGEX.match(trello.current_release_labels.first) do |fields|
+            current_release = "#{fields[3]} "
           end
         end
         next_release = 'Next '
         if trello.next_release_labels && !trello.next_release_labels.empty?
-          if trello.next_release_labels.first =~ TrelloHelper::RELEASE_LABEL_REGEX
-            next_release = "#{$4} "
+          TrelloHelper::RELEASE_LABEL_REGEX.match(trello.current_release_labels.first) do |fields|
+            next_release = "#{fields[3]} "
           end
         end
         if trello.sprint_card.name =~ TrelloHelper::SPRINT_REGEX
