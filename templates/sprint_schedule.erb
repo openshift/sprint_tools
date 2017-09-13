@@ -53,7 +53,7 @@
         end
         next_release = 'Next '
         if trello.next_release_labels && !trello.next_release_labels.empty?
-          TrelloHelper::RELEASE_LABEL_REGEX.match(trello.current_release_labels.first) do |fields|
+          TrelloHelper::RELEASE_LABEL_REGEX.match(trello.next_release_labels.first) do |fields|
             next_release = "#{fields[3]} "
           end
         end
