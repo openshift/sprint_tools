@@ -28,8 +28,10 @@ class TrelloHelper
   RELEASE_COMPLETE_REGEX = /^Complete ((\d+)\.(\d+)(.(\d+))?(.(\d+))?)/
   SPRINT_REGEXES = Regexp.union([SPRINT_REGEX, DONE_REGEX, RELEASE_COMPLETE_REGEX])
 
-  RELEASE_LABEL_REGEX = /^(proposed|targeted|committed)-((\w*)-)*((?:fy)?(\d+)(.((?:q)?\d+))?(.(\d+))?(.(\d+))*)/
-
+  RELEASE_LABEL_REGEX = /^(proposed|targeted|committed)-(?:(.+)-)?((?:\D*(\d+))\.(?:\D*(\d+))(?:\.(?:\D*(\d+)))?(?:\.(?:\D*(\d+)))?)/
+  # .match ->  [0,      1,|                              2,|    3,|    4,|     (+3)  5,|        (+3)  6,|           (+3)  7|     |]
+  #             |         |                                |      |.-----|-------------|----------------|------------------|-----'
+  #        [original_str, state,                    product/nil, release,major,        minor,           patch,             hotfix]
   STAR_LABEL_REGEX = /^([1-5])star$/
 
   CARD_NAME_REGEX = /^(\((\d+|\?)\))?(.*)/
@@ -790,17 +792,19 @@ class TrelloHelper
                   card_labels.each do |label|
                     if label.name.start_with? 'epic-'
                       card_tags << label.name
-                    elsif releases.include?(label.name) && label.name =~ RELEASE_LABEL_REGEX
-                      state = $1
-                      product = $3
-                      release = $4
-                      major = $5.to_i
-                      minor = $7.to_i
-                      patch = $9.to_i
-                      hotfix = $11.to_i
+                    elsif releases.include?(label.name)
+                      RELEASE_LABEL_REGEX.match(label.name) do |fields|
+                        state = fields[1]
+                        product = fields[2]
+                        release = fields[3]
+                        major = fields[4].to_i
+                        minor = fields[5].to_i
+                        patch = fields[6].to_i
+                        hotfix = fields[7].to_i
 
-                      card_releases[product] = [] unless card_releases[product]
-                      card_releases[product] << [label, state, release, major, minor, patch, hotfix]
+                        card_releases[product] = [] unless card_releases[product]
+                        card_releases[product] << [label, state, release, major, minor, patch, hotfix]
+                      end
                     end
                   end
 
@@ -1246,9 +1250,9 @@ class TrelloHelper
         labels = card_labels(card)
         label_names = labels.map{ |label| label.name }
         label_names.each do |label_name|
-          if label_name =~ RELEASE_LABEL_REGEX
-            if product == $3 && release == $4
-              state = $1
+          RELEASE_LABEL_REGEX.match(label_name) do |fields|
+            if product == fields[2] && release == fields[3]
+              state = fields[1]
               release_cards[card.id] = {
                                          :short_url => card.short_url,
                                          :name => card.name,
@@ -1548,16 +1552,19 @@ class TrelloHelper
   # Parse out sortable/prioritizable metadata from card label
   def sortable_card_label(label)
     label_data = @sortable_card_labels[label.name]
-    if label_data.nil? && label.name =~ TrelloHelper::RELEASE_LABEL_REGEX
-      label_data = SortableCard.new()
-      label_data.state = $1 if $1
-      label_data.product = $3 ? $3 : 'ocp'
-      if $4
-        version = $4
-        version.gsub!(/^fy/, "0.")
-        label_data.release = Gem::Version.new(version)
+    if label_data.nil?
+      TrelloHelper::RELEASE_LABEL_REGEX.match(label.name) do |fields|
+        label_data = SortableCard.new()
+        label_data.state = fields[1] if fields[1]
+        label_data.product = fields[2] ? fields[2] : 'ocp'
+        if fields[3]
+          version = fields[3]
+          version.gsub!(/^\D+/, "0.") # Normalize exotic versions
+          version = version.scan(/\d+/).join('.') # Normalize exotic versions
+          label_data.release = Gem::Version.new(version)
+        end
+        @sortable_card_labels[label.name] = label_data
       end
-    @sortable_card_labels[label.name] = label_data
     end
     label_data
   end

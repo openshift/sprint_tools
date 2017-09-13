@@ -108,14 +108,14 @@
           labels = trello.card_labels(card)
           label_names = labels.map{ |label| label.name }
           label_names.each do |label_name|
-            if label_name =~ TrelloHelper::RELEASE_LABEL_REGEX
-              if product == $3
-                state = $1
-                release = $4
-                major = $5.to_i
-                minor = $7.to_i
-                patch = $9.to_i
-                hotfix = $11.to_i
+            TrelloHelper::RELEASE_LABEL_REGEX.match(label_name) do |fields|
+              if product == fields[2]
+                state = fields[1]
+                release = fields[3]
+                major = fields[4].to_i
+                minor = fields[5].to_i
+                patch = fields[6].to_i
+                hotfix = fields[7].to_i
                 orig_state = state
                 if complete
                   state = 'committed'
@@ -303,12 +303,14 @@
                   epic_card = tag_to_epics[label_name].first
                 end
                 epics << [label_name[5..-1], epic_card ? epic_card.url : nil]
-              elsif label_name =~ TrelloHelper::RELEASE_LABEL_REGEX
-                if product != $3
-                  addtl_releases << [$3, label_name, $1, $4]
-                end
               elsif label_name == TrelloHelper::STAGE1_DEP_LABEL
                 stage1_dep_indicator = '*'
+              else
+                TrelloHelper::RELEASE_LABEL_REGEX.match(label_name) do |fields|
+                  if product != fields[2]
+                    addtl_releases << [fields[2], label_name, fields[1], fields[3]]
+                  end
+                end
               end
             end
 
@@ -427,8 +429,8 @@
               labels = trello.card_labels(card)
               label_names = labels.map{ |label| label.name }
               label_names.each do |label_name|
-                if label_name =~ TrelloHelper::RELEASE_LABEL_REGEX
-                  other_releases << [$3, label_name, $1, $4]
+                TrelloHelper::RELEASE_LABEL_REGEX.match(label_name) do |fields|
+                  other_releases << [fields[2], label_name, fields[1], fields[3]]
                 end
               end
             end

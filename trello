@@ -398,8 +398,8 @@ command :release_identifier do |c|
   c.description = "Print the release identifier"
   c.action do |args, options|
     if trello.current_release_labels && !trello.current_release_labels.empty?
-      if trello.current_release_labels.first =~ TrelloHelper::RELEASE_LABEL_REGEX
-        print "#{$4}"
+      TrelloHelper::RELEASE_LABEL_REGEX.match(trello.current_release_labels.first) do |fields|
+        print "#{fields[3]}"
       end
     end
   end
