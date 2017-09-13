@@ -376,6 +376,10 @@ class TrelloHelper
     end
   end
 
+  def sprint_length_in_days
+    @sprint_length_in_days ||= (@sprint_length_in_weeks * 7)
+  end
+
   def boards
     return @boards if @boards
     @boards = {}
