@@ -410,7 +410,12 @@ command :days_left_in_sprint do |c|
 
   c.description = "Print the number of days left in the sprint"
   c.action do |args, options|
-    print ((trello.sprint_card.due.to_time - Time.new) / (60*60*24)).ceil
+    # Take the modulo by trello.sprint_length_in_days (21), since the
+    # last Wednesday of each sprint is when the sprint card usually is
+    # updated. From that point until Saturday, the formula below would
+    # otherwise give an answer that doesn't make sense (e.g. 23 days
+    # left on Wednesday afternoon)
+    print (((trello.sprint_card.due.to_time - Time.new) / (60*60*24)).ceil % trello.sprint_length_in_days)
   end
 end
 
