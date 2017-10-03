@@ -14,8 +14,8 @@ class TrelloHelper
 
   attr_accessor :boards, :trello_login_to_email, :cards_by_list, :labels_by_card, :list_by_card, :members_by_card, :members_by_id, :checklists_by_card, :lists_by_board, :comments_by_card, :board_id_to_team_map
 
-  DEFAULT_RETRIES = 9
-  DEFAULT_RETRY_SLEEP = 2
+  DEFAULT_RETRIES = 14
+  DEFAULT_RETRY_SLEEP = 5
   DEFAULT_RETRY_INC = 1
 
   FUTURE_LABEL = 'future'
