@@ -12,7 +12,7 @@ class TrelloHelper
                 :current_release_labels, :next_release_labels, :default_product,
                 :other_products, :product_order, :sprint_card, :archive_path, :dependent_work_boards
 
-  attr_accessor :boards, :trello_login_to_email, :cards_by_list, :labels_by_card, :list_by_card, :members_by_card, :members_by_id, :checklists_by_card, :lists_by_board, :comments_by_card, :board_id_to_team_map
+  attr_accessor :boards, :trello_login_to_email, :cards_by_list, :labels_by_card, :list_by_card, :members_by_card, :checklists_by_card, :lists_by_board, :comments_by_card, :board_id_to_team_map
 
   DEFAULT_RETRIES = 14
   DEFAULT_RETRY_SLEEP = 5
@@ -131,11 +131,11 @@ class TrelloHelper
       config.oauth_token_secret = @oauth_token_secret
     end
 
+    @board_members = {}
     @cards_by_list = {}
     @labels_by_card = {}
     @list_by_card = {}
     @members_by_card = {}
-    @members_by_id = {}
     @checklists_by_card = {}
     @lists_by_board = {}
     @comments_by_card = {}
@@ -508,7 +508,7 @@ class TrelloHelper
 
   def board_members(board)
     trello_do('board_members') do
-      return target(board.members)
+      return @board_members[board.id] ||= target(board.members)
     end
   end
 
@@ -1012,11 +1012,10 @@ class TrelloHelper
     members = @members_by_card[card.id]
     return members if members
     members = card.member_ids.map do |member_id|
-      member = @members_by_id[member_id]
-      unless member
-        trello_do('find_member') do
-          member = Trello::Member.find(member_id)
-        end
+      member = members_by_id[member_id]
+      if !member
+        # not an org member, get member info from board member api endpoint
+        member = board_members(boards[card.board_id]).select { |member| member_id == member.id }.first
       end
       @members_by_id[member_id] = member
       member
@@ -1202,14 +1201,20 @@ class TrelloHelper
 
   def org_boards
     trello_do('org_boards') do
-      return target(org.boards)
+      @org_boards ||= target(org.boards)
+      return @org_boards
     end
   end
 
   def org_members
     trello_do('org_members') do
-      return target(org.members)
+      @org_members ||= target(org.members)
+      return @org_members
     end
+  end
+
+  def members_by_id
+    @members_by_id ||= Hash[org_members.map { |m| [m.id, m] }]
   end
 
   def board(board_id)
