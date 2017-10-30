@@ -523,7 +523,9 @@
 <%
         end
 %>
-<strong>Total: <%="#{release_complete_sizing_total + release_in_progress_sizing_total} of #{release_complete_sizing_total + release_remaining_sizing_total}"%></strong><br />
+Complete: <%=release_complete_sizing_total%><br />
+In Progress: <%=release_in_progress_sizing_total%><br />
+<strong>Total: <%="#{release_complete_sizing_total + release_in_progress_sizing_total} of #{release_complete_sizing_total + release_remaining_sizing_total} (Complete + Remaining)"%></strong><br />
 </div>
 <br />
 <h4 class="anchor" id="<%=release_name%>_completed_points"><%=release_name%> Completed Points:</h4>
