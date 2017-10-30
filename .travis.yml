@@ -6,3 +6,7 @@ rvm:
 gemfile: Gemfile
 
 sudo: false
+
+language: ruby
+
+script: "bundle exec rake check_syntax test"

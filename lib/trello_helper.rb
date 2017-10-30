@@ -3,16 +3,16 @@ require 'kramdown'
 
 class TrelloHelper
   # Trello Config
-  attr_accessor :consumer_key, :consumer_secret, :oauth_token, :oauth_token_secret, :teams,
-                :organization_id, :roadmap_board, :roadmap_id,
-                :public_roadmap_id, :public_roadmap_board,
-                :next_dependent_work_list, :organization_name,
+  attr_accessor :consumer_key, :consumer_secret, :oauth_token, :teams,
+                :organization_id, :roadmap_id,
+                :public_roadmap_id,
+                :organization_name,
                 :sprint_length_in_weeks, :sprint_start_day, :sprint_end_day, :logo,
                 :roadmap_board_lists, :max_lists_per_board,
                 :current_release_labels, :next_release_labels, :default_product,
-                :other_products, :product_order, :sprint_card, :archive_path, :dependent_work_boards
+                :other_products, :product_order, :archive_path, :dependent_work_boards
 
-  attr_accessor :boards, :trello_login_to_email, :cards_by_list, :labels_by_card, :list_by_card, :members_by_card, :checklists_by_card, :lists_by_board, :comments_by_card, :board_id_to_team_map
+  attr_accessor :trello_login_to_email, :cards_by_list, :labels_by_card, :list_by_card, :members_by_card, :checklists_by_card, :lists_by_board, :comments_by_card
 
   DEFAULT_RETRIES = 14
   DEFAULT_RETRY_SLEEP = 5
@@ -128,7 +128,6 @@ class TrelloHelper
       config.consumer_key = @consumer_key
       config.consumer_secret = @consumer_secret
       config.oauth_token = @oauth_token
-      config.oauth_token_secret = @oauth_token_secret
     end
 
     @board_members = {}
@@ -307,6 +306,20 @@ class TrelloHelper
   def cards_equal(card1, card2)
     ((RELEASE_STATE_ORDER[card1.state] == RELEASE_STATE_ORDER[card2.state]) &&
      (card1.release == card2.release))
+  end
+
+  # Return a list of valid product names - based on the configuration
+  # in trello.yml - to match against
+  def valid_products
+    return @valid_products if @valid_products
+    @valid_products = []
+    if other_products
+      @valid_products = other_products
+    end
+    if default_product
+      @valid_products += [default_product]
+    end
+    @valid_products
   end
 
   def board_id_to_team_map
@@ -783,7 +796,7 @@ class TrelloHelper
             lists += previous_sprint_lists
             lists += other_lists
             lists.each do |list|
-              accepted = (list.name.match(SPRINT_REGEXES) || ACCEPTED_STATES.include?(list.name)) ? true : false
+              accepted = list_for_completed_work?(list.name)
               next if (accepted && accepted_pass == 1) || (!accepted && accepted_pass == 2)
               cards = list_cards(list)
               if !cards.empty?
@@ -893,7 +906,6 @@ class TrelloHelper
           epic_card = first_epic_story[0]
           checklist_to_cins = {}
           epic_stories.each do |epic_story|
-            epic = epic_story[0]
             card = epic_story[1]
             list = epic_story[2]
             board = epic_story[3]
@@ -1015,7 +1027,7 @@ class TrelloHelper
       member = members_by_id[member_id]
       if !member
         # not an org member, get member info from board member api endpoint
-        member = board_members(boards[card.board_id]).select { |member| member_id == member.id }.first
+        member = board_members(boards[card.board_id]).select { |m| member_id == m.id }.first
       end
       @members_by_id[member_id] = member
       member
@@ -1072,6 +1084,14 @@ class TrelloHelper
     trello_do('update_card') do
       card.save
     end
+  end
+
+  def list_for_completed_work?(list_name)
+    ACCEPTED_STATES.include?(list_name) || list_name =~ SPRINT_REGEXES
+  end
+
+  def list_for_in_progress_work?(list_name)
+    CURRENT_SPRINT_NOT_ACCEPTED_STATES.include?(list_name)
   end
 
   def list_checklists(card)
@@ -1252,7 +1272,6 @@ class TrelloHelper
 
     search_list_info.each do |list_info|
       team_name = list_info[0]
-      board = list_info[1]
       list = list_info[2]
       cards = list_cards(list)
       cards.each_with_index do |card, index|

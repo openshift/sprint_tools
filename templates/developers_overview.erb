@@ -74,7 +74,7 @@
               list_name = list.name
               if list_name !~ TrelloHelper::SPRINT_REGEXES && !TrelloHelper::CURRENT_SPRINT_NOT_IN_PROGRESS_STATES.include?(list_name) && !TrelloHelper::NEW_STATES.include?(list_name) && !TrelloHelper::REFERENCE_STATES.include?(list_name) && !list.closed?
                 pos_adjustment = TrelloHelper::LIST_POSITION_ADJUSTMENT[list_name]
-                if TrelloHelper::ACCEPTED_STATES.include?(list_name) || list_name =~ TrelloHelper::SPRINT_REGEXES
+                if trello.list_for_completed_work?(list_name)
                   pos_adjustment = 0
                 end
                 pos_adjustment = TrelloHelper::MAX_LIST_POSITION_ADJUSTMENT unless pos_adjustment

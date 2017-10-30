@@ -6,6 +6,7 @@ $LOAD_PATH.unshift(File.dirname(__FILE__) + '/lib') unless $LOAD_PATH.include?(F
 require 'config'
 require 'trello_helper'
 require 'output_helper'
+require 'overviews_helper'
 require 'reports'
 require 'report'
 require 'erb'
@@ -14,6 +15,8 @@ require 'yaml'
 require 'i18n'
 require 'commander/import'
 require 'bugzilla_helper'
+
+require 'csv'
 
 Encoding.default_external = "UTF-8"
 
@@ -64,66 +67,6 @@ LINKS = {'roadmap_overview' => 'Roadmap',
          'labels_overview' => 'Labels',
          'sprint_schedule' => 'Sprint Schedule'}
 
-def create_releases_overview(out, trello, bugzilla)
-  extname = File.extname out
-  filename = File.basename out, extname
-  dirname = File.dirname out
-
-  ((trello.other_products ? trello.other_products : []) + [nil]).each do |product|
-    erb = ERB.new(File.open('templates/releases_overview.erb', "rb").read)
-    file = nil
-    if product
-      file = File.join(dirname, "#{filename}_#{product}#{extname}")
-    else
-      file = out
-    end
-    File.open(file, 'w') {|f| f.write(erb.result(binding)) }
-  end
-end
-
-def create_teams_overview(out, trello, bugzilla)
-  extname = File.extname out
-  filename = File.basename out, extname
-  dirname = File.dirname out
-
-  (trello.teams.keys + [nil]).each do |team|
-    erb = ERB.new(File.open('templates/teams_overview.erb', "rb").read)
-    file = nil
-    if team
-      file = File.join(dirname, "#{filename}_#{team}#{extname}")
-    else
-      file = out
-    end
-    File.open(file, 'w') {|f| f.write(erb.result(binding)) }
-  end
-end
-
-def create_developers_overview(out, trello)
-  extname = File.extname out
-  filename = File.basename out, extname
-  dirname = File.dirname out
-
-  (trello.teams.keys + [nil]).each do |team|
-    erb = ERB.new(File.open('templates/developers_overview.erb', "rb").read)
-    file = nil
-    if team
-      file = File.join(dirname, "#{filename}_#{team}#{extname}")
-    else
-      file = out
-    end
-    File.open(file, 'w') {|f| f.write(erb.result(binding)) }
-  end
-end
-
-def create_labels_overview(out, trello)
-  erb = ERB.new(File.open('templates/labels_overview.erb', "rb").read)
-  File.open(out, 'w') {|f| f.write(erb.result(binding)) }
-end
-
-def create_roadmap_overview(out, trello)
-  erb = ERB.new(File.open('templates/roadmap_overview.erb', "rb").read)
-  File.open(out, 'w') {|f| f.write(erb.result(binding)) }
-end
 
 trello = load_conf(TrelloHelper, CONFIG.trello, true)
 
@@ -144,7 +87,7 @@ command :organize_release_cards do |c|
 
   c.option "--dry-run", "Show what changes would be made without actually making them"
 
-  c.syntax = "#{name}"
+  c.syntax = "#{name} organize_release_cards"
   c.description = "Rearrange board list cards sorted by release"
   c.action do |args, options|
     release_states = TrelloHelper::NEXT_STATES.keys + TrelloHelper::BACKLOG_STATES.keys
@@ -282,8 +225,8 @@ command :backup_org_boards do |c|
 
   c.option "--out-dir DIRECTORY", "Directory to dump backup json to"
 
-  c.syntax = "#{name}"
-  c.description = "dump all organization boards"
+  c.syntax = "#{name} backup_org_boards"
+  c.description = "dump a JSON backup of all organization boards to the specified directory"
   c.action do |args, options|
     output_dir = (options.out_dir.nil? || options.out_dir.empty?) ? Pathname.pwd : Pathname.new(options.out_dir)
     if !output_dir.writable?
@@ -362,9 +305,10 @@ command :list do |c|
 end
 
 command :list_roadmap_labels do |c|
-  c.syntax = "#{name} list"
+  c.syntax = "#{name} list_roadmap_labels"
 
-  c.option "--board board_name", "List labels on a particular board (defaults to Private AtomicOpenShift Roadmap)"
+  c.description = "List the labels belonging to a board, defaulting to the Roadmap board designated in the configuration."
+  c.option "--board BOARD_NAME", "List labels on a particular board"
   c.action do |args, options|
     if options.board_name
       board = trello.boards.find { |b| b.name == options.board_name }
@@ -442,7 +386,7 @@ end
 command :days_until_stage_one_dep_complete do |c|
   c.syntax = "#{name} days_until_stage_one_dep_complete"
 
-  c.description = "Print the number of days left until stage_one_dep_complete"
+  c.description = "Print the number of days left until stage one dependencies are feature complete"
   c.action do |args, options|
     sprint = Sprint.new({:trello => trello, :uninitialized => true})
     print ((sprint.stage_one_dep_complete.to_time - Time.new) / (60*60*24)).ceil
@@ -576,7 +520,8 @@ command :generate_roadmap_overview do |c|
   c.description = "Generate the overview of the roadmap board"
   c.action do |args, options|
     options.out ||= '/tmp/roadmap_overview.html'
-    create_roadmap_overview(options.out, trello)
+    overviews_helper = OverviewsHelper.new(trello: trello)
+    overviews_helper.create_roadmap_overview(options.out)
   end
 end
 
@@ -622,7 +567,8 @@ command :generate_labels_overview do |c|
   c.description = "Generate the labels overview"
   c.action do |args, options|
     options.out ||= '/tmp/labels_overview.html'
-    create_labels_overview(options.out, trello)
+    overviews_helper = OverviewsHelper.new(trello: trello)
+    overviews_helper.create_labels_overview(options.out)
   end
 end
 
@@ -636,7 +582,8 @@ command :generate_releases_overview do |c|
     bugzilla = load_conf(BugzillaHelper, CONFIG.bugzilla, true)
 
     options.out ||= '/tmp/releases_overview.html'
-    create_releases_overview(options.out, trello, bugzilla)
+    overviews_helper = OverviewsHelper.new(trello: trello, bugzilla: bugzilla)
+    overviews_helper.create_releases_overview(options.out)
   end
 end
 
@@ -650,7 +597,8 @@ command :generate_teams_overview do |c|
     bugzilla = load_conf(BugzillaHelper, CONFIG.bugzilla, true)
 
     options.out ||= '/tmp/teams_overview.html'
-    create_teams_overview(options.out, trello, bugzilla)
+    overviews_helper = OverviewsHelper.new(trello: trello, bugzilla: bugzilla)
+    overviews_helper.create_teams_overview(options.out)
   end
 end
 
@@ -662,7 +610,21 @@ command :generate_developers_overview do |c|
   c.description = "Generate the developers overview"
   c.action do |args, options|
     options.out ||= '/tmp/developers_overview.html'
-    create_developers_overview(options.out, trello)
+    overviews_helper = OverviewsHelper.new(trello: trello)
+    overviews_helper.create_developers_overview(options.out)
+  end
+end
+
+command :generate_raw_overview do |c|
+  c.syntax = "#{name} generate_raw_overview"
+
+  c.option "--out OUT_FILE", "The file to output Ex: /tmp/raw_overview.csv"
+
+  c.description = "Generate a CSV-formatted file containing the card data used in the overview pages, suitable to importing into a spreadsheet."
+  c.action do |args, options|
+    options.out ||= '/tmp/raw_overview.csv'
+    overviews_helper = OverviewsHelper.new(trello: trello)
+    overviews_helper.create_raw_overview_data(options.out)
   end
 end
 
@@ -677,11 +639,13 @@ command :generate_default_overviews do |c|
 
     options.out_dir ||= '/tmp'
 
-    create_roadmap_overview(File.join(options.out_dir, 'roadmap_overview.html'), trello)
-    create_releases_overview(File.join(options.out_dir, 'releases_overview.html'), trello, bugzilla)
-    create_labels_overview(File.join(options.out_dir, 'labels_overview.html'), trello)
-    create_teams_overview(File.join(options.out_dir, 'teams_overview.html'), trello, bugzilla)
-    create_developers_overview(File.join(options.out_dir, 'developers_overview.html'), trello)
+    overviews_helper = OverviewsHelper.new(trello: trello, bugzilla: bugzilla)
+    overviews_helper.create_roadmap_overview(File.join(options.out_dir, 'roadmap_overview.html'))
+    overviews_helper.create_releases_overview(File.join(options.out_dir, 'releases_overview.html'))
+    overviews_helper.create_labels_overview(File.join(options.out_dir, 'labels_overview.html'))
+    overviews_helper.create_teams_overview(File.join(options.out_dir, 'teams_overview.html'))
+    overviews_helper.create_developers_overview(File.join(options.out_dir, 'developers_overview.html'))
+    overviews_helper.create_raw_overview_data(File.join(options.out_dir, 'raw_overview.csv'))
 
     options.sprints = options.sprints ? options.sprints.to_i : 14
     options.offset = options.offset ? options.offset.to_i : 0
@@ -790,7 +754,7 @@ command :rename_label do |c|
   c.option "--from FROM", "The label to rename"
   c.option "--to TO", "What to rename it to"
 
-  c.description = "Renames a label on all the boards"
+  c.description = "Renames a label on all configured boards"
   c.action do |args, options|
 
     raise "--from not specified" if options.from.nil? || options.from.strip.empty?
@@ -824,7 +788,7 @@ end
 
 command :create_roadmap_labels do |c|
   c.syntax = "#{name} create_roadmap_labels LABEL1 LABEL2 ..."
-  c.description = "creates each of LABEL1 LABEL2 ... as labels on the roadmap board"
+  c.description = "creates each of LABEL1 LABEL2 ... as labels on the configured roadmap board"
   c.action do |args, options|
     puts "args: #{args} options: #{options}"
     roadmap_label_names = trello.board_labels(trello.roadmap_board).map{|l| l.name}
@@ -924,7 +888,7 @@ command :update do |c|
           dependent_work_valid = !(board.prefs['permissionLevel'] == 'org' && dep_work_board.prefs['permissionLevel'] != 'org')
           lists = trello.board_lists(board)
           lists.each do |list|
-            if TrelloHelper::CURRENT_SPRINT_NOT_ACCEPTED_STATES.include?(list.name)
+            if trello.list_for_in_progress_work?(list.name)
               cards = trello.list_cards(list)
               if !cards.empty?
                 puts "\n  List: #{list.name}  (#cards #{cards.length})"

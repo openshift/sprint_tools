@@ -39,6 +39,26 @@ Commands
             Card url Ex: https://trello.com/c/6EhPEbM4
 
 
+**create_roadmap_labels**
+
+    DESCRIPTION:
+        creates each of LABEL1 LABEL2 ... as labels on the configured roadmap board
+
+    OPTIONS:
+        LABEL1 [LABEL2 ...]
+            Labels names to be created
+
+
+**backup_org_boards**
+
+    DESCRIPTION:
+        dump a JSON backup of all organization boards to the specified directory
+
+    OPTIONS:
+        --out-dir DIRECTORY
+            Directory to dump backup json to
+
+
 **generate_roadmap_overview**
 
     DESCRIPTION:
@@ -115,6 +135,50 @@ Commands
             The dir to output to Ex: /tmp
 
 
+**generate_developers_overview**
+
+    DESCRIPTION:
+        Generate the developers overview
+
+    OPTIONS:
+        --out OUT_FILE 
+            The file to output Ex: /tmp/developers_overview.html
+
+
+**generate_raw_overview**
+
+    DESCRIPTION:
+        Generate a CSV-formatted file containing the card data used in the overview pages, suitable to importing into a spreadsheet.
+
+    OPTIONS:
+        --out OUT_FILE
+            The file to output Ex: /tmp/raw_overview.csv
+
+
+**generate_release_json**
+
+    DESCRIPTION:
+        Generate json for the cards in a release
+
+    OPTIONS:
+        --out-dir DIRECTORY 
+            The dir to output to Ex: /tmp
+        --release RELEASE 
+            Release to build json for Ex: 3.3
+        --product PRODUCT 
+            Product to build json for Ex: myproduct
+
+
+**generate_trello_login_to_email_json**
+
+    DESCRIPTION:
+        Generate a json file with trello login -> email
+
+    OPTIONS:
+        --out OUT_FILE 
+            File to output the resulting json to Ex: /tmp/trello_login_to_email.json
+
+
 **list**
 
     DESCRIPTION:
@@ -133,6 +197,16 @@ Commands
 
     DESCRIPTION:
         List the potentially invalid users
+
+
+**list_roadmap_labels**
+
+    DESCRIPTION:
+        List the labels belonging to a board, defaulting to the Roadmap board designated in the configuration.
+
+    OPTIONS:
+        --board BOARD_NAME
+            List labels on a particular board
 
 
 **organize_release_cards**
@@ -157,6 +231,12 @@ Commands
             Send email?
 
 
+**release_identifier**
+
+    DESCRIPTION:
+        Print the release identifier
+
+
 **sprint_identifier**
 
     DESCRIPTION:
@@ -167,6 +247,24 @@ Commands
 
     DESCRIPTION:
         Print the number of days left in the sprint
+
+
+**days_until_code_freeze**
+
+    DESCRIPTION:
+        Print the number of days left until the next code freeze
+
+
+**days_until_feature_complete**
+
+    DESCRIPTION:
+        Print the number of days left until feature_complete
+
+
+**days_until_stage_one_dep_complete**
+
+    DESCRIPTION:
+        Print the number of days left until stage one dependencies are feature complete
 
 
 **update**
@@ -199,6 +297,18 @@ Commands
 
     DESCRIPTION:
         Convert [] markers on cards to epic- and future labels that exist
+
+
+**rename_label**
+
+    DESCRIPTION:
+        Renames a label on all configured boards
+
+    OPTIONS:
+        --from FROM
+            The label to rename
+        --to TO
+            What to rename it to
 
 
 Detailed Run Example
