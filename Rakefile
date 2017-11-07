@@ -1,16 +1,23 @@
 require 'rubygems'
+require 'rake/testtask'
 
 $stdout.sync = true
 $stderr.sync = true
 
-namespace :sprint_tools do
+task :default => "check_syntax"
 
-  desc "Check syntax"
+Rake::TestTask.new(:test) do |t|
+  t.libs.unshift("test")
+  t.verbose = true
+  t.test_files = FileList["test/**/test_*.rb"]
+end
+
+desc "Check syntax"
   task :check_syntax do
 
     syntax_check_cmd = %{
 set -e
-for f in `find lib -name *.rb`
+for f in `find ./ -name *.rb`
 do
   ruby -c $f >/dev/null;
 done
@@ -21,6 +28,3 @@ ruby -c trello >/dev/null;
       exit 1
     end
   end
-end
-
-task :default => "sprint_tools:check_syntax"

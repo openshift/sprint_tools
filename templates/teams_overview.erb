@@ -79,11 +79,11 @@
         complete = false
         status = 'Planned'
         pos_adjustment = TrelloHelper::LIST_POSITION_ADJUSTMENT[list_name]
-        if TrelloHelper::ACCEPTED_STATES.include?(list_name) || list_name =~ TrelloHelper::SPRINT_REGEXES
+        if trello.list_for_completed_work?(list_name)
           pos_adjustment = 0
           status = 'Complete'
           complete = true
-        elsif TrelloHelper::CURRENT_SPRINT_NOT_ACCEPTED_STATES.include?(list_name)
+        elsif trello.list_for_in_progress_work?(list_name)
           status = 'In Progress'
         end
         pos_adjustment = TrelloHelper::MAX_LIST_POSITION_ADJUSTMENT unless pos_adjustment

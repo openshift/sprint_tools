@@ -1,0 +1,59 @@
+---
+:consumer_key: abcdef1234567890abcdef1234567890
+:consumer_secret: abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890
+:oauth_token: abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890
+:max_lists_per_board: 26
+:default_product: product1
+:other_products:
+  - product2
+  - product3
+:product_order:
+  - product1
+  - product2
+  - product3
+:teams:
+  :team1:
+    :boards:
+      :team1_board1: 1abcdef1234567890abcdef1
+      :team1_board2: 2abcdef1234567890abcdef1
+    :dependent_work_boards:
+      3abcdef1234567890abcdef1:
+        :label: documentation
+        :new_list_name: New
+        :card_name_prefix: Team1-Document
+        :card_desc_prefix: Corresponding Development Card
+        :task_reminder_text: Update this card with team1-specific details about what needs to be documented.
+  :team2:
+    :boards:
+      :team2_board: 02abcdef1234567890abcdef
+  :team3:
+    :boards:
+      :team3_board: 03abcdef1234567890abcdef
+      :team3_board_private: 13abcdef1234567890abcdef
+    :exclude_from_sprint_report: true
+    :exclude_from_dependent_work_board: true
+:roadmap_id: 4abcdef1234567890abcdef1
+:public_roadmap_id: 5abcdef1234567890abcdef1
+:dependent_work_boards:
+  6abcdef1234567890abcdef1:
+    :label: documentation
+    :new_list_name: New
+    :card_name_prefix: Document
+    :card_desc_prefix: Corresponding Development Card
+    :task_reminder_text: Update this card (in the description or in a comment) with details about what needs to be documented.
+  7abcdef1234567890abcdef1:
+    :label: other_work
+    :new_list_name: New
+    :card_name_prefix: Other
+    :card_desc_prefix: Corresponding Development Card
+    :task_reminder_text: Update this card (in the description or in a comment) with details about any additional work required
+:organization_id: test_org_name
+:organization_name: Test Organization Name
+:roadmap_board_lists:
+ - 'New'
+ - 'Epic Backlog'
+:sprint_length_in_weeks: 3
+:sprint_start_day: monday
+:sprint_end_day: friday
+:logo: https://example.com/logo.png
+:archive_path: /history/
