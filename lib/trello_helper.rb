@@ -789,7 +789,7 @@ class TrelloHelper
             new_lists.sort_by!{ |l| NEW_STATES[l.name] }
             new_lists.reverse!
             other_lists.sort_by!{ |l| l.name }
-            
+
             lists = accepted_lists + complete_lists + in_progress_lists + next_lists + backlog_lists + new_lists
 
             previous_sprint_lists = previous_sprint_lists.sort_by { |l| [l.name =~ SPRINT_REGEXES ? $1.to_i : 9999999, $3 ? $3.to_i : $9.to_i, $5 ? $5.to_i : $10.to_i, $7 ? $7.to_i : $12.to_i, $14.to_i]}
@@ -1087,11 +1087,13 @@ class TrelloHelper
   end
 
   def list_for_completed_work?(list_name)
-    ACCEPTED_STATES.include?(list_name) || list_name =~ SPRINT_REGEXES
+    # !! ensures boolean value for feeding to API
+    !!(ACCEPTED_STATES.include?(list_name) || list_name =~ SPRINT_REGEXES)
   end
 
   def list_for_in_progress_work?(list_name)
-    CURRENT_SPRINT_NOT_ACCEPTED_STATES.include?(list_name)
+    # !! ensures boolean value for feeding to API
+    !!CURRENT_SPRINT_NOT_ACCEPTED_STATES.include?(list_name)
   end
 
   def list_checklists(card)
@@ -1297,7 +1299,7 @@ class TrelloHelper
 
   def release_cards_history(product, release)
     release_cards_history_file = File.join('config', 'releases', "#{product ? product + '-' : '' }#{release}.json")
-    release_cards_history = nil 
+    release_cards_history = nil
     release_cards_history = JSON.parse(File.read(release_cards_history_file)) if File.exist?(release_cards_history_file)
     release_cards_history
   end
