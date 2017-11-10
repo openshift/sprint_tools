@@ -106,9 +106,13 @@ class Sprint
     @next_code_freeze
   end
 
-  def feature_complete(cf=code_freeze)
-    feature_complete = sprint_card_date("Feature Complete")
-    unless feature_complete
+  def next_feature_complete(next_code_freeze)
+    feature_complete(next_code_freeze, "Next Feature Complete")
+  end
+
+  def feature_complete(cf=code_freeze, field_string="Feature Complete")
+    feature_complete = sprint_card_date(field_string)
+    if !feature_complete
       feature_complete = cf
       trello.sprint_length_in_weeks.times do
         feature_complete = feature_complete.previous(trello.sprint_end_day.to_sym)
