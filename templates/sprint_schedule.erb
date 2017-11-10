@@ -100,7 +100,7 @@
 <%
           options.sprints.times do
             addtl_sprint_details = ''
-            [[code_freeze, stage_one_dep_complete, feature_complete, current_release], [next_code_freeze, sprint.stage_one_dep_complete(next_code_freeze), sprint.feature_complete(next_code_freeze), next_release]].each do |release_milestones|
+            [[code_freeze, stage_one_dep_complete, feature_complete, current_release], [next_code_freeze, sprint.stage_one_dep_complete(next_code_freeze), sprint.next_feature_complete(next_code_freeze), next_release]].each do |release_milestones|
               cf = release_milestones[0]
               sodc = release_milestones[1]
               fc = release_milestones[2]
