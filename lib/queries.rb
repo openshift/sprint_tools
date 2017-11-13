@@ -1,7 +1,6 @@
 class Sprint
-
   def has_label?(card, labels)
-    (labels - trello.card_labels(card).map{|label| label.name }).length < labels.length
+    (labels - trello.card_labels(card).map { |label| label.name }).length < labels.length
   end
 
   def has_comment?(card, target_comments)
@@ -29,7 +28,7 @@ class Sprint
       #  return true if comment.include?(url)
       #end
     end
-    return false
+    false
   end
 
   def has_unplanned_referencing_card?(rfe, stories)
@@ -37,7 +36,7 @@ class Sprint
     url = "https://bugzilla.redhat.com/show_bug.cgi?id=#{id}"
     stories.each do |card|
       if card.desc.include?(url)
-        label_names = trello.card_labels(card).map{ |label| label.name.split('-').first }
+        label_names = trello.card_labels(card).map { |label| label.name.split('-').first }
         if !label_names.include?('targeted') && !label_names.include?('committed')
           return true
         else
@@ -45,54 +44,54 @@ class Sprint
         end
       end
     end
-    return false
+    false
   end
 
   def queries
     {
-      :needs_qe => {
-        :parent   => :not_accepted,
-        :function => lambda{ |card| !has_label?(card, ['no-qe']) }
+      needs_qe: {
+        parent: :not_accepted,
+        function: lambda { |card| !has_label?(card, ['no-qe']) }
       },
-      :qe_ready => {
-        :parent => :needs_qe,
-        :function => lambda{ |card| has_comment?(card, ['tcms', 'goo.gl', 'url.corp.redhat.com']) }
+      qe_ready: {
+        parent: :needs_qe,
+        function: lambda { |card| has_comment?(card, ['tcms', 'goo.gl', 'url.corp.redhat.com']) }
       },
-      :approved => {
-        :parent   => :qe_ready,
-        :function => lambda{ |card| has_label?(card, ['tc-approved', 'no-qe']) }
+      approved: {
+        parent: :qe_ready,
+        function: lambda { |card| has_label?(card, ['tc-approved', 'no-qe']) }
       },
-      :accepted   => {
-        :function => lambda{ |card| TrelloHelper::ACCEPTED_STATES.include?(trello.card_list(card).name) || (TrelloHelper::COMPLETE_STATES.include?(trello.card_list(card).name) && has_label?(card, ['no-qe'])) }
+      accepted: {
+        function: lambda { |card| TrelloHelper::ACCEPTED_STATES.include?(trello.card_list(card).name) || (TrelloHelper::COMPLETE_STATES.include?(trello.card_list(card).name) && has_label?(card, ['no-qe'])) }
       },
-      :completed  => {
-        :parent   => :not_accepted,
-        :function => lambda{ |card| TrelloHelper::COMPLETE_STATES.include?(trello.card_list(card).name) }
+      completed: {
+        parent: :not_accepted,
+        function: lambda { |card| TrelloHelper::COMPLETE_STATES.include?(trello.card_list(card).name) }
       },
-      :not_dcut_complete => {
-        :parent   => :not_completed,
-        :function => lambda{ |card| has_label?(card, ['devcut'])}
+      not_dcut_complete: {
+        parent: :not_completed,
+        function: lambda { |card| has_label?(card, ['devcut']) }
       },
-      :code_freeze_incomplete => {
-        :function => lambda{ |card| (trello.current_release_labels && has_label?(card, trello.current_release_labels))},
-        :include_backlog => true
+      code_freeze_incomplete: {
+        function: lambda { |card| (trello.current_release_labels && has_label?(card, trello.current_release_labels)) },
+        include_backlog: true
       },
-      :stage1_incomplete => {
-        :parent   => :code_freeze_incomplete,
-        :function => lambda{ |card| has_label?(card, [TrelloHelper::STAGE1_DEP_LABEL])},
-        :include_backlog => true
+      stage1_incomplete: {
+        parent: :code_freeze_incomplete,
+        function: lambda { |card| has_label?(card, [TrelloHelper::STAGE1_DEP_LABEL]) },
+        include_backlog: true
       },
-      :new_rfes => {
-        :function => lambda{ |rfe| !has_referencing_card?(rfe, all_stories)},
-        :type => 'rfes'
+      new_rfes: {
+        function: lambda { |rfe| !has_referencing_card?(rfe, all_stories) },
+        type: 'rfes'
       },
-      :complete_rfes => {
-        :function => lambda{ |rfe| !(rfe['status'] == 'POST') && has_referencing_card?(rfe, accepted_and_after_stories)},
-        :type => 'rfes'
+      complete_rfes: {
+        function: lambda { |rfe| !(rfe['status'] == 'POST') && has_referencing_card?(rfe, accepted_and_after_stories) },
+        type: 'rfes'
       },
-      :unplanned_rfes => {
-        :function => lambda{ |rfe| has_unplanned_referencing_card?(rfe, not_accepted_stories)},
-        :type => 'rfes'
+      unplanned_rfes: {
+        function: lambda { |rfe| has_unplanned_referencing_card?(rfe, not_accepted_stories) },
+        type: 'rfes'
       }
     }
   end

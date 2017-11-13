@@ -172,7 +172,7 @@
             label_names = labels.map{ |label| label.name }
             releases = []
             label_names.each do |label_name|
-              TrelloHelper::RELEASE_LABEL_REGEX.match(label_name) do |fields| 
+              TrelloHelper::RELEASE_LABEL_REGEX.match(label_name) do |fields|
                 product = fields[2]
                 release = fields[3]
                 if sizing

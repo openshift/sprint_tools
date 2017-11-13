@@ -230,7 +230,7 @@
 %>
 <h2 class="anchor" id="<%=release_name%>"><%=release_name.upcase%></h2>
 <div class="container">
-<% 
+<%
         release_cards_history = trello.release_cards_history(product, release_name)
         release_cards_history.delete_if{ |id, card_info| team_map = trello.teams[card_info['team_name'].to_sym]; team_map && team_map[:exclude_from_releases_overview] } if release_cards_history
 

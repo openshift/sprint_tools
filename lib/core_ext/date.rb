@@ -22,11 +22,11 @@ class Date
   end
 
   private
-  def find_day(_day,mod = :after)
+  def find_day(_day, mod = :after)
     mult = (mod == :after ? 1 : -1)
-    _start = self + (1*mult)
+    _start = self + (1 * mult)
     _end   = self + (7 * mult)
-    range  = Range.new(*[_start,_end].sort)
-    range.select{|x| x.send("#{_day}?".to_sym)}.first
+    range  = Range.new(*[_start, _end].sort)
+    range.select { |x| x.send("#{_day}?".to_sym) }.first
   end
 end

@@ -133,6 +133,4 @@ class TestOverviewsHelper < SprintTools::TestCase
 
     assert_equal(csv_array, [OverviewsHelper::CSV_HEADER, @card_csv_row_array_no_products])
   end
-
 end
-

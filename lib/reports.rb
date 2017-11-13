@@ -4,26 +4,26 @@ module SprintReport
   attr_accessor :title, :headings, :bug_headings, :function, :columns, :data, :day, :days_before_code_freeze, :sort_key, :secondary_sort_key, :friendly, :type
   attr_accessor :sprint
   def initialize(opts)
-    opts.each do |k,v|
-      send("#{k}=",v)
+    opts.each do |k, v|
+      send("#{k}=", v)
     end
 
     if type == :bug
-      @columns = bug_headings.map{|heading| Column.new(heading, self)}
+      @columns = bug_headings.map { |heading| Column.new(heading, self) }
     else
-      @columns = headings.map{|heading| Column.new(heading, self)}
+      @columns = headings.map { |heading| Column.new(heading, self) }
     end
     @data = []
   end
 
   def send_attr(x, attr)
     if attr == 'bug_owner'
-      return x['assigned_to']
+      x['assigned_to']
     elsif attr == 'team_name'
-      return sprint.trello.team_name(x)
+      sprint.trello.team_name(x)
     elsif attr == 'list_name'
       list_name = sprint.trello.card_list(x).name
-      return TrelloHelper::LIST_POSITION_ADJUSTMENT[list_name] ? TrelloHelper::LIST_POSITION_ADJUSTMENT[list_name] : list_name.hash.abs
+      TrelloHelper::LIST_POSITION_ADJUSTMENT[list_name] ? TrelloHelper::LIST_POSITION_ADJUSTMENT[list_name] : list_name.hash.abs
     else
       sprint.trello.trello_do('send_attr') do
         return x.send(attr)
@@ -39,19 +39,19 @@ module SprintReport
     sort_keys << sort_key.to_s if sort_key
     sort_keys << secondary_sort_key.to_s if secondary_sort_key && type != :bug
     unless sort_keys.empty?
-      @data.sort_by!{|x| sort_keys.map{ |key| send_attr(x, key) }}
+      @data.sort_by! { |x| sort_keys.map { |key| send_attr(x, key) } }
     end
     @data
   end
 
   def offenders
-    data.map{|card| sprint.trello.member_emails(members(card))}.flatten.uniq
+    data.map { |card| sprint.trello.member_emails(members(card)) }.flatten.uniq
   end
 
   def rows(user = nil)
     _data = data
     if user
-      _data = data.select{|card| sprint.trello.member_emails(members(card)).include?(user)}
+      _data = data.select { |card| sprint.trello.member_emails(members(card)).include?(user) }
     end
     _data.map do |x|
       # Get data for each column
@@ -67,11 +67,11 @@ module SprintReport
 
   def required?
     if days_before_code_freeze && sprint.code_freeze
-      return ((sprint.code_freeze.to_time - Time.new) / (60*60*24)).ceil <= days_before_code_freeze
+      ((sprint.code_freeze.to_time - Time.new) / (60 * 60 * 24)).ceil <= days_before_code_freeze
     elsif day.nil?
-      return true
+      true
     else
-      return Date.today >= due_date
+      Date.today >= due_date
     end
   end
 
@@ -94,27 +94,27 @@ module SprintReport
   class Column
     attr_accessor :header, :attr, :fmt, :sub_attr, :report, :max_length
     def initialize(opts, report)
-      opts.each do |k,v|
-        send("#{k}=",v)
+      opts.each do |k, v|
+        send("#{k}=", v)
       end
       @report = report
     end
 
     def send_attr(x, attr)
       if attr == 'bug_url'
-        return "https://bugzilla.redhat.com/show_bug.cgi?id=#{x['id']}"
+        "https://bugzilla.redhat.com/show_bug.cgi?id=#{x['id']}"
       elsif attr == 'bug_summary'
-        return x['summary']
+        x['summary']
       elsif attr == 'bug_owner'
-        return x['assigned_to']
+        x['assigned_to']
       elsif x.is_a? Hash
-        return x[attr.to_sym]
+        x[attr.to_sym]
       elsif attr == 'members'
-        return report.members(x)
+        report.members(x)
       elsif attr == 'list'
-        return report.sprint.trello.card_list(x)
+        report.sprint.trello.card_list(x)
       elsif attr == 'team_name'
-        return report.sprint.trello.team_name(x)
+        report.sprint.trello.team_name(x)
       else
         report.sprint.trello.trello_do('send_attr') do
           return x.send(attr)
@@ -155,7 +155,7 @@ module SprintReport
       value ||= '<none>'
       value = fmt ? (fmt % [value]) : value
       if max_length && (value.is_a? String) && value.length > max_length
-        value = value[0..(max_length-4)]
+        value = value[0..(max_length - 4)]
         value += ('.' * (max_length - value.length))
       end
       value
@@ -167,19 +167,19 @@ class UserStoryReport
   include SprintReport
   def initialize(opts)
     _opts = {
-      :headings => [
-        { :header => 'url', :attr => 'short_url' },
-        { :header => 'Team', :attr => 'team_name', :max_length => 15 },
-        { :header => 'List', :sub_attr => 'name', :max_length => 15 },
-        { :header => 'Name', :max_length => 30 },
-        { :header => 'Members', :sub_attr => 'full_name', :max_length => 25 }
+      headings: [
+        { header: 'url', attr: 'short_url' },
+        { header: 'Team', attr: 'team_name', max_length: 15 },
+        { header: 'List', sub_attr: 'name', max_length: 15 },
+        { header: 'Name', max_length: 30 },
+        { header: 'Members', sub_attr: 'full_name', max_length: 25 }
       ],
-      :bug_headings => [
-        { :header => 'bug_url', :attr => 'bug_url' },
-        { :header => 'bug_owner', :attr => 'bug_owner', :max_length => 20 },
-        { :header => 'bug_summary', :attr => 'bug_summary', :max_length => 35 }
+      bug_headings: [
+        { header: 'bug_url', attr: 'bug_url' },
+        { header: 'bug_owner', attr: 'bug_owner', max_length: 20 },
+        { header: 'bug_summary', attr: 'bug_summary', max_length: 35 }
       ],
-      :secondary_sort_key => :list_name
+      secondary_sort_key: :list_name
     }
     super(_opts.merge(opts))
   end
@@ -190,11 +190,11 @@ class StatsReport
 
   def initialize
     super({
-      :title => "Sprint Stats",
-      :function => :stats,
-      :headings => [
-        {:header => "Count"},
-        {:header => "Name"},
+      title: "Sprint Stats",
+      function: :stats,
+      headings: [
+        { header: "Count" },
+        { header: "Name" },
       ],
     })
   end
@@ -205,11 +205,11 @@ class DeadlinesReport
 
   def initialize
     super({
-      :title => "Deadlines",
-      :function => :upcoming,
-      :headings => [
-        {:header => "Date"},
-        {:header => "Title"}
+      title: "Deadlines",
+      function: :upcoming,
+      headings: [
+        { header: "Date" },
+        { header: "Title" }
       ],
     })
   end
@@ -220,11 +220,11 @@ class EnvironmentsReport
 
   def initialize
     super({
-      :title => "Environment Pushes",
-      :function => :upcoming,
-      :headings => [
-        {:header => "Date"},
-        {:header => "Title"}
+      title: "Environment Pushes",
+      function: :upcoming,
+      headings: [
+        { header: "Date" },
+        { header: "Title" }
       ],
     })
   end

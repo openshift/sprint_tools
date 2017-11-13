@@ -10,7 +10,7 @@ class Report
 
   def reports
     @reports ||= (
-    # Map passed in names to global report_types
+      # Map passed in names to global report_types
       options.reports.map do |name|
         $report_types[name]
       end.each do |r|
@@ -27,11 +27,11 @@ class Report
   end
 
   def required_reports
-    reports.select{|r| r.required? }
+    reports.select { |r| r.required? }
   end
 
   def offenders
-    required_reports.map{|r| r.offenders}.flatten.compact.uniq
+    required_reports.map { |r| r.offenders }.flatten.compact.uniq
   end
 
   def process(user = nil)
@@ -39,18 +39,18 @@ class Report
     data = required_reports.map do |r|
       rows = r.rows(user)
       hash = {
-        :report => r,
-        :data => {
-          :title => r.title,
-          :headings => r.columns.map{|col| col.header},
-          :rows => rows
+        report: r,
+        data: {
+          title: r.title,
+          headings: r.columns.map { |col| col.header },
+          rows: rows
         }
       }
-      stats.data << {:name => hash[:data][:title], :count => rows.count} if rows.count > 0
+      stats.data << { name: hash[:data][:title], count: rows.count } if rows.count > 0
       hash
     end.compact
 
-    data.delete_if{|d| d[:data][:rows].length == 0}
+    data.delete_if { |d| d[:data][:rows].length == 0 }
 
     unless data.empty? || user
 
@@ -68,20 +68,18 @@ class Report
 
       unless only_bug_reports_included
         deadlines = DeadlinesReport.new
-        deadlines.data = reports.select{|x| !(x.required? || x.first_day?) }.map{|x| {:date => x.due_date, :title => x.friendly || x.title} }
-        deadlines.data << {:date => $sprint.finish, :title => "Last Day of Sprint" }
-        deadlines.data << {:date => $sprint.stage_one_dep_complete, :title => "Stage 1 Deps Feature Complete" }
-        deadlines.data << {:date => $sprint.feature_complete, :title => "Feature Complete" }
-        deadlines.data << {:date => $sprint.code_freeze, :title => "Release Code Freeze" }
-        deadlines.data = deadlines.data.sort_by{|x| x[:date] }
-        data.unshift({
-          :report => deadlines,
-          :data => {
-            :title => deadlines.title,
-            :headings => deadlines.columns.map{|col| col.header},
-            :rows => deadlines.rows
-          }
-        })
+        deadlines.data = reports.select { |x| !(x.required? || x.first_day?) }.map { |x| { date: x.due_date, title: x.friendly || x.title } }
+        deadlines.data << { date: $sprint.finish, title: "Last Day of Sprint" }
+        deadlines.data << { date: $sprint.stage_one_dep_complete, title: "Stage 1 Deps Feature Complete" }
+        deadlines.data << { date: $sprint.feature_complete, title: "Feature Complete" }
+        deadlines.data << { date: $sprint.code_freeze, title: "Release Code Freeze" }
+        deadlines.data = deadlines.data.sort_by { |x| x[:date] }
+        data.unshift(report: deadlines,
+          data: {
+            title: deadlines.title,
+            headings: deadlines.columns.map { |col| col.header },
+            rows: deadlines.rows
+          })
 
         #environments = EnvironmentsReport.new
         #environments.data = []
@@ -100,33 +98,27 @@ class Report
       end
 
       if story_reports_included
-        stats.data.unshift({
-          :name => 'Total Stories',
-          :count => $sprint.sprint_stories.length
-        })
+        stats.data.unshift(name: 'Total Stories',
+          count: $sprint.sprint_stories.length)
       end
       if bug_reports_included
-        stats.data.unshift({
-          :name => 'Total RFEs',
-          :count => $sprint.rfes.length
-        })
+        stats.data.unshift(name: 'Total RFEs',
+          count: $sprint.rfes.length)
       end
 
-      data.unshift({
-        :report => stats,
-        :data => {
-          :title => stats.title,
-          :headings => stats.columns.map{|col| col.header},
-          :rows => stats.rows
-        }
-      })
+      data.unshift(report: stats,
+        data: {
+          title: stats.title,
+          headings: stats.columns.map { |col| col.header },
+          rows: stats.rows
+        })
     end
 
     data
   end
 
   def to_ascii(data, user = nil)
-    return capture_stdout do
+    capture_stdout do
       title = user ? "Incomplete User Stories for #{user}" : $sprint.title
       heading title do
         data.each do |t|
@@ -168,11 +160,11 @@ class Report
     puts ascii
   end
 
-  def make_mail(to,subject,data)
+  def make_mail(to, subject, data)
     Status::Email.new(
-      :to => to,
-      :subject => subject,
-      :body => to_ascii(data)
+      to: to,
+      subject: subject,
+      body: to_ascii(data)
     )
   end
 end

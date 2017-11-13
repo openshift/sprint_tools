@@ -12,15 +12,14 @@ module SprintTools
       OpenStruct.new(hashes)
     end
 
-    def load_conf(klass,args,single = false)
+    def load_conf(klass, args, single = false)
       if single
         klass.new(args)
       else
-        Hash[*args.map do |key,val|
-               [key,klass.new(val)]
+        Hash[*args.map do |key, val|
+               [key, klass.new(val)]
              end.flatten]
       end
     end
-
   end
 end
