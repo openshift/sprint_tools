@@ -141,7 +141,7 @@ Commands
         Generate the developers overview
 
     OPTIONS:
-        --out OUT_FILE 
+        --out OUT_FILE
             The file to output Ex: /tmp/developers_overview.html
 
 
@@ -161,11 +161,11 @@ Commands
         Generate json for the cards in a release
 
     OPTIONS:
-        --out-dir DIRECTORY 
+        --out-dir DIRECTORY
             The dir to output to Ex: /tmp
-        --release RELEASE 
+        --release RELEASE
             Release to build json for Ex: 3.3
-        --product PRODUCT 
+        --product PRODUCT
             Product to build json for Ex: myproduct
 
 
@@ -175,7 +175,7 @@ Commands
         Generate a json file with trello login -> email
 
     OPTIONS:
-        --out OUT_FILE 
+        --out OUT_FILE
             File to output the resulting json to Ex: /tmp/trello_login_to_email.json
 
 

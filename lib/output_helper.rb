@@ -51,7 +51,7 @@ def _progress(msg)
   @indent = indent
 end
 
-def _table(title, hash, args={})
+def _table(title, hash, args = {})
   table = make_table(hash, args)
 
   heading title do
@@ -61,16 +61,16 @@ def _table(title, hash, args={})
   end
 end
 
-def make_table(args, options={})
+def make_table(args, options = {})
   options = OpenStruct.new(options)
   # Sort the stuff or just convert to an array
   args = if (key = options.sort)
-           args.sort do |a,b|
-             a[key].to_s <=> b[key].to_s
-           end
-         else
-           args.to_a
-         end
+    args.sort do |a, b|
+      a[key].to_s <=> b[key].to_s
+    end
+  else
+    args.to_a
+  end
 
   # Convert to a list or string
   args.map! do |line|
@@ -93,8 +93,8 @@ def make_table(args, options={})
 
   lens = []
   args.each do |line|
-    line.each_with_index do |item,i|
-      lens[i] = [lens[i],item.length].compact.max
+    line.each_with_index do |item, i|
+      lens[i] = [lens[i], item.length].compact.max
     end
   end
 
@@ -102,12 +102,12 @@ def make_table(args, options={})
   lens.push(nil)
 
   lens.map! do |x|
-    ["%",x,"s"].join('')
+    ["%", x, "s"].join('')
   end
 
-  OpenStruct.new({
-    :fmt => lens.join( " %s " % (options.separator || "-") ),
-    :lines => args,
-    :line_len => args.first ? args.first.length : 0
-  })
+  OpenStruct.new(
+    fmt: lens.join(" %s " % (options.separator || "-")),
+    lines: args,
+    line_len: args.first ? args.first.length : 0
+  )
 end

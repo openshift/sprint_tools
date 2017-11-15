@@ -21,9 +21,9 @@ require 'csv'
 Encoding.default_external = "UTF-8"
 
 I18n.backend.store_translations(:en,
-                                :i18n => {
-                                  :transliterate => {
-                                    :rule => {
+                                i18n: {
+                                  transliterate: {
+                                    rule: {
                                       'ö' => 'oe',
                                       'ü' => 'ue',
                                       'Ö' => 'Oe',
@@ -34,19 +34,19 @@ I18n.backend.store_translations(:en,
                                 })
 I18n.config.enforce_available_locales = false
 
-name="#{__FILE__}"
+name = "#{__FILE__}"
 
 program :name, "Trello Utilities"
 program :version, "1.0.0"
 program :description, "An assortment of Trello utilities"
 
 # This loads the conf files and creates new objects based on the specified classes
-def load_conf(klass,args,single = false)
+def load_conf(klass, args, single = false)
   if single
     klass.new(args)
   else
-    Hash[*args.map do |key,val|
-      [key,klass.new(val)]
+    Hash[*args.map do |key, val|
+      [key, klass.new(val)]
     end.flatten]
   end
 end
@@ -59,14 +59,15 @@ $tag_to_label_color = {
   'devcut' => 'purple'
 }
 
-LINKS = {'roadmap_overview' => 'Roadmap',
-         'releases_overview' => 'Releases',
-         'teams_overview' => 'Teams',
-         'developers_overview' => 'Developers',
-         'sprints_overview' => 'Sprints',
-         'labels_overview' => 'Labels',
-         'sprint_schedule' => 'Sprint Schedule'}
+LINKS = { 'roadmap_overview' => 'Roadmap',
+          'releases_overview' => 'Releases',
+          'teams_overview' => 'Teams',
+          'developers_overview' => 'Developers',
+          'sprints_overview' => 'Sprints',
+          'labels_overview' => 'Labels',
+          'sprint_schedule' => 'Sprint Schedule' }
 
+ONE_DAY = 60 * 60 * 24
 
 trello = load_conf(TrelloHelper, CONFIG.trello, true)
 
@@ -241,7 +242,7 @@ command :backup_org_boards do |c|
         begin
           # cache the response so we don't create a 0-byte file if the request times out
           output = trello.dump_board_json(board)
-          File.open(out_path, 'w') { |f| f.write(output)}
+          File.open(out_path, 'w') { |f| f.write(output) }
         rescue Exception => e
           $stderr.puts "Error while writing to #{out_path}: #{e.message}"
         end
@@ -359,7 +360,7 @@ command :days_left_in_sprint do |c|
     # updated. From that point until Saturday, the formula below would
     # otherwise give an answer that doesn't make sense (e.g. 23 days
     # left on Wednesday afternoon)
-    print (((trello.sprint_card.due.to_time - Time.new) / (60*60*24)).ceil % trello.sprint_length_in_days)
+    print (((trello.sprint_card.due.to_time - Time.new) / ONE_DAY).ceil % trello.sprint_length_in_days)
   end
 end
 
@@ -368,8 +369,8 @@ command :days_until_code_freeze do |c|
 
   c.description = "Print the number of days left until the next code freeze"
   c.action do |args, options|
-    sprint = Sprint.new({:trello => trello, :uninitialized => true})
-    print ((sprint.code_freeze.to_time - Time.new) / (60*60*24)).ceil
+    sprint = Sprint.new(trello: trello, uninitialized: true)
+    print ((sprint.code_freeze.to_time - Time.new) / ONE_DAY).ceil
   end
 end
 
@@ -378,8 +379,8 @@ command :days_until_feature_complete do |c|
 
   c.description = "Print the number of days left until feature_complete"
   c.action do |args, options|
-    sprint = Sprint.new({:trello => trello, :uninitialized => true})
-    print ((sprint.feature_complete.to_time - Time.new) / (60*60*24)).ceil
+    sprint = Sprint.new(trello: trello, uninitialized: true)
+    print ((sprint.feature_complete.to_time - Time.new) / ONE_DAY).ceil
   end
 end
 
@@ -388,8 +389,8 @@ command :days_until_stage_one_dep_complete do |c|
 
   c.description = "Print the number of days left until stage one dependencies are feature complete"
   c.action do |args, options|
-    sprint = Sprint.new({:trello => trello, :uninitialized => true})
-    print ((sprint.stage_one_dep_complete.to_time - Time.new) / (60*60*24)).ceil
+    sprint = Sprint.new(trello: trello, uninitialized: true)
+    print ((sprint.stage_one_dep_complete.to_time - Time.new) / ONE_DAY).ceil
   end
 end
 
@@ -442,7 +443,7 @@ command :generate_release_json do |c|
   c.action do |args, options|
     release_cards = trello.release_cards(options.product, options.release)
     if options.out_dir
-      File.open(File.join(options.out_dir, "#{options.product ? options.product + '-' : '' }#{options.release}.json"), 'w') {|f| f.write(JSON.pretty_generate(release_cards)) }
+      File.open(File.join(options.out_dir, "#{options.product ? options.product + '-' : '' }#{options.release}.json"), 'w') { |f| f.write(JSON.pretty_generate(release_cards)) }
     else
       pp JSON.pretty_generate(release_cards)
     end
@@ -459,7 +460,7 @@ command :generate_trello_login_to_email_json do |c|
     ldap = load_conf(LdapHelper, CONFIG.ldap, true)
     valid_users = ldap.valid_users(trello.org_members)
     if options.out
-      File.open(options.out, 'w') {|f| f.write(JSON.pretty_generate(valid_users)) }
+      File.open(options.out, 'w') { |f| f.write(JSON.pretty_generate(valid_users)) }
     else
       pp JSON.pretty_generate(valid_users)
     end
@@ -475,7 +476,7 @@ command :report do |c|
 
   c.description = "An assortment of Trello reporting utilities"
   c.action do |args, options|
-    options.report_type ||= choose("Report to run?",*CONFIG.reports.keys)
+    options.report_type ||= choose("Report to run?", *CONFIG.reports.keys)
     options.report_type = options.report_type.to_sym
     if options.date
       $date = Date.parse(options.date)
@@ -484,17 +485,17 @@ command :report do |c|
     heading "Generating Status Report" do
       # Read Rally configuration file
       _progress "Logging into Trello" do
-        $sprint = Sprint.new({:trello => trello})
+        $sprint = Sprint.new(trello: trello)
       end
 
       # Generate queries
       _progress "Generating queries" do
-        $report_types = load_conf(UserStoryReport,CONFIG.queries)
+        $report_types = load_conf(UserStoryReport, CONFIG.queries)
       end
 
       # Generate reports
       _progress "Building available reports" do
-        $reports = load_conf(Report,CONFIG.reports)
+        $reports = load_conf(Report, CONFIG.reports)
       end
     end
 
@@ -504,7 +505,9 @@ command :report do |c|
     _table(
       "Running Report With Options",
       report.options.marshal_dump,
-      { :capitalize => true, :sort => 0, :separator => ':' }
+      capitalize: true,
+      sort: 0,
+      separator: ':'
     )
 
     report.send_email
@@ -539,7 +542,7 @@ command :generate_sprints_overview do |c|
     options.offset = options.offset ? options.offset.to_i : 0
 
     erb = ERB.new(File.open('templates/sprints_overview.erb', "rb").read)
-    File.open(options.out, 'w') {|f| f.write(erb.result(binding)) }
+    File.open(options.out, 'w') { |f| f.write(erb.result(binding)) }
   end
 end
 
@@ -555,7 +558,7 @@ command :generate_sprint_schedule do |c|
     options.sprints = options.sprints ? options.sprints.to_i : 8
 
     erb = ERB.new(File.open('templates/sprint_schedule.erb', "rb").read)
-    File.open(options.out, 'w') {|f| f.write(erb.result(binding)) }
+    File.open(options.out, 'w') { |f| f.write(erb.result(binding)) }
   end
 end
 
@@ -651,7 +654,7 @@ command :generate_default_overviews do |c|
     options.offset = options.offset ? options.offset.to_i : 0
 
     erb = ERB.new(File.open('templates/sprints_overview.erb', "rb").read)
-    File.open(File.join(options.out_dir, 'sprints_overview.html'), 'w') {|f| f.write(erb.result(binding)) }
+    File.open(File.join(options.out_dir, 'sprints_overview.html'), 'w') { |f| f.write(erb.result(binding)) }
   end
 end
 
@@ -721,7 +724,7 @@ command :sync_labels do |c|
                   created = true
                 rescue => e
                   board_labels = trello.target(trello.board_labels(board))
-                  created = board_labels.map{|l| l.name }.include?(label_name)
+                  created = board_labels.map { |l| l.name }.include?(label_name)
                   unless created
                     $stderr.puts "Error creating label: #{e.message}"
                     raise if create_retry_count >= TrelloHelper::DEFAULT_RETRIES
@@ -791,7 +794,7 @@ command :create_roadmap_labels do |c|
   c.description = "creates each of LABEL1 LABEL2 ... as labels on the configured roadmap board"
   c.action do |args, options|
     puts "args: #{args} options: #{options}"
-    roadmap_label_names = trello.board_labels(trello.roadmap_board).map{|l| l.name}
+    roadmap_label_names = trello.board_labels(trello.roadmap_board).map { |l| l.name }
     args.each do |new_label_name|
       if roadmap_label_names.include? new_label_name
         puts "Not creating duplicate label: #{new_label_name}"
@@ -836,7 +839,7 @@ command :convert_markers_to_labels do |c|
                 epic_label_name = "epic-#{card_tag[1..-2]}"
               end
               if board_labels_by_name.has_key? epic_label_name
-                unless trello.card_labels(card).map{|c| c.name }.include?(epic_label_name)
+                unless trello.card_labels(card).map { |c| c.name }.include?(epic_label_name)
                   epic_label = board_labels_by_name[epic_label_name]
                   puts "Adding #{epic_label.name} to #{card.name} (#{card.url})"
                   trello.add_label_to_card(card, epic_label)
@@ -896,7 +899,7 @@ command :update do |c|
                   if options.add_task_checklists || options.add_bug_checklists || options.add_dependent_cards
                     if !(card.name =~ TrelloHelper::SPRINT_REGEX && !card.due.nil?)
                       labels = trello.card_labels(card)
-                      label_names = labels.map{|l| l.name }
+                      label_names = labels.map { |l| l.name }
                       if options.add_dependent_cards && dependent_work_valid
                         trello.add_dependent_cards(card, dep_work_board_id, dep_work_board_params, label_names, team_map)
                       end

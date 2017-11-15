@@ -120,8 +120,8 @@ class TrelloHelper
   SortableCard = Struct.new(:card, :new_pos, :state, :product, :release)
 
   def initialize(opts)
-    opts.each do |k,v|
-      send("#{k}=",v)
+    opts.each do |k, v|
+      send("#{k}=", v)
     end
 
     Trello.configure do |config|
@@ -151,7 +151,7 @@ class TrelloHelper
         board_ids << b_id
       end
     end
-    return board_ids
+    board_ids
   end
 
   # Associate sortable metadata to one trello card
@@ -202,7 +202,7 @@ class TrelloHelper
       lo = 1
       hi = longest
       while lo <= hi
-        mid = Float((lo+hi)/2).ceil
+        mid = Float((lo + hi) / 2).ceil
         if a[middle_vals[mid]] < a[i]
           lo = mid + 1
         else
@@ -221,7 +221,7 @@ class TrelloHelper
       longest_sequence[i] = a[k]
       k = pile[k]
     end
-    return longest_sequence
+    longest_sequence
   end
 
   # For each card which needs to be updated, find the ids of cards
@@ -277,7 +277,7 @@ class TrelloHelper
   end
 
   def product_to_order
-    @product_to_order ||= Hash[product_order.map.with_index{ |v,i| [v,i] }]
+    @product_to_order ||= Hash[product_order.map.with_index { |v, i| [v, i] }]
   end
 
   # Return true if the product labels for SortableCard objects card1
@@ -299,7 +299,7 @@ class TrelloHelper
     if card1.product != card2.product
       return true
     end
-    return false
+    false
   end
 
   # Return true if the SortableCard objects card1 and card2 are equal
@@ -345,7 +345,7 @@ class TrelloHelper
         end
       end
     end
-    return "#{board_name}_#{card.short_id}"
+    "#{board_name}_#{card.short_id}"
   end
 
   def team_boards(team_name)
@@ -365,7 +365,7 @@ class TrelloHelper
     else
       team_boards_map = team_map
     end
-    return team_boards_map
+    team_boards_map
   end
 
   def team_board(board_name)
@@ -416,7 +416,7 @@ class TrelloHelper
     nil
   end
 
-  def dependent_work_board(board_id=dependent_work_board_id)
+  def dependent_work_board(board_id = dependent_work_board_id)
     @dependent_work_board[board_id] = find_board(board_id) unless @dependent_work_board[board_id]
     @dependent_work_board[board_id]
   end
@@ -447,7 +447,7 @@ class TrelloHelper
     end
   end
 
-  def find_card(card_id, retry_on_error=true)
+  def find_card(card_id, retry_on_error = true)
     card = nil
     begin
       if retry_on_error
@@ -478,7 +478,7 @@ class TrelloHelper
     roadmap_label_colors_by_name
   end
 
-  def tag_to_epics(rm_boards=roadmap_boards)
+  def tag_to_epics(rm_boards = roadmap_boards)
     tag_to_epics = {}
     rm_boards.each do |roadmap_board|
       epic_lists = epic_lists(roadmap_board)
@@ -503,20 +503,20 @@ class TrelloHelper
     tag_to_epics
   end
 
-  def board_lists(board, list_limit=max_lists_per_board)
+  def board_lists(board, list_limit = max_lists_per_board)
     lists = nil
     lists = @lists_by_board[board.id] if max_lists_per_board.nil? || (list_limit && list_limit <= max_lists_per_board)
     unless lists
       trello_do('lists') do
-        lists = board.lists(:filter => [:all])
-        lists = lists.delete_if{ |list| list.name !~ TrelloHelper::SPRINT_REGEXES && list.closed? }
-        lists.sort_by!{ |list| [list.name =~ TrelloHelper::SPRINT_REGEXES ? ($1.to_i) : 9999999, $3 ? $3.to_i : $9.to_i, $5 ? $5.to_i : $10.to_i, $7 ? $7.to_i : $12.to_i, $14.to_i]}
+        lists = board.lists(filter: [:all])
+        lists = lists.delete_if { |list| list.name !~ TrelloHelper::SPRINT_REGEXES && list.closed? }
+        lists.sort_by! { |list| [list.name =~ TrelloHelper::SPRINT_REGEXES ? ($1.to_i) : 9999999, $3 ? $3.to_i : $9.to_i, $5 ? $5.to_i : $10.to_i, $7 ? $7.to_i : $12.to_i, $14.to_i] }
         lists.reverse!
       end
     end
     @lists_by_board[board.id] = lists if ((list_limit && max_lists_per_board && (list_limit >= max_lists_per_board)) || list_limit.nil?) && !@lists_by_board[board.id]
     lists = lists.first(list_limit) if list_limit
-    return lists
+    lists
   end
 
   def board_members(board)
@@ -541,10 +541,10 @@ class TrelloHelper
   end
 
   def dependent_work_board_ids
-    @dependent_work_board_ids ||= dependent_work_boards.keys + teams.select{|k,v| v.include? :dependent_work_boards}.map{|t,v| v[:dependent_work_boards].keys}.flatten
+    @dependent_work_board_ids ||= dependent_work_boards.keys + teams.select { |k, v| v.include? :dependent_work_boards }.map { |t, v| v[:dependent_work_boards].keys }.flatten
   end
 
-  def next_dependent_work_list(board_id=dependent_work_board.id, new_list_name='New')
+  def next_dependent_work_list(board_id = dependent_work_board.id, new_list_name = 'New')
     unless @next_dependent_work_list[board_id]
       board_lists(boards[board_id]).each do |l|
         if l.name == new_list_name
@@ -563,7 +563,7 @@ class TrelloHelper
         return checklist
       end
     end
-    return nil
+    nil
   end
 
   def checklist_add_item(cl, item_name, checked, position)
@@ -578,7 +578,7 @@ class TrelloHelper
         trello_do('checklist_add_item') do
           cl = Trello::Checklist.find(cl.id)
         end
-        break unless cl.items.select{|i| i.name.strip == item_name && i.complete? == checked }.one?
+        break unless cl.items.select { |i| i.name.strip == item_name && i.complete? == checked }.one?
         raise if retry_count >= DEFAULT_RETRIES
         retry_sleep retry_count
         retry_count += 1
@@ -598,7 +598,7 @@ class TrelloHelper
         trello_do('checklist_delete_item') do
           cl = Trello::Checklist.find(cl.id)
         end
-        break if cl.items.select{|i| i.id == item.id }.empty?
+        break if cl.items.select { |i| i.id == item.id }.empty?
         raise if retry_count >= DEFAULT_RETRIES
         retry_sleep retry_count
         retry_count += 1
@@ -659,7 +659,7 @@ class TrelloHelper
     puts "Adding #{checklist_name} to #{card.name} (#{card.id})" if cl.nil?
     while cl.nil?
       begin
-        cl = Trello::Checklist.create({:name => checklist_name, :board_id => card.board_id, :card_id => card.id})
+        cl = Trello::Checklist.create(name: checklist_name, board_id: card.board_id, card_id: card.id)
         @checklists_by_card.delete(card.id)
         break
       rescue Exception => e
@@ -694,7 +694,7 @@ class TrelloHelper
     end
   end
 
-  def update_roadmaps(team_name, rm_boards, team_boards, releases, roadmap_tag_to_epics, include_accepted=true, include_board_name_in_epic=true)
+  def update_roadmaps(team_name, rm_boards, team_boards, releases, roadmap_tag_to_epics, include_accepted = true, include_board_name_in_epic = true)
     t_to_epics = tag_to_epics(rm_boards)
     tags_without_epics = {}
     rm_boards.each do |roadmap_board|
@@ -732,7 +732,7 @@ class TrelloHelper
               end
             end
             unless global_epics_to_link.empty?
-              epic_card.desc = epic_card.desc + "\n\n" + global_epics_to_link.keys.map{ |short_url| "Parent Epic: #{short_url}"}.join("\n")
+              epic_card.desc = epic_card.desc + "\n\n" + global_epics_to_link.keys.map { |short_url| "Parent Epic: #{short_url}" }.join("\n")
               puts "Adding parent epic(s) to local epic: #{epic_card.short_url}"
               update_card(epic_card)
             end
@@ -776,23 +776,23 @@ class TrelloHelper
               end
             end
 
-            accepted_lists.sort_by!{ |l| ACCEPTED_STATES[l.name] }
+            accepted_lists.sort_by! { |l| ACCEPTED_STATES[l.name] }
             accepted_lists.reverse!
-            complete_lists.sort_by!{ |l| COMPLETE_STATES[l.name] }
+            complete_lists.sort_by! { |l| COMPLETE_STATES[l.name] }
             complete_lists.reverse!
-            in_progress_lists.sort_by!{ |l| IN_PROGRESS_STATES[l.name] }
+            in_progress_lists.sort_by! { |l| IN_PROGRESS_STATES[l.name] }
             in_progress_lists.reverse!
-            next_lists.sort_by!{ |l| NEXT_STATES[l.name] }
+            next_lists.sort_by! { |l| NEXT_STATES[l.name] }
             next_lists.reverse!
-            backlog_lists.sort_by!{ |l| BACKLOG_STATES[l.name] }
+            backlog_lists.sort_by! { |l| BACKLOG_STATES[l.name] }
             backlog_lists.reverse!
-            new_lists.sort_by!{ |l| NEW_STATES[l.name] }
+            new_lists.sort_by! { |l| NEW_STATES[l.name] }
             new_lists.reverse!
-            other_lists.sort_by!{ |l| l.name }
+            other_lists.sort_by! { |l| l.name }
 
             lists = accepted_lists + complete_lists + in_progress_lists + next_lists + backlog_lists + new_lists
 
-            previous_sprint_lists = previous_sprint_lists.sort_by { |l| [l.name =~ SPRINT_REGEXES ? $1.to_i : 9999999, $3 ? $3.to_i : $9.to_i, $5 ? $5.to_i : $10.to_i, $7 ? $7.to_i : $12.to_i, $14.to_i]}
+            previous_sprint_lists = previous_sprint_lists.sort_by { |l| [l.name =~ SPRINT_REGEXES ? $1.to_i : 9999999, $3 ? $3.to_i : $9.to_i, $5 ? $5.to_i : $10.to_i, $7 ? $7.to_i : $12.to_i, $14.to_i] }
             lists += previous_sprint_lists
             lists += other_lists
             lists.each do |list|
@@ -828,7 +828,7 @@ class TrelloHelper
                   unless card_releases.empty?
                     card_releases.each do |product, product_card_releases|
                       if product_card_releases.length > 1
-                        product_card_releases.sort_by!{ |release| [release[3], release[4], release[5], release[6], RELEASE_STATE_ORDER[release[1]]] }
+                        product_card_releases.sort_by! { |release| [release[3], release[4], release[5], release[6], RELEASE_STATE_ORDER[release[1]]] }
                         first_release = product_card_releases.first
                         previous_release = first_release[2]
                         lowest_state_order = RELEASE_STATE_ORDER[first_release[1]]
@@ -848,9 +848,9 @@ class TrelloHelper
                   end
 
                   marker_card_tags = card.name.scan(/\[[^\]]+\]/)
-                  marker_card_tags.each{ |tag| tag.downcase! }
-                  marker_card_tags.delete_if{ |tag| card_tags.include?("epic-#{tag[1..-2]}") }
-                  checklist_name = (marker_card_tags.include?(FUTURE_TAG) || card_labels.map{|l| l.name }.include?(FUTURE_LABEL)) ? FUTURE_RELEASE : UNASSIGNED_RELEASE
+                  marker_card_tags.each { |tag| tag.downcase! }
+                  marker_card_tags.delete_if { |tag| card_tags.include?("epic-#{tag[1..-2]}") }
+                  checklist_name = (marker_card_tags.include?(FUTURE_TAG) || card_labels.map { |l| l.name }.include?(FUTURE_LABEL)) ? FUTURE_RELEASE : UNASSIGNED_RELEASE
                   card_tags += marker_card_tags
 
                   card_tags << '[none]' if card_tags.empty?
@@ -882,7 +882,7 @@ class TrelloHelper
           end
 
           tags_without_epics_keys = tags_without_epics.keys
-          tags_without_epics_keys.sort_by!{ |tag| tag }
+          tags_without_epics_keys.sort_by! { |tag| tag }
 
           if checklist_item_names(tags_without_epics_checklist) != tags_without_epics_keys
             clear_checklist(tags_without_epics_checklist)
@@ -993,7 +993,7 @@ class TrelloHelper
     end
   end
 
-  def target(ref, name='target')
+  def target(ref, name = 'target')
     trello_do(name) do
       t = ref.target
       return t
@@ -1040,14 +1040,14 @@ class TrelloHelper
     labels = nil
     label_limit = 1000
     trello_do('board_labels') do
-      labels = board.labels(:limit => label_limit)
+      labels = board.labels(limit: label_limit)
     end
     raise "Reached label API limit of 1000 entries" if labels.length >= label_limit
     labels
   end
 
   def create_label(name, color, board_id)
-    Trello::Label.create(:name => name, :color => color, :board_id => board_id)
+    Trello::Label.create(name: name, color: color, board_id: board_id)
   end
 
   def update_label(label)
@@ -1062,7 +1062,7 @@ class TrelloHelper
     end
   end
 
-  def add_label_to_card(card, label, retry_on_error=true)
+  def add_label_to_card(card, label, retry_on_error = true)
     begin
       trello_do('add_label_to_card', retry_on_error ? 2 : 0) do
         card.add_label(label)
@@ -1071,7 +1071,7 @@ class TrelloHelper
     end
   end
 
-  def remove_label_from_card(card, label, retry_on_error=true)
+  def remove_label_from_card(card, label, retry_on_error = true)
     begin
       trello_do('remove_label_from_card', retry_on_error ? 2 : 0) do
         card.remove_label(label)
@@ -1147,13 +1147,13 @@ class TrelloHelper
     comments
   end
 
-  def print_card(card, num=nil)
+  def print_card(card, num = nil)
     print "     "
     print "#{num}) " if num
     puts "#{card.name} (##{card.short_id})"
     members = card_members(card)
     if !members.empty?
-      puts "       Assignee(s): #{members.map{|member| member.full_name}.join(', ')}"
+      puts "       Assignee(s): #{members.map { |member| member.full_name }.join(', ')}"
     end
     puts "\nActions:\n\n"
     list_actions(card).each do |action|
@@ -1168,9 +1168,9 @@ class TrelloHelper
           puts "===============================================\n\n"
         end
       elsif action.type == 'createCard'
-          list_name = action.data['list']['name']
-          puts "#{action.member_creator.username} added to #{list_name}"
-          puts "    Name: #{action.data['card']['name']}"
+        list_name = action.data['list']['name']
+        puts "#{action.member_creator.username} added to #{list_name}"
+        puts "    Name: #{action.data['card']['name']}"
       end
     end
   end
@@ -1181,13 +1181,13 @@ class TrelloHelper
       puts "\n  List: #{list.name}  (#cards #{cards.length})"
       puts "    Cards:"
       cards.each_with_index do |card, index|
-        print_card(card, index+1)
+        print_card(card, index + 1)
       end
     end
   end
 
-  def print_labels(board=roadmap_board)
-    label_names = board_labels(board).map{ |l| l.name }
+  def print_labels(board = roadmap_board)
+    label_names = board_labels(board).map { |l| l.name }
     puts "\n  Board: #{board.name}  (#labels #{label_names.length})"
     puts "    Labels:"
     label_names.sort.each { |n| puts "      #{n}" }
@@ -1278,17 +1278,17 @@ class TrelloHelper
       cards = list_cards(list)
       cards.each_with_index do |card, index|
         labels = card_labels(card)
-        label_names = labels.map{ |label| label.name }
+        label_names = labels.map { |label| label.name }
         label_names.each do |label_name|
           RELEASE_LABEL_REGEX.match(label_name) do |fields|
             if product == fields[2] && release == fields[3]
               state = fields[1]
               release_cards[card.id] = {
-                                         :short_url => card.short_url,
-                                         :name => card.name,
-                                         :team_name => team_name,
-                                         :state => state
-                                       }
+                short_url: card.short_url,
+                name: card.name,
+                team_name: team_name,
+                state: state
+              }
             end
           end
         end
@@ -1322,21 +1322,21 @@ class TrelloHelper
     board_json_url = "#{board.url}.json"
     # API request to pull down the same content as the export URL, but limited to 100 actions
     alternate_url = "https://trello.com/1/boards/#{board.id}"
-    alternate_params = {:fields => 'all',
-                        :actions => 'all',
-                        :actions_limit => '100',
-                        :action_fields => 'all',
-                        :cards => 'all',
-                        :card_fields => 'all',
-                        :card_attachments => 'true',
-                        :labels => 'all',
-                        :lists => 'all',
-                        :list_fields => 'all',
-                        :members => 'all',
-                        :member_fields => 'all',
-                        :checklists => 'all',
-                        :checklist_fields => 'all',
-                        :organization => 'false'}
+    alternate_params = { fields: 'all',
+                         actions: 'all',
+                         actions_limit: '100',
+                         action_fields: 'all',
+                         cards: 'all',
+                         card_fields: 'all',
+                         card_attachments: 'true',
+                         labels: 'all',
+                         lists: 'all',
+                         list_fields: 'all',
+                         members: 'all',
+                         member_fields: 'all',
+                         checklists: 'all',
+                         checklist_fields: 'all',
+                         organization: 'false' }
     request = Trello::Request.new :get, board_json_url, {}, nil
     response = nil
     i = 0
@@ -1437,7 +1437,7 @@ class TrelloHelper
           name = $3.strip
         end
         # Update the next list on the appropriate dependent work board
-        dependent_card = Trello::Card.create(:name => "#{params[:card_name_prefix]}: #{name}", :desc => "#{params[:card_desc_prefix]}: #{card.short_url}", :list_id => next_dependent_work_list(dependent_work_board_id, params[:new_list_name]).id)
+        dependent_card = Trello::Card.create(name: "#{params[:card_name_prefix]}: #{name}", desc: "#{params[:card_desc_prefix]}: #{card.short_url}", list_id: next_dependent_work_list(dependent_work_board_id, params[:new_list_name]).id)
       end
       # Sync release labels from the dev card to the dependent work card
       # TODO Make this configurable?
@@ -1448,7 +1448,7 @@ class TrelloHelper
         end
       end
       dependent_card_labels = card_labels(dependent_card)
-      dependent_card_label_names = dependent_card_labels.map {|l| l.name}
+      dependent_card_label_names = dependent_card_labels.map { |l| l.name }
       dependent_card_release_labels = []
       dependent_card_label_names.each do |dependent_card_label_name|
         if dependent_card_label_name =~ RELEASE_LABEL_REGEX
@@ -1503,7 +1503,7 @@ class TrelloHelper
   end
 
   def add_dependent_tasks_reminder(card, reminder, label)
-    if card_labels(card).map {|l| l.name}.include?(label)
+    if card_labels(card).map { |l| l.name }.include?(label)
       tasks_checklist = checklist(card, 'Tasks')
       if tasks_checklist
         found = false
@@ -1521,7 +1521,7 @@ class TrelloHelper
     end
   end
 
-  def update_card_checklists(card, label_names, add_task_checklists=false, add_bug_checklists=false)
+  def update_card_checklists(card, label_names, add_task_checklists = false, add_bug_checklists = false)
     checklists = []
     checklists << 'Tasks' if add_task_checklists
     checklists << 'Bugs' if add_bug_checklists && !label_names.include?('no-qe')
@@ -1539,7 +1539,7 @@ class TrelloHelper
     end
   end
 
-  def trello_do(type, retries=DEFAULT_RETRIES)
+  def trello_do(type, retries = DEFAULT_RETRIES)
     i = 0
     while true
       begin

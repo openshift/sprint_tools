@@ -12,14 +12,14 @@ class BugzillaHelper
   attr_accessor :bz
 
   def initialize(opts)
-    opts.each do |k,v|
-      send("#{k}=",v)
+    opts.each do |k, v|
+      send("#{k}=", v)
     end
 
     xmlrpc = Bugzilla::XMLRPC.new("bugzilla.redhat.com")
     user = Bugzilla::User.new(xmlrpc)
 
-    user.login({'login'=>username, 'password'=>Base64.decode64(password), 'remember'=>true})
+    user.login('login' => username, 'password' => Base64.decode64(password), 'remember' => true)
     @bz = Bugzilla::Bug.new(xmlrpc)
     @bug_status_by_url = {}
   end
@@ -28,7 +28,7 @@ class BugzillaHelper
     sleep DEFAULT_RETRY_SLEEP + (DEFAULT_RETRY_INC * retry_count)
   end
 
-  def retry_on_exception(retries=DEFAULT_RETRIES)
+  def retry_on_exception(retries = DEFAULT_RETRIES)
     i = 0
     while true
       begin
@@ -80,5 +80,4 @@ class BugzillaHelper
     end
     @rfes
   end
-
 end

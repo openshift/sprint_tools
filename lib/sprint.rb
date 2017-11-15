@@ -14,8 +14,8 @@ class Sprint
   attr_accessor :debug
 
   def initialize(opts)
-    opts.each do |k,v|
-      send("#{k}=",v)
+    opts.each do |k, v|
+      send("#{k}=", v)
     end
     unless uninitialized
       init_stories
@@ -29,19 +29,21 @@ class Sprint
   end
 
   def show_days(report)
-    puts "%s - Starts on %s" % [report.title,report.day]
+    puts "%s - Starts on %s" % [report.title, report.day]
     puts
     (start..send(:end)).each do |x|
       $date = x
-      req = case
-            when report.first_day?
-              "Start"
-            when report.required?
-              "  |  "
-            else
-              ''
-            end
-      puts "%s (%2d) - %s" % [x,day,req]
+      req = (
+        case
+        when report.first_day?
+          "Start"
+        when report.required?
+          "  |  "
+        else
+          ''
+        end
+      )
+      puts "%s (%2d) - %s" % [x, day, req]
     end
     $date ||= Date.today
   end
@@ -71,7 +73,7 @@ class Sprint
     @start = sprint_card_date("Start of Sprint")
     unless @start
       @start = finish
-      trello.sprint_length_in_weeks.times{@start = @start.previous(trello.sprint_start_day.to_sym)}
+      trello.sprint_length_in_weeks.times { @start = @start.previous(trello.sprint_start_day.to_sym) }
     end
     @start
   end
@@ -110,7 +112,7 @@ class Sprint
     feature_complete(next_code_freeze, "Next Feature Complete")
   end
 
-  def feature_complete(cf=code_freeze, field_string="Feature Complete")
+  def feature_complete(cf = code_freeze, field_string = "Feature Complete")
     feature_complete = sprint_card_date(field_string)
     if !feature_complete
       feature_complete = cf
@@ -121,7 +123,7 @@ class Sprint
     feature_complete
   end
 
-  def stage_one_dep_complete(cf=code_freeze)
+  def stage_one_dep_complete(cf = code_freeze)
     stage_one_dep_complete = sprint_card_date("Stage 1 Dep Complete")
     unless stage_one_dep_complete
       stage_one_dep_complete = cf
@@ -158,7 +160,7 @@ class Sprint
       lists.each do |list|
         if TrelloHelper::CURRENT_SPRINT_STATES.include?(list.name)
           cards = trello.list_cards(list)
-          cards = cards.clone.delete_if {|card| card.name =~ TrelloHelper::SPRINT_REGEX && !card.due.nil?}
+          cards = cards.clone.delete_if { |card| card.name =~ TrelloHelper::SPRINT_REGEX && !card.due.nil? }
           @sprint_stories += cards unless team_map[:exclude_from_sprint_report]
           if TrelloHelper::ACCEPTED_STATES.include?(list.name)
             @accepted_and_after_stories += cards
@@ -222,14 +224,14 @@ class Sprint
   end
 
   private
-  def method_missing(method,*args,&block)
+  def method_missing(method, *args, &block)
     begin
       case method.to_s
       when *(queries.keys.map(&:to_s))
-        find(method,*args)
+        find(method, *args)
       when /^not_/
         meth = method.to_s.scan(/not_(.*)/).flatten.first.to_sym
-        send(meth,false)
+        send(meth, false)
       else
         super
       end
@@ -237,5 +239,4 @@ class Sprint
       super
     end
   end
-
 end

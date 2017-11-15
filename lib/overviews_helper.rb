@@ -2,7 +2,6 @@ require 'csv'
 require 'trello_helper'
 
 class OverviewsHelper
-
   attr_accessor :trello, :bugzilla
 
   CSV_HEADER = [ "Product(s)",
@@ -22,8 +21,8 @@ class OverviewsHelper
 
   def initialize(opts = nil)
     if opts
-      opts.each do |k,v|
-        send("#{k}=",v)
+      opts.each do |k, v|
+        send("#{k}=", v)
       end
     end
   end
@@ -34,7 +33,7 @@ class OverviewsHelper
     prod_state = card_data[:products].map { |product, data| "#{product}:#{data[1]}" }.join("|")
     card_epics = card_data[:epics].join("|")
     card_members = card_data[:members].join("|")
-    return [ products,
+    [ products,
              prod_rel,
              prod_state,
              card_data[:title],
@@ -71,7 +70,7 @@ class OverviewsHelper
     card_data[:products] = {}
     card_data[:epics] = []
     labels = trello.card_labels(card)
-    label_names = labels.map{ |label| label.name }
+    label_names = labels.map { |label| label.name }
     label_names.each do |label_name|
       if label_name.start_with?('epic-')
         card_data[:epics] << label_name
@@ -94,7 +93,7 @@ class OverviewsHelper
 
   def create_raw_overview_data(out)
     cards_data = []
-    lists_for_team_boards  = []
+    lists_for_team_boards = []
     # Leave this for ease of testing
     # ["clusterlifecycle","continuousinfra","customersuccess"].each do |team|
     trello.teams.each do |team_name, team|
@@ -137,7 +136,7 @@ class OverviewsHelper
       else
         file = out
       end
-      File.open(file, 'w') {|f| f.write(erb.result(binding)) }
+      File.open(file, 'w') { |f| f.write(erb.result(binding)) }
     end
   end
 
@@ -154,7 +153,7 @@ class OverviewsHelper
       else
         file = out
       end
-      File.open(file, 'w') {|f| f.write(erb.result(binding)) }
+      File.open(file, 'w') { |f| f.write(erb.result(binding)) }
     end
   end
 
@@ -171,19 +170,17 @@ class OverviewsHelper
       else
         file = out
       end
-      File.open(file, 'w') {|f| f.write(erb.result(binding)) }
+      File.open(file, 'w') { |f| f.write(erb.result(binding)) }
     end
   end
 
   def create_labels_overview(out)
     erb = ERB.new(File.open('templates/labels_overview.erb', "rb").read)
-    File.open(out, 'w') {|f| f.write(erb.result(binding)) }
+    File.open(out, 'w') { |f| f.write(erb.result(binding)) }
   end
 
   def create_roadmap_overview(out)
     erb = ERB.new(File.open('templates/roadmap_overview.erb', "rb").read)
-    File.open(out, 'w') {|f| f.write(erb.result(binding)) }
+    File.open(out, 'w') { |f| f.write(erb.result(binding)) }
   end
-
-
 end

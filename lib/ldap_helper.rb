@@ -1,15 +1,14 @@
 require 'ldap'
 
 class LdapHelper
-
   ATTRS = ['uid', 'mail', 'cn']
   IMPERFECT_MATCH = '(imperfect match)'
 
   attr_accessor :host, :base_dn
 
   def initialize(opts)
-    opts.each do |k,v|
-      send("#{k}=",v)
+    opts.each do |k, v|
+      send("#{k}=", v)
     end
   end
 
@@ -36,7 +35,7 @@ class LdapHelper
     user
   end
 
-  def ldap_users_by_name(givenName, sn, perfect_match=false)
+  def ldap_users_by_name(givenName, sn, perfect_match = false)
     users = []
     ldap = ldap_connect
     ldap.bind do
@@ -58,7 +57,7 @@ class LdapHelper
     users
   end
 
-  def print_invalid_members(members, valid_user_names, invalid_user_names=nil)
+  def print_invalid_members(members, valid_user_names, invalid_user_names = nil)
     invalid_user_names = {} unless invalid_user_names
     members.each do |member|
       login = member.username
@@ -83,7 +82,7 @@ class LdapHelper
         $stderr.puts "  #{login}: #{name} (Exception: #{e.message})"
       end
     end
-    return invalid_user_names
+    invalid_user_names
   end
 
   def valid_users(members)
@@ -100,12 +99,12 @@ class LdapHelper
         puts "    #{login}: #{name} (Exception: #{e.message})"
       end
     end
-    return valid_users
+    valid_users
   end
 
   private
 
-  def email(name, login, verbose=true, allow_multiple=false)
+  def email(name, login, verbose = true, allow_multiple = false)
     first_name, middle_name, last_name = split_names(name)
     users = nil
     if last_name
@@ -118,7 +117,7 @@ class LdapHelper
             users = ldap_users_by_name(first_name, "#{middle_name} #{last_name}")
           end
         end
-        if users.length != 1 && !(allow_multiple && users.length > 1) 
+        if users.length != 1 && !(allow_multiple && users.length > 1)
           users = ldap_users_by_name(first_name[0..2], last_name)
           if users.length != 1 && !(allow_multiple && users.length > 1)
             last_name_users = ldap_users_by_last_name(last_name)
@@ -137,7 +136,7 @@ class LdapHelper
         puts "Not found or multiple matches: #{login}: #{name}" if verbose
       end
     end
-    return email
+    email
   end
 
   def split_names(name)
@@ -162,7 +161,7 @@ class LdapHelper
         end
       end
     end
-    return [first_name, middle_name, last_name]
+    [first_name, middle_name, last_name]
   end
 
   def ldap_connect
@@ -170,5 +169,4 @@ class LdapHelper
     ldap.set_option(LDAP::LDAP_OPT_PROTOCOL_VERSION, 3)
     ldap
   end
-
 end
