@@ -641,8 +641,10 @@ class TrelloHelper
 
   def checklist_item_names(cl)
     cins = []
-    cl.items.each do |item|
-      cins << item.name
+    if cl
+      cl.items.each do |item|
+        cins << item.name
+      end
     end
     cins
   end
