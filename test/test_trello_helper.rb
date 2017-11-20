@@ -51,4 +51,5 @@ class TestTrelloHelper < SprintTools::TestCase
     trello = load_conf(TrelloHelper, @config.trello, true)
     assert_equal(['product2', 'product3', 'product1'], trello.valid_products)
   end
+
 end

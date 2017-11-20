@@ -5,6 +5,7 @@ $LOAD_PATH.unshift(File.dirname(__FILE__) + '/lib') unless $LOAD_PATH.include?(F
 
 require 'config'
 require 'trello_helper'
+require 'trello_json_loader'
 require 'output_helper'
 require 'overviews_helper'
 require 'reports'
@@ -15,7 +16,6 @@ require 'yaml'
 require 'i18n'
 require 'commander/import'
 require 'bugzilla_helper'
-
 require 'csv'
 
 Encoding.default_external = "UTF-8"
@@ -70,7 +70,7 @@ LINKS = { 'roadmap_overview' => 'Roadmap',
 ONE_DAY = 60 * 60 * 24
 
 trello = load_conf(TrelloHelper, CONFIG.trello, true)
-
+json_loader = TrelloJsonLoader.new
 # Generate a formatted string representing the sortable card for
 # dry-run output
 def card_data_string(card)
@@ -80,6 +80,31 @@ def card_data_string(card)
     " " * 30
   end
   "#{labeldata} %-4d pos: %-20s name: [%-30s]" % [card.card.short_id, "#{card.new_pos}", card.card.name[0..29]]
+end
+
+global_option "--load-dir LOADDIR", "Load sprint *board* data from *.json backups in LOADDIR" do |loaddir|
+  json_files = Dir.glob(File.join(loaddir, "*.json")).map { |f| File.expand_path(f) }
+  # Load org and org members first, since they're special
+  org_prefix = File.expand_path("#{loaddir}/#{TrelloHelper::ORG_BACKUP_PREFIX}")
+  org_members_prefix = File.expand_path("#{loaddir}/#{TrelloHelper::ORG_MEMBERS_BACKUP_PREFIX}")
+
+  if json_files.any? { |fname| fname.match(/^#{org_prefix}/) }
+    json_filespec = json_files.delete_at(json_files.index { |fname| fname.match(/^#{org_prefix}/) })
+    $stderr.puts "*** Loading org data from #{json_filespec}"
+    json_loader.load_from_file(json_filespec, "organizations")
+  end
+
+  if json_files.any? { |fname| fname.match(/^#{org_members_prefix}/) }
+    json_filespec = json_files.delete_at(json_files.index { |fname| fname.match(/^#{org_members_prefix}/) })
+    $stderr.puts "*** Loading org members data from #{json_filespec}"
+    json_loader.load_org_members_from_file(json_filespec)
+  end
+  # Load board data
+  json_files.sort.each do |json_filespec|
+    $stderr.puts "*** Loading board data from #{json_filespec}"
+    json_loader.load_from_file(json_filespec, "boards")
+  end
+  trello.add_json_loader_content(json_loader)
 end
 
 # Sort only the release cards by their release label, release number
@@ -245,8 +270,27 @@ command :backup_org_boards do |c|
           File.open(out_path, 'w') { |f| f.write(output) }
         rescue Exception => e
           $stderr.puts "Error while writing to #{out_path}: #{e.message}"
+          raise
         end
       end
+    end
+    out_filename = "#{TrelloHelper::ORG_BACKUP_PREFIX}#{trello.org.name}.json"
+    out_path = File.join(output_dir, out_filename)
+    begin
+      output = trello.dump_org_json()
+      File.open(out_path, 'w') { |f| f.write(output) }
+    rescue Exception => e
+      $stderr.puts "Error while writing to #{out_path}: #{e.message}"
+      raise
+    end
+    out_filename = "#{TrelloHelper::ORG_MEMBERS_BACKUP_PREFIX}#{trello.org.name}.json"
+    out_path = File.join(output_dir, out_filename)
+    begin
+      output = trello.dump_org_members_json()
+      File.open(out_path, 'w') { |f| f.write(output) }
+    rescue Exception => e
+      $stderr.puts "Error while writing to #{out_path}: #{e.message}"
+      raise
     end
   end
 end
