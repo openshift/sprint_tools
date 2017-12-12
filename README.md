@@ -4,18 +4,74 @@ OpenShift Sprint Tools
 
 [![TravisCI](https://travis-ci.org/openshift/sprint_tools.svg?branch=master)](https://travis-ci.org/openshift/sprint_tools)
 
-Setup
-===
+## Prerequisites
+
+* Ruby v2.3 (other versions _might_ work, but are not tested)
+* ImageMagick v6
+
+
+## Setup
+
+### macOS
+
+macOS comes with Ruby preinstalled, but it's an older version so we need to
+install a more recent Ruby version. You can do this without affecting the macOS
+default version by using [rbenv](https://github.com/rbenv/rbenv).
+
+Once you've followed the install instructions for `rbenv` run the following:
+
+```
+rbenv install 2.3.5
+echo "2.3.5" > ~/.rbenv/version
+rbenv rehash
+gem install bundler
+```
+
+Running `which bundler` should point to the `.rbenv/shims` location and not
+`/usr/local/bin`. Double check your profile has the required `rbenv init -`
+output incldued and run `rbenv rehash` to ensure the shim is used.
+
+```
+$ which bundler       
+/Users/SOMEUSERNAME/.rbenv/shims/bundler
+```
+
+Now install ImageMagick like so:
+
+```
+brew unlink imagemagick
+brew install imagemagick@6
+brew link imagemagick@6 --force
+```
+
+Finally you can run the following to install dependencies:
+
+    bundler install
+
+### Other Platforms
+
+Once you're running the correct Ruby and ImageMagick versions run:
+
     bundle install
 
 
-Run
-===
+## Run
+
     ./trello <COMMAND> [OPTIONS]
 
 
-Commands
-===
+##Configuration
+
+You'll need to update `config/trello.yml` with your board IDs and API
+credentials. You can find the API credentials by following the `ruby-trello` guide
+[here](https://github.com/jeremytregunna/ruby-trello#configuration).
+
+To get the necessary board IDs visit the board in your browser then add
+`/report.json` to the end of the URL. The JSON returned contains the ID for that
+specific board.
+
+
+### Commands
 
 **comment**
 
@@ -311,8 +367,7 @@ Commands
             What to rename it to
 
 
-Detailed Run Example
-===
+## Detailed Run Example
     ./trello update --update-roadmap --trace
     ./trello update --add-task-checklists --add-bug-checklists --update-bug-tasks --add-dependent-tasks --add-dependent-cards --trace
     ./trello generate_default_overviews --out /tmp --trace
