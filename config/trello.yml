@@ -49,6 +49,7 @@
 :roadmap_board_lists:
  - 'New'
  - 'Epic Backlog'
+ - 'Clusters'
 :sprint_length_in_weeks: 3
 :sprint_start_day: monday
 :sprint_end_day: friday
