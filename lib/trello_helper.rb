@@ -1,5 +1,6 @@
 require 'trello'
 require 'kramdown'
+require 'rest_client'
 
 class TrelloHelper
   # Trello Config
@@ -12,7 +13,8 @@ class TrelloHelper
                 :current_release_labels, :next_release_labels, :default_product,
                 :other_products, :product_order, :archive_path, :dependent_work_boards
 
-  attr_accessor :trello_login_to_email, :cards_by_list, :labels_by_card, :list_by_card, :members_by_card, :checklists_by_card, :lists_by_board, :comments_by_card
+  attr_accessor :trello_login_to_email, :cards_by_list, :labels_by_card, :list_by_card, :members_by_card, :checklists_by_card, :sprint_lists_by_board, :comments_by_card,
+                :all_lists_by_board
 
   DEFAULT_RETRIES = 14
   DEFAULT_RETRY_SLEEP = 5
@@ -117,6 +119,9 @@ class TrelloHelper
 
   TRELLO_CARD_INCREMENT = 16384.0
 
+  ORG_BACKUP_PREFIX = 'org_'
+  ORG_MEMBERS_BACKUP_PREFIX = 'org_members_'
+
   SortableCard = Struct.new(:card, :new_pos, :state, :product, :release)
 
   def initialize(opts)
@@ -133,10 +138,12 @@ class TrelloHelper
     @board_members = {}
     @cards_by_list = {}
     @labels_by_card = {}
+    @label_by_id = {}
     @list_by_card = {}
     @members_by_card = {}
     @checklists_by_card = {}
-    @lists_by_board = {}
+    @sprint_lists_by_board = {}
+    @all_lists_by_board = {}
     @comments_by_card = {}
     @sortable_card_labels = {}
     @dependent_work_board = {}
@@ -311,15 +318,13 @@ class TrelloHelper
   # Return a list of valid product names - based on the configuration
   # in trello.yml - to match against
   def valid_products
-    return @valid_products if @valid_products
-    @valid_products = []
-    if other_products
-      @valid_products = other_products
-    end
-    if default_product
-      @valid_products += [default_product]
-    end
-    @valid_products
+    @valid_products ||= initialize_valid_products
+  end
+
+  def initialize_valid_products
+    valid_prod ||= other_products || []
+    valid_prod << default_product if default_product
+    valid_prod
   end
 
   def board_id_to_team_map
@@ -391,6 +396,153 @@ class TrelloHelper
 
   def sprint_length_in_days
     @sprint_length_in_days ||= (@sprint_length_in_weeks * 7)
+  end
+
+  ##
+  # Adds a +Trello::Board+ object to the instance caching collections
+  #
+  # +board+ is a +Trello::Board+ object
+  #
+  # modifies +@boards+, +@public_roadmap_board+ and +@roadmap_board+
+  #
+  def add_board(board)
+    @boards ||= {}
+    if board_ids.include?(board.id)
+      @boards[board.id] = board
+    elsif public_roadmap_id == board.id
+      @public_roadmap_board = board
+    elsif roadmap_id == board.id
+      @roadmap_board = board
+    end
+  end
+
+  ##
+  # Tries to find a cached label for +label_id+.
+  #
+  # +label+ is a label object in Hash format, as returned by
+  # Trello::Card#card_labels. If +label+ is provided and +label_id+
+  # doesn't match a cached label, +label+ is used to create a
+  # +Trello::Label+ object which is then cached for that id
+  def label_by_id(label_id, label=nil)
+    if @label_by_id.include?(label_id)
+      @label_by_id[label_id]
+    elsif label
+      return (@label_by_id[label_id] = Trello::Label.new(label))
+    else
+      trello_do('label_by_id') do
+        @label_by_id[label_id] = Trello::Label.find(label_id)
+        return @label_by_id[label_id]
+      end
+    end
+  end
+
+  ##
+  # Adds a +Trello::Label+ object to the instance caching collections
+  #
+  # +label+ is a +Trello::Label+ object
+  #
+  # modifies +@label_by_id+
+  #
+  def add_label(label)
+    @label_by_id[label.id] = label if !@label_by_id.include?(label.id)
+  end
+
+  ##
+  # Adds a +Trello::Member+ object to the instance caching collections
+  #
+  # +member+ is a +Trello::Member+ object
+  # +board+ is a +Trello::Board+ object that is associated with +member+
+  #
+  # modifies +@board_members+, +@members_by_id+
+  #
+  def add_member(member, board=nil)
+    if board && board.respond_to?(:id)
+      members = @board_members[board.id] || []
+      members << member if !members.map { |m| m.respond_to?(:id) ? m.id : [] }.include?(member.id)
+      @board_members[board.id] = members
+    end
+    members_by_id[member.id] ||= member
+  end
+
+  ##
+  # Adds a +Trello::Card+ object to the instance caching collections
+  #
+  # +card+ is a +Trello::Card+ object
+  #
+  # modifies +@labels_by_card+, +@cards_by_list+, and +@members_by_card+
+  #
+  def add_card(card)
+    if !card.closed
+      @labels_by_card[card.id] ||= card.card_labels.map do |label|
+        label_by_id(label['id'], label)
+      end
+      (@cards_by_list[card.list_id] ||= []) << card
+    end
+    if !@members_by_card.include?(card.id) || @members_by_card[card.id].size < card.member_ids.size
+      @members_by_card[card.id] = card.member_ids.map do |m_id|
+        if !members_by_id[m_id]
+          trello_do 'add_card|members_by_id' do
+            add_member(Trello::Member.find(m_id))
+          end
+        end
+        members_by_id[m_id]
+      end
+    end
+  end
+
+  ##
+  # Adds a +Trello::Checklist+ object to the instance caching collections
+  #
+  # +checklist+ is a +Trello::Checklist+ object
+  #
+  # modifies +@checklists_by_card+
+  #
+  def add_checklist(checklist, checklist_id_to_card_id)
+    begin
+      @checklists_by_card[checklist.card_id] ||= checklist
+    rescue NoMethodError # ruby-trello 1.3.0 doesn't add the checklist.card_id attr
+      @checklists_by_card[checklist_id_to_card_id[checklist.id]] ||= checklist
+    end
+  end
+
+  ##
+  # Adds a +Trello::List+ object to the instance caching collections
+  #
+  # +list+ is a +Trello::List+ object
+  #
+  # modifies +@cards_by_list+, +@list_by_card+, and +@sprint_lists_by_board+
+  #
+  def add_list(list)
+    (@cards_by_list[list.id] ||= []).each do |card|
+      @list_by_card[card.id] = list
+    end
+    if @all_lists_by_board.include?(list.board_id)
+      @all_lists_by_board[list.board_id] << list if !@all_lists_by_board[list.board_id].map { |l| l.board_id }.include?(list)
+    else
+      @all_lists_by_board[list.board_id] = [list]
+    end
+  end
+
+  ##
+  # Adds +Trello+ API objects that have been parsed and loaded into a
+  # +TrelloJsonLoader+ object
+  #
+  # +json_loader+ is a +TrelloJsonLoader+ that has been populated with
+  # +Trello+ API objects
+  def add_json_loader_content(json_loader)
+    # We only have one org, so load it if it's there
+    @org = json_loader.organizations_by_id.values.select { |o| o.name == organization_id }.first
+    # org members are a special case, since they're loaded as an array
+    @org_members = json_loader.organization_members
+
+    json_loader.boards_by_id.values().each { |d| add_board(d) }
+    json_loader.labels_by_id.values().each { |d| add_label(d) }
+    json_loader.members_by_id.values().each { |d| add_member(d) }
+    json_loader.cards_by_id.values().each { |d| add_card(d) }
+    json_loader.checklists_by_id.values().each { |d|
+      add_checklist(d, json_loader.checklist_id_to_card_id)
+    }
+    json_loader.lists_by_id.values().each { |d| add_list(d) }
   end
 
   def boards
@@ -505,23 +657,31 @@ class TrelloHelper
 
   def board_lists(board, list_limit = max_lists_per_board)
     lists = nil
-    lists = @lists_by_board[board.id] if max_lists_per_board.nil? || (list_limit && list_limit <= max_lists_per_board)
-    unless lists
+    lists = @sprint_lists_by_board[board.id] if max_lists_per_board.nil? || (list_limit && list_limit <= max_lists_per_board)
+    if !lists
       trello_do('lists') do
-        lists = board.lists(filter: [:all])
+        lists = @all_lists_by_board[board.id] ||= board.lists(filter: [:all])
         lists = lists.delete_if { |list| list.name !~ TrelloHelper::SPRINT_REGEXES && list.closed? }
         lists.sort_by! { |list| [list.name =~ TrelloHelper::SPRINT_REGEXES ? ($1.to_i) : 9999999, $3 ? $3.to_i : $9.to_i, $5 ? $5.to_i : $10.to_i, $7 ? $7.to_i : $12.to_i, $14.to_i] }
         lists.reverse!
       end
     end
-    @lists_by_board[board.id] = lists if ((list_limit && max_lists_per_board && (list_limit >= max_lists_per_board)) || list_limit.nil?) && !@lists_by_board[board.id]
+    @sprint_lists_by_board[board.id] = lists if ((list_limit && max_lists_per_board && (list_limit >= max_lists_per_board)) || list_limit.nil?) && !@sprint_lists_by_board[board.id]
     lists = lists.first(list_limit) if list_limit
     lists
   end
 
   def board_members(board)
-    trello_do('board_members') do
-      return @board_members[board.id] ||= target(board.members)
+    if @board_members.include?(board.id)
+      @board_members[board.id]
+    else
+      trello_do('board_members') do
+        members = target(board.members)
+        members.each do |member|
+          add_member(member, board)
+        end
+        return members
+      end
     end
   end
 
@@ -1119,7 +1279,7 @@ class TrelloHelper
     end
     if cards
       cards = target(cards, 'cards')
-      @cards_by_list[list.id] = cards
+      cards.each { |card| add_card(card) }
     end
     cards
   end
@@ -1217,22 +1377,22 @@ class TrelloHelper
   end
 
   def org
-    trello_do('org') do
-      @org ||= Trello::Organization.find(organization_id)
+    @org || trello_do('org') do
+      @org = Trello::Organization.find(organization_id)
       return @org
     end
   end
 
   def org_boards
-    trello_do('org_boards') do
-      @org_boards ||= target(org.boards)
+    @org_boards || trello_do('org_boards') do
+      @org_boards = target(org.boards)
       return @org_boards
     end
   end
 
   def org_members
-    trello_do('org_members') do
-      @org_members ||= target(org.members)
+    @org_members || trello_do('org_members') do
+      @org_members = target(org.members)
       return @org_members
     end
   end
@@ -1319,47 +1479,150 @@ class TrelloHelper
     title
   end
 
-  def dump_board_json(board)
-    board = board(board) unless board.respond_to? :id
-    board_json_url = "#{board.url}.json"
-    # API request to pull down the same content as the export URL, but limited to 100 actions
-    alternate_url = "https://trello.com/1/boards/#{board.id}"
-    alternate_params = { fields: 'all',
-                         actions: 'all',
-                         actions_limit: '100',
-                         action_fields: 'all',
-                         cards: 'all',
-                         card_fields: 'all',
-                         card_attachments: 'true',
-                         labels: 'all',
-                         lists: 'all',
-                         list_fields: 'all',
-                         members: 'all',
-                         member_fields: 'all',
-                         checklists: 'all',
-                         checklist_fields: 'all',
-                         organization: 'false' }
-    request = Trello::Request.new :get, board_json_url, {}, nil
-    response = nil
+  ##
+  # Do the same thing as Trello::Net.execute_core, but with adjustable
+  # timeout
+  #
+  # * +request+ A Trello::Request object. This should probably be
+  #   passed through Trello.auth_policy.authorize first.
+  # * +timeout+ Time to wait for response in seconds. Passed to
+  #   RestClient::Request.execute
+  #
+  def long_request_execute(request, timeout=30)
+    RestClient.proxy = ENV['HTTP_PROXY'] if ENV['HTTP_PROXY']
+    result = RestClient::Request.execute(
+      method: request.verb,
+      url: request.uri.to_s,
+      headers: request.headers,
+      payload: request.body,
+      timeout: timeout
+    )
+    return Trello::Response.new(200, {}, result)
+  end
+
+
+  ##
+  # Return the JSON backup of the Trello org
+  def dump_org_members_json()
+    $stderr.puts("Backing up Organization Members for #{org.display_name} (#{org.name})...")
+    api_call_uri = Addressable::URI.parse("https://trello.com/1/organizations/#{organization_id}/members")
+    api_call_uri.query_values = { fields: 'all' }
+
     i = 0
+    request_timeout = 30
     while true
-      trello_do('dump_board_json') do
-        response = Trello::TInternet.execute Trello.auth_policy.authorize(request)
+      request = Trello::Request.new :get, api_call_uri, {}, nil
+      begin
+        response = long_request_execute(Trello.auth_policy.authorize(request), request_timeout)
         return response.body if response.code == 200
+      rescue RestClient::RequestTimeout => e
+        err_msg = "Error with dump_org_json backing up org '#{org.name}' using API call: " + (e.http_code.nil? ? "HTTP Timeout?" : "HTTP response code: #{e.http_code}, response body: #{e.http_body}")
       end
-      err_msg = "Error with dump_board_json backing up board '#{board.name}': " + (response.code.nil? ? "HTTP Timeout?" : "HTTP response code: #{response.code}, response body: #{response.body}")
       if i >= DEFAULT_RETRIES
         raise err_msg
       end
       $stderr.puts err_msg
-      if request.uri != alternate_url && response.code.nil?
-        $stderr.puts "Retrying with API-based backup URL to work around timeout. *NOTE*: This will only back up the 100 most recent actions, instead of the usual 1,000."
-        request = Trello::Request.new :get, alternate_url, alternate_params, nil
-      else
-        # don't sleep or increment the counter unless we've tried the workaround
-        retry_sleep i
-        i += 1
+      retry_sleep i
+      request_timeout += 15
+      i += 1
+    end
+  end
+
+
+  ##
+  # Return the JSON backup of the Trello org
+  def dump_org_json()
+    $stderr.puts("Backing up Organization content for #{org.display_name} (#{org.name})...")
+    api_call_uri = Addressable::URI.parse("https://trello.com/1/organizations/#{organization_id}")
+    api_call_uri.query_values = { fields: 'all' }
+
+    i = 0
+    request_timeout = 30
+    while true
+      request = Trello::Request.new :get, api_call_uri, {}, nil
+      begin
+        response = long_request_execute(Trello.auth_policy.authorize(request), request_timeout)
+        return response.body if response.code == 200
+      rescue RestClient::RequestTimeout => e
+        err_msg = "Error with dump_org_json backing up org '#{org.name}' using API call: " + (e.http_code.nil? ? "HTTP Timeout?" : "HTTP response code: #{e.http_code}, response body: #{e.http_body}")
       end
+      if i >= DEFAULT_RETRIES
+        raise err_msg
+      end
+      $stderr.puts err_msg
+      retry_sleep i
+      request_timeout += 15
+      i += 1
+    end
+  end
+
+
+  ##
+  # Return the JSON backup of +board+
+  def dump_board_json(board)
+    $stderr.puts("Backing up board #{board.name}...")
+
+    # This can take a Trello::Board or a board ID
+    board = board(board) unless board.respond_to? :id
+
+    # Yes, we have to try two different URL schemes because one works
+    # for some boards, one works for others, and then we STILL get to
+    # fall back to the API call if neither work. :/
+    board_json_url = board.url.gsub(/\/[^\/]+$/, '.json')
+    board_json_other_url = "#{board.url}.json"
+
+    # API request to pull down the same content as the export URL, but limited to 100 actions
+    api_call_uri = Addressable::URI.parse("https://trello.com/1/boards/#{board.id}")
+    api_call_uri.query_values = { fields: 'all',
+                                  actions: 'all',
+                                  actions_limit: '1000',
+                                  action_fields: 'all',
+                                  cards: 'all',
+                                  card_fields: 'all',
+                                  card_attachments: 'true',
+                                  labels: 'all',
+                                  lists: 'all',
+                                  list_fields: 'all',
+                                  members: 'all',
+                                  member_fields: 'all',
+                                  checklists: 'all',
+                                  checklist_fields: 'all',
+                                  organization: 'false' }
+    i = 0
+    request_timeout = 30
+    while true
+      request = Trello::Request.new :get, board_json_url, {}, nil
+      response = nil
+      begin
+        response = long_request_execute(Trello.auth_policy.authorize(request), request_timeout)
+        return response.body if response.code == 200
+      rescue RestClient::RequestTimeout => e
+        err_msg = "Error with dump_board_json backing up board '#{board.name}' at URL #{request.uri}: " + (e.http_code.nil? ? "HTTP Timeout?" : "HTTP response code: #{e.http_code}, response body: #{e.http_body}")
+        $stderr.puts err_msg
+      end
+      request = Trello::Request.new :get, board_json_other_url, {}, nil
+      begin
+        response = long_request_execute(Trello.auth_policy.authorize(request), request_timeout)
+        return response.body if response.code == 200
+      rescue RestClient::RequestTimeout => e
+        err_msg = "Error with dump_board_json backing up board '#{board.name}' at alternate URL #{request.uri}: " + (e.http_code.nil? ? "HTTP Timeout?" : "HTTP response code: #{e.http_code}, response body: #{e.http_body}")
+        $stderr.puts err_msg
+      end
+      $stderr.puts "Retrying with API-based backup URL to work around failed request."
+      request = Trello::Request.new :get, api_call_uri, {}, nil
+      begin
+        response = long_request_execute(Trello.auth_policy.authorize(request), request_timeout)
+        return response.body if response.code == 200
+      rescue RestClient::RequestTimeout => e
+        err_msg = "Error with dump_board_json backing up board '#{board.name}' using all URL endpoints and API call: " + (e.http_code.nil? ? "HTTP Timeout?" : "HTTP response code: #{e.http_code}, response body: #{e.http_body}")
+      end
+      if i >= DEFAULT_RETRIES
+        raise err_msg
+      end
+      $stderr.puts err_msg
+      retry_sleep i
+      request_timeout += 15
+      i += 1
     end
   end
 
