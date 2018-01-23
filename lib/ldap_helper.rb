@@ -1,4 +1,4 @@
-require 'net/ldap'
+require 'ldap'
 
 class LdapHelper
   ATTRS = ['uid', 'mail', 'cn']
@@ -15,8 +15,8 @@ class LdapHelper
   def ldap_user_by_uid(uid)
     user = nil
     ldap = ldap_connect
-    if ldap.bind
-      ldap.search(base: base_dn, scope: Net::LDAP::SearchScope_WholeSubtree, filter: "(uid=#{uid})", attribute: ATTRS) do |entry|
+    ldap.bind do
+      ldap.search(base_dn, LDAP::LDAP_SCOPE_SUBTREE, "(uid=#{uid})", ATTRS) do |entry|
         #email = entry.vals('mail')[0]
         user = entry
       end
@@ -27,8 +27,8 @@ class LdapHelper
   def ldap_user_by_email(email)
     user = nil
     ldap = ldap_connect
-    if ldap.bind
-      ldap.search(base: base_dn, scope: Net::LDAP::SearchScope_WholeSubtree, filter: "(mail=#{email})", attribute: ATTRS) do |entry|
+    ldap.bind do
+      ldap.search(base_dn, LDAP::LDAP_SCOPE_SUBTREE, "(mail=#{email})", ATTRS) do |entry|
         user = entry
       end
     end
@@ -38,8 +38,9 @@ class LdapHelper
   def ldap_users_by_name(givenName, sn, perfect_match = false)
     users = []
     ldap = ldap_connect
-    if ldap.bind
-      users = ldap.search(base: base_dn, scope: Net::LDAP::SearchScope_WholeSubtree, filter: "(|(&(givenName=#{givenName}#{perfect_match ? '' : '*'})(sn=#{sn}))(cn=#{givenName}#{perfect_match ? ' ' : '*'}#{sn}))", attribute: ATTRS) do |entry|
+    ldap.bind do
+      ldap.search(base_dn, LDAP::LDAP_SCOPE_SUBTREE, "(|(&(givenName=#{givenName}#{perfect_match ? '' : '*'})(sn=#{sn}))(cn=#{givenName}#{perfect_match ? ' ' : '*'}#{sn}))", ATTRS) do |entry|
+        users << entry
       end
     end
     users
@@ -48,8 +49,8 @@ class LdapHelper
   def ldap_users_by_last_name(sn)
     users = []
     ldap = ldap_connect
-    if ldap.bind
-      ldap.search(base: base_dn, scope: Net::LDAP::SearchScope_WholeSubtree, filter: "(sn=#{sn})", attribute: ATTRS) do |entry|
+    ldap.bind do
+      ldap.search(base_dn, LDAP::LDAP_SCOPE_SUBTREE, "(sn=#{sn})", ATTRS) do |entry|
         users << entry
       end
     end
@@ -164,7 +165,8 @@ class LdapHelper
   end
 
   def ldap_connect
-    ldap = Net::LDAP.new(host: host, port: Net::LDAP::DefaultPort)
+    ldap = LDAP::Conn.new(host, LDAP::LDAP_PORT.to_i)
+    ldap.set_option(LDAP::LDAP_OPT_PROTOCOL_VERSION, 3)
     ldap
   end
 end
