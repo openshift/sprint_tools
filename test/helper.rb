@@ -8,11 +8,20 @@ module SprintTools
   class TestCase < MiniTest::Spec
     ASSETS_DIR = File.expand_path File.join(File.dirname(__FILE__), 'files')
     STD_CONFIG_FILE = File.join(ASSETS_DIR, 'std_config.yml')
+    NO_DEP_WORK_BDS_CONFIG_FILE = File.join(ASSETS_DIR, 'no_dependent_work_boards_config.yml')
+
+    def load_config(config_file)
+      hashes = {}
+      hashes['trello'] = YAML.load_file(config_file)
+      OpenStruct.new(hashes)
+    end
 
     def load_std_config
-      hashes = {}
-      hashes['trello'] = YAML.load_file(STD_CONFIG_FILE)
-      OpenStruct.new(hashes)
+      load_config(STD_CONFIG_FILE)
+    end
+
+    def load_no_dep_work_boards_config
+      load_config(NO_DEP_WORK_BDS_CONFIG_FILE)
     end
 
     def load_conf(klass, args, single = false)

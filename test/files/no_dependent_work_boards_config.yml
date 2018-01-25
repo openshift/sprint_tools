@@ -1,0 +1,38 @@
+---
+:consumer_key: abcdef1234567890abcdef1234567890
+:consumer_secret: abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890
+:oauth_token: abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890
+:max_lists_per_board: 26
+:default_product: product1
+:other_products:
+  - product2
+  - product3
+:product_order:
+  - product1
+  - product2
+  - product3
+:teams:
+  :team1:
+    :boards:
+      :team1_board1: 1abcdef1234567890abcdef1
+      :team1_board2: 2abcdef1234567890abcdef1
+  :team2:
+    :boards:
+      :team2_board: 02abcdef1234567890abcdef
+  :team3:
+    :boards:
+      :team3_board: 03abcdef1234567890abcdef
+      :team3_board_private: 13abcdef1234567890abcdef
+    :exclude_from_sprint_report: true
+:roadmap_id: 4abcdef1234567890abcdef1
+:public_roadmap_id: 5abcdef1234567890abcdef1
+:organization_id: test_org_name
+:organization_name: Test Organization Name
+:roadmap_board_lists:
+ - 'New'
+ - 'Epic Backlog'
+:sprint_length_in_weeks: 3
+:sprint_start_day: monday
+:sprint_end_day: friday
+:logo: https://example.com/logo.png
+:archive_path: /history/
