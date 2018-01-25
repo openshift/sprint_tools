@@ -330,6 +330,7 @@ command :list do |c|
       end
 
       boards.each do |board|
+        trello.board_members(board) # seed the cache with board-specific members
         puts "\nBoard Name: #{board.name}"
         lists = trello.board_lists(board)
         if options.list
