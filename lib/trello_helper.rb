@@ -1328,14 +1328,14 @@ class TrelloHelper
         field = action.data['old'].keys.first
         if ['desc', 'pos', 'name'].include?(field)
           list_name = action.data['list']['name']
-          puts "#{action.member_creator.username} (#{list_name}):"
+          puts "#{members_by_id[action.member_creator_id].username} (#{list_name}):"
           puts "    New #{field}: #{action.data['card'][field]}"
           puts "    Old #{field}: #{action.data['old'][field]}"
           puts "===============================================\n\n"
         end
       elsif action.type == 'createCard'
         list_name = action.data['list']['name']
-        puts "#{action.member_creator.username} added to #{list_name}"
+        puts "#{members_by_id[action.member_creator_id].username} added to #{list_name}"
         puts "    Name: #{action.data['card']['name']}"
       end
     end
