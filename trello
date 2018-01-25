@@ -926,7 +926,7 @@ command :update do |c|
         team_map = trello.board_id_to_team_map[board_id]
         # Use the team dependent work boards if set, default to global
         # dependent work boards
-        dependent_work_boards = team_map[:dependent_work_boards] || trello.dependent_work_boards
+        dependent_work_boards = team_map[:dependent_work_boards] || trello.dependent_work_boards || {} # can't call .each on nil
         dependent_work_boards.each do |dep_work_board_id, dep_work_board_params|
           dep_work_board = trello.boards[dep_work_board_id]
           puts "\nBoard Name: #{board.name}"

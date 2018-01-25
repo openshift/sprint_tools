@@ -701,7 +701,11 @@ class TrelloHelper
   end
 
   def dependent_work_board_ids
-    @dependent_work_board_ids ||= dependent_work_boards.keys + teams.select { |k, v| v.include? :dependent_work_boards }.map { |t, v| v[:dependent_work_boards].keys }.flatten
+    @dependent_work_board_ids ||= if !dependent_work_boards
+      [] # can't iterate over nil
+    else
+      dependent_work_boards.keys + teams.select { |k, v| v.include? :dependent_work_boards }.map { |t, v| v[:dependent_work_boards].keys }.flatten
+    end
   end
 
   def next_dependent_work_list(board_id = dependent_work_board.id, new_list_name = 'New')
