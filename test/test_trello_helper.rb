@@ -52,4 +52,17 @@ class TestTrelloHelper < SprintTools::TestCase
     assert_equal(['product2', 'product3', 'product1'], trello.valid_products)
   end
 
+  # Validate behavior when dependent work boards are defined
+  def test_dependent_work_board_ids_defined
+    trello = load_conf(TrelloHelper, @config.trello, true)
+    assert_equal(['6abcdef1234567890abcdef1', '7abcdef1234567890abcdef1'], trello.dependent_work_board_ids)
+  end
+
+  # Validate behavior when dependent work boards aren't defined
+  def test_dependent_work_board_ids_defined
+    cfg = load_no_dep_work_boards_config
+    trello = load_conf(TrelloHelper, cfg.trello, true)
+    assert_equal([], trello.dependent_work_board_ids)
+  end
+
 end

@@ -135,6 +135,7 @@ class TrelloHelper
       config.oauth_token = @oauth_token
     end
 
+    @members_by_id = {}
     @board_members = {}
     @cards_by_list = {}
     @labels_by_card = {}
@@ -461,7 +462,7 @@ class TrelloHelper
       members << member if !members.map { |m| m.respond_to?(:id) ? m.id : [] }.include?(member.id)
       @board_members[board.id] = members
     end
-    members_by_id[member.id] ||= member
+    members_by_id[member.id] = member
   end
 
   ##
@@ -701,7 +702,11 @@ class TrelloHelper
   end
 
   def dependent_work_board_ids
-    @dependent_work_board_ids ||= dependent_work_boards.keys + teams.select { |k, v| v.include? :dependent_work_boards }.map { |t, v| v[:dependent_work_boards].keys }.flatten
+    @dependent_work_board_ids ||= if !dependent_work_boards
+      [] # can't iterate over nil
+    else
+      dependent_work_boards.keys + teams.select { |k, v| v.include? :dependent_work_boards }.map { |t, v| v[:dependent_work_boards].keys }.flatten
+    end
   end
 
   def next_dependent_work_list(board_id = dependent_work_board.id, new_list_name = 'New')
@@ -1184,18 +1189,42 @@ class TrelloHelper
 
   def card_members(card)
     members = @members_by_card[card.id]
-    return members if members
+    # If the list we get doesn't match the card, refresh
+    return members if members && members.size == card.member_ids.size
     members = card.member_ids.map do |member_id|
-      member = members_by_id[member_id]
+      # if not cached member, get member info from cached board member api endpoint
+      member = members_by_id[member_id] || board_members(boards[card.board_id]).select { |m| member_id == m.id }.first
       if !member
-        # not an org member, get member info from board member api endpoint
+        # if not in the cached board member list, refresh the cached board members
+        $stderr.puts("Clearing @board_members cache for board id #{card.board_id}")
+        @board_members.delete(card.board_id)
         member = board_members(boards[card.board_id]).select { |m| member_id == m.id }.first
       end
-      @members_by_id[member_id] = member
-      member
+      add_member(member)
     end
     @members_by_card[card.id] = members if members
+    members.each { |member| add_member(member) }
     members
+  end
+
+  def create_missing_member(member_id)
+    Trello::Member.new({'id' => member_id, 'username' => 'deleted_account', 'fullName' => 'deleted account'})
+  end
+
+  def action_member_creator(action)
+    member = nil
+    if !(member = members_by_id[action.member_creator_id])
+      trello_do("action.member_creator") do
+        begin
+          member = action.member_creator
+        rescue Trello::Error => e
+          if e.message =~ /The requested resource was not found/ # 404
+            member = create_missing_member(action.member_creator_id)
+          end
+        end
+      end
+    end
+    add_member(member)
   end
 
   def board_labels(board)
@@ -1324,14 +1353,14 @@ class TrelloHelper
         field = action.data['old'].keys.first
         if ['desc', 'pos', 'name'].include?(field)
           list_name = action.data['list']['name']
-          puts "#{action.member_creator.username} (#{list_name}):"
+          puts "#{action_member_creator(action).username} (#{list_name}):"
           puts "    New #{field}: #{action.data['card'][field]}"
           puts "    Old #{field}: #{action.data['old'][field]}"
           puts "===============================================\n\n"
         end
       elsif action.type == 'createCard'
         list_name = action.data['list']['name']
-        puts "#{action.member_creator.username} added to #{list_name}"
+        puts "#{action_member_creator(action).username} added to #{list_name}"
         puts "    Name: #{action.data['card']['name']}"
       end
     end
@@ -1393,12 +1422,15 @@ class TrelloHelper
   def org_members
     @org_members || trello_do('org_members') do
       @org_members = target(org.members)
+      @org_members.each { |member| add_member(member) }
       return @org_members
     end
   end
 
   def members_by_id
-    @members_by_id ||= Hash[org_members.map { |m| [m.id, m] }]
+    org_members if !@org_members # Make sure at least the organization
+                                 # members are populated
+    @members_by_id
   end
 
   def board(board_id)
