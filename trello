@@ -735,7 +735,8 @@ command :sync_labels do |c|
   c.action do |args, options|
     roadmap_label_colors_by_name = trello.roadmap_label_colors_by_name
     unless roadmap_label_colors_by_name.empty?
-      boards = [trello.public_roadmap_board] + trello.boards.values
+      boards = trello.boards.values
+      boards.insert(0, trello.public_roadmap_board) if trello.public_roadmap_board
       boards.each do |board|
         puts "\nBoard Name: #{board.name}"
         board_labels = trello.target(trello.board_labels(board))
