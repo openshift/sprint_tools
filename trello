@@ -82,6 +82,21 @@ def card_data_string(card)
   "#{labeldata} %-4d pos: %-20s name: [%-30s]" % [card.card.short_id, "#{card.new_pos}", card.card.name[0..29]]
 end
 
+def try_loading_bugzilla
+  bz = nil
+  begin
+    if CONFIG.bugzilla && CONFIG.bugzilla[:username] != "<bugzilla_username>"
+      bz = load_conf(BugzillaHelper, CONFIG.bugzilla, true)
+    end
+  rescue NoMethodError
+
+  end
+  if bz.nil?
+    $stderr.puts "*** WARNING: No bugzilla configuration could be loaded; RFE and bug info will be excluded from processing"
+  end
+  bz
+end
+
 global_option "--load-dir LOADDIR", "Load sprint *board* data from *.json backups in LOADDIR" do |loaddir|
   json_files = Dir.glob(File.join(loaddir, "*.json")).map { |f| File.expand_path(f) }
   # Load org and org members first, since they're special
@@ -627,7 +642,7 @@ command :generate_releases_overview do |c|
 
   c.description = "Generate the releases overview"
   c.action do |args, options|
-    bugzilla = load_conf(BugzillaHelper, CONFIG.bugzilla, true)
+    bugzilla = try_loading_bugzilla
 
     options.out ||= '/tmp/releases_overview.html'
     overviews_helper = OverviewsHelper.new(trello: trello, bugzilla: bugzilla)
@@ -642,7 +657,7 @@ command :generate_teams_overview do |c|
 
   c.description = "Generate the teams overview"
   c.action do |args, options|
-    bugzilla = load_conf(BugzillaHelper, CONFIG.bugzilla, true)
+    bugzilla = try_loading_bugzilla
 
     options.out ||= '/tmp/teams_overview.html'
     overviews_helper = OverviewsHelper.new(trello: trello, bugzilla: bugzilla)
@@ -683,7 +698,7 @@ command :generate_default_overviews do |c|
 
   c.description = "Generate the default overviews"
   c.action do |args, options|
-    bugzilla = load_conf(BugzillaHelper, CONFIG.bugzilla, true)
+    bugzilla = try_loading_bugzilla
 
     options.out_dir ||= '/tmp'
 
@@ -920,7 +935,7 @@ command :update do |c|
     if options.update_roadmap
       trello.update_roadmap
     end
-    bugzilla = load_conf(BugzillaHelper, CONFIG.bugzilla, true) if options.update_bug_tasks
+    bugzilla = try_loading_bugzilla if options.update_bug_tasks
     if options.add_task_checklists || options.add_bug_checklists || options.update_bug_tasks || options.add_dependent_tasks || options.add_dependent_cards
       # Build a labels reference for each dependent work board
       trello.boards.each do |board_id, board|
@@ -953,7 +968,7 @@ command :update do |c|
                     end
                   end
                   if options.update_bug_tasks
-                    trello.update_bug_tasks(card, bugzilla)
+                    trello.update_bug_tasks(card, bugzilla) if !bugzilla.nil?
                   end
                   if options.add_dependent_tasks && dep_work_board_params.include?(:task_reminder_text) && dependent_work_valid
                     trello.add_dependent_tasks_reminder(card, dep_work_board_params[:task_reminder_text], dep_work_board_params[:label])
