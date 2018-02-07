@@ -133,7 +133,7 @@
 
       tag_to_epics = trello.tag_to_epics
 
-      rfes = bugzilla.rfes
+      rfes = bugzilla ? bugzilla.rfes : {}
 
       releases.sort_by!{ |release| [release[1], release[2], release[3], release[4]] }
 %>
