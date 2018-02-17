@@ -6,6 +6,12 @@
 :consumer_secret: <consumer_secret>
 :oauth_token: <oauth_token>
 :max_lists_per_board: 26
+:current_release_labels:
+  - committed-1.0
+  - targeted-1.0
+:next_release_labels:
+  - committed-1.1
+  - targeted-1.1
 :default_product: product1
 :other_products:
   - product2
