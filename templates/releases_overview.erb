@@ -137,21 +137,19 @@
 
       releases.sort_by!{ |release| [release[1], release[2], release[3], release[4]] }
 %>
-<%
-      if trello.other_products && !trello.other_products.empty?
-%>
 <h2>Product Releases</h2>
 <ul>
 <%
-        if product.nil?
+      if product.nil?
 %>
   <li><%=trello.default_product.upcase%></li>
 <%
-        else
+      else
 %>
   <li><a href="releases_overview.html"><%=trello.default_product.upcase%></a></li>
 <%
-        end
+      end
+      if trello.other_products && !trello.other_products.empty?
         trello.other_products.each do |p|
           if p == product
 %>
