@@ -225,11 +225,11 @@
             position_title = 'Position'
           end
 %>
-<h5 title="<%="#{trello.state_title(state, product, release_name)} #{sorted_by_title}"%>" class="anchor" id="<%="#{state}-#{product ? "#{product}-": ''}#{release_name}"%>"><%=TrelloHelper::RELEASE_STATE_DISPLAY_NAME[state]%> (<%=release_name%>)<span class="pficon-help"></span></h5>
+<h5 title="<%="#{trello.state_title(state, product, release_name)} #{sorted_by_title}"%>" class="anchor" id="<%="#{state}-#{product ? "#{product}-": ''}#{release_name}"%>"><%=TrelloHelper::RELEASE_STATE_DISPLAY_NAME[state]%> (<%=release_name%>)</h5>
 <div class="container">
 <div class="table-responsive">
 <table class="table table-normal table-condensed">
-  <tr><th title="Card Name">Scenario</th><th title="<%=position_title%>">Position<span class="pficon-help"></span></th><th title="Planned, In Progress, or Complete">Status<span class="pficon-help"></span></th><th title="Associated Epics">Epic(s)</th><th title="Additional Release(s)">Additional Release(s)</th><th>Members</th><th title="Sizing in Story Points (Rolling Total)">Sizing<span class="pficon-help"></span></th></tr>
+  <tr><th title="Card Name">Scenario</th><th title="<%=position_title%>">Position</th><th title="Planned, In Progress, or Complete">Status</th><th title="Associated Epics">Epic(s)</th><th title="Additional Release(s)">Additional Release(s)</th><th>Members</th><th title="Sizing in Story Points (Rolling Total)">Sizing</th></tr>
 <%
           position = 0
           sizing_total = 0
@@ -365,11 +365,11 @@
         unless release_cards_history.nil? || release_cards_history.empty?
           removed_sizing_total = 0
 %>
-<h5 title="Cards removed from the release after the release began" class="anchor" id="removed-from-<%=release_name%>">Removed from Release (<%=release_name%>)<span class="pficon-help"></span></h5>
+<h5 title="Cards removed from the release after the release began" class="anchor" id="removed-from-<%=release_name%>">Removed from Release (<%=release_name%>)</h5>
 <div class="container">
 <div class="table-responsive">
 <table class="table table-normal table-condensed">
-  <tr><th title="Card Name">Scenario</th><th title="Committed, Targeted, or Proposed">Original Plan State<span class="pficon-help"></span></th><th title="Other Release(s)">Other Release(s)</th><th title="Sizing in Story Points">Sizing</th></tr>
+  <tr><th title="Card Name">Scenario</th><th title="Committed, Targeted, or Proposed">Original Plan State</th><th title="Other Release(s)">Other Release(s)</th><th title="Sizing in Story Points">Sizing</th></tr>
 <%
           release_cards_history_list = []
           release_cards_history.each do |id, card_info|
@@ -424,11 +424,11 @@
         unless cards_added_to_release.empty?
           added_sizing_total = 0
 %>
-<h5 title="Cards added to the release after the release began" class="anchor" id="added-to-<%=release_name%>">Added to Release (<%=release_name%>)<span class="pficon-help"></span></h5>
+<h5 title="Cards added to the release after the release began" class="anchor" id="added-to-<%=release_name%>">Added to Release (<%=release_name%>)</h5>
 <div class="container">
 <div class="table-responsive">
 <table class="table table-normal table-condensed">
-  <tr><th title="Card Name">Scenario</th><th title="Committed, Targeted, or Proposed">Plan State<span class="pficon-help"></span></th><th title="Sizing in Story Points">Sizing</th></tr>
+  <tr><th title="Card Name">Scenario</th><th title="Committed, Targeted, or Proposed">Plan State</th><th title="Sizing in Story Points">Sizing</th></tr>
 <%
           cards_added_to_release.sort_by!{ |card_info| [TrelloHelper::RELEASE_STATE_ORDER[card_info['state']], card_info['team_name']] }
           cards_added_to_release.each do |card_info|
