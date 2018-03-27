@@ -37,6 +37,11 @@ body {
 .table.table-columns td {
   border-right: 1px solid #bbb;
 }
+
+.table > thead.sortable > tr > th {
+  vertical-align: top;
+}
+
 table.table.table-rows {
   border: 1px solid #ddd;
   border-top: none;
@@ -100,35 +105,6 @@ pre {
 
 .navbar-collapse.in {overflow-y: inherit;}
 
-.anchor {
-  padding-top: 51px;
-  margin-top: -51px;
-}
-
-@font-face{
-  font-family:'PatternFlyIcons-webfont';
-  src:url(../fonts/PatternFlyIcons-webfont.eot) format('embedded-opentype'),url(../fonts/PatternFlyIcons-webfont.ttf) format('truetype'),url(../fonts/PatternFlyIcons-webfont.woff) format('woff'),url(../fonts/PatternFlyIcons-webfont.svg#PatternFlyIcons-webfont) format('svg');
-}
-
-.pficon-help:before{
-  cursor: pointer;
-  padding-left: 5px;
-  font-size: 14px;
-  margin-right: 5px;
-  text-align: center;
-  width: 14px;
-  display: inline-block;
-  font-family: 'PatternFlyIcons-webfont';
-  font-style: normal;
-  font-variant: normal;
-  font-weight: 400;
-  line-height: 1;
-  speak: none;
-  text-transform: none;
-  -webkit-font-smoothing: antialiased;
-  content:"\e605"
-}
-
 /* Responsive
  //---------------  */
 
@@ -148,4 +124,19 @@ pre {
 }
 @media (min-width: 1200px) {
   .table.table-normal td:nth-child(1) {width: 780px;  }
+}
+
+thead.sortable > tr > th:before {
+  content: '\21D5';
+  margin-left: -1em;
+  margin-right: .25em;
+  font-size: 15px;
+  color: #555555;
+}
+
+thead.sortable > tr > th {
+  cursor: pointer;
+  border-left: solid 1em #ccc;
+  padding-left: 2px;
+  border-bottom: none;
 }

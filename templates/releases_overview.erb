@@ -64,6 +64,8 @@
     <h2 class="visible-xs"><%= trello.organization_name %> Releases Overview</h2>
 
 <%
+      removed_by_release = {}
+      added_by_release = {}
       release_data = {}
       releases = []
       search_list_info = []
@@ -196,11 +198,13 @@
         if release_cards_history
           removed_from_release = !release_cards_history.empty?
           if removed_from_release
+            removed_by_release[release] = true
 %>
     <li><a href='#removed-from-<%=release_name%>'>Removed From Release</a></li>
 <%
           end
           if added_to_release
+            added_by_release[release] = true
 %>
     <li><a href='#added-to-<%=release_name%>'>Added to Release</a></li>
 <%
@@ -254,11 +258,14 @@
             position_title = 'Team Position'
           end
 %>
-<h5 title="<%="#{trello.state_title(state, product, release_name)} #{sorted_by_title}"%>" class="anchor" id="<%="#{state}-#{release_name}"%>"><%=TrelloHelper::RELEASE_STATE_DISPLAY_NAME[state]%> (<%=release_name%>)<span class="pficon-help"></span></h5>
+<h5 title="<%="#{trello.state_title(state, product, release_name)} #{sorted_by_title}"%>" class="anchor" id="<%="#{state}-#{release_name}"%>"><%=TrelloHelper::RELEASE_STATE_DISPLAY_NAME[state]%> (<%=release_name%>)</h5>
 <div class="container">
 <div class="table-responsive">
-<table class="table table-normal table-condensed">
-  <tr><th title="Card Name">Scenario</th><th title="<%=position_title%>">Position<span class="pficon-help"></span></th><th title="Corresponding Board">Board</th><th title="Planned, In Progress, or Complete">Status<span class="pficon-help"></span></th><th title="Associated Epics">Epic(s)</th><th title="Additional Release(s)">Additional Release(s)</th><th title="Sizing in Story Points (Team Rolling Total)">Sizing<span class="pficon-help"></span></th></tr>
+<table class="table table-normal table-condensed" id="<%="table_#{state}_#{release_name.tr(' .','_')}"%>">
+  <thead class="sortable">
+    <tr><th title="Card Name">Scenario</th><th title="<%=position_title%>">Position</th><th title="Corresponding Board">Board</th><th title="Planned, In Progress, or Complete">Status</th><th title="Associated Epics">Epic(s)</th><th title="Additional Release(s)">Additional Release(s)</th><th title="Sizing in Story Points (Team Rolling Total)">Sizing</th></tr>
+  </thead>
+  <tbody>
 <%
           previous_team_name = nil
           team_positions = {}
@@ -402,6 +409,7 @@
             completed_details = "Total Points (#{state}): #{state_remaining_sizing_total}"
           end
 %>
+  </tbody>
 </table>
 <i><%=completed_details%></i><br />
 <br />
@@ -413,11 +421,14 @@
         unless release_cards_history.nil? || release_cards_history.empty?
           removed_sizing_total = 0
 %>
-<h5 title="Cards removed from the release after the release began" class="anchor" id="removed-from-<%=release_name%>">Removed from Release (<%=release_name%>)<span class="pficon-help"></span></h5>
+<h5 title="Cards removed from the release after the release began" class="anchor" id="removed-from-<%=release_name%>">Removed from Release (<%=release_name%>)</h5>
 <div class="container">
 <div class="table-responsive">
-<table class="table table-normal table-condensed">
-  <tr><th title="Card Name">Scenario</th><th title="Team">Team</th><th title="Committed, Targeted, or Proposed">Original Plan State<span class="pficon-help"></span></th><th title="Other Release(s)">Other Release(s)</th><th title="Sizing in Story Points">Sizing</th></tr>
+  <table class="table table-normal table-condensed" id="<%="table_removed-from_#{release_name.tr(' .','_')}"%>">
+    <thead class="sortable" >
+      <tr><th title="Card Name">Scenario</th><th title="Team">Team</th><th title="Committed, Targeted, or Proposed">Original Plan State</th><th title="Other Release(s)">Other Release(s)</th><th title="Sizing in Story Points">Sizing</th></tr>
+    </thead>
+    <tbody>
 <%
           release_cards_history_list = []
           release_cards_history.each do |id, card_info|
@@ -468,6 +479,7 @@
 <%
           end
 %>
+    </tbody>
 </table>
 <i>Total Points (removed): <%=removed_sizing_total%></i><br />
 <br />
@@ -479,11 +491,14 @@
         unless cards_added_to_release.empty?
           added_sizing_total = 0
 %>
-<h5 title="Cards added to the release after the release began" class="anchor" id="added-to-<%=release_name%>">Added to Release (<%=release_name%>)<span class="pficon-help"></span></h5>
+<h5 title="Cards added to the release after the release began" class="anchor" id="added-to-<%=release_name%>">Added to Release (<%=release_name%>)</h5>
 <div class="container">
 <div class="table-responsive">
-<table class="table table-normal table-condensed">
-  <tr><th title="Card Name">Scenario</th><th title="Team">Team</th><th title="Committed, Targeted, or Proposed">Plan State<span class="pficon-help"></span></th><th title="Sizing in Story Points">Sizing</th></tr>
+  <table class="table table-normal table-condensed" id="<%="table_added-to_#{release_name.tr(' .','_')}"%>">
+    <thead class="sortable">
+      <tr><th title="Card Name">Scenario</th><th title="Team">Team</th><th title="Committed, Targeted, or Proposed">Plan State</th><th title="Sizing in Story Points">Sizing</th></tr>
+    </thead>
+    <tbody>
 <%
           cards_added_to_release.sort_by!{ |card_info| [TrelloHelper::RELEASE_STATE_ORDER[card_info['state']], card_info['team_name']] }
           cards_added_to_release.each do |card_info|
@@ -503,6 +518,7 @@
 <%
           end
 %>
+    </tbody>
 </table>
 <i>Total Points (added): <%=added_sizing_total%></i><br />
 <br />
@@ -552,5 +568,24 @@ In Progress: <%=release_in_progress_sizing_total%><br />
     <hr>
     <i>Generated at <%=Time.now.strftime("%I:%M%p %Z")%></i><%if trello.archive_path%> - <a href="<%=trello.archive_path%>">archives</a><%end%>
   </div><!-- /container -->
+  <script src="https://cdn.datatables.net/1.10.16/js/jquery.dataTables.min.js"></script>
+  <script type="text/javascript">
+    $(document).ready( function() {
+<%
+      releases.each do |release|
+        release_name = release[0]
+        states = release_data[release_name]
+        state_tables = TrelloHelper::RELEASE_STATES.select { |state| release_data[release_name][state] }
+        state_tables << 'removed-from' if removed_by_release[release]
+        state_tables << 'added-to' if added_by_release[release]
+        state_tables.each do |state|
+%>
+    $('#<%="table_#{state}_#{release_name.tr(' .','_')}"%>').DataTable( { "paging": false, "order": [] } );
+<%
+        end
+      end
+%>
+    });
+  </script>
 </body>
 </html>
