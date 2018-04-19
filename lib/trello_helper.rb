@@ -400,6 +400,30 @@ class TrelloHelper
   end
 
   ##
+  # Hits the Trello API directly to get the Members from a
+  # +Trello::Card+ without having to hit the /members API endpoint
+  #
+  # +card+ is a +Trello::Card+ object
+  #
+  # modifies +@board_members+ via +add_member+
+  #
+  # returns +members+, an +Array+ of +Trello::Member+ objects
+  def get_card_members(card)
+    raw_members = ""
+    trello_do('get_card_members') do
+      raw_members = Trello.client.get("/cards/#{card.id}/members")
+    end
+    json_members = JSON.parse(raw_members)
+    members = []
+    json_members.each do |m|
+      member = Trello::Member.new(m)
+      members << member
+      add_member(member)
+    end
+    members
+  end
+
+  ##
   # Adds a +Trello::Board+ object to the instance caching collections
   #
   # +board+ is a +Trello::Board+ object
@@ -459,6 +483,7 @@ class TrelloHelper
   def add_member(member, board=nil)
     if board && board.respond_to?(:id)
       members = @board_members[board.id] || []
+      # Add member to @board_members if no entry matching member.id exists
       members << member if !members.map { |m| m.respond_to?(:id) ? m.id : [] }.include?(member.id)
       @board_members[board.id] = members
     end
@@ -480,14 +505,16 @@ class TrelloHelper
       (@cards_by_list[card.list_id] ||= []) << card
     end
     if !@members_by_card.include?(card.id) || @members_by_card[card.id].size < card.member_ids.size
-      @members_by_card[card.id] = card.member_ids.map do |m_id|
-        if !members_by_id[m_id]
-          trello_do 'add_card|members_by_id' do
-            add_member(Trello::Member.find(m_id))
+      missing_member_ids = card.member_ids.select { |m_id| !members_by_id.include?(m_id) }
+      if !missing_member_ids.empty?
+        members = get_card_members(card)
+        members.each do |m|
+          if missing_member_ids.include?(m.id)
+            add_member(m)
           end
         end
-        members_by_id[m_id]
       end
+      @members_by_card[card.id] = card.member_ids.map { |m_id| members_by_id[m_id] } #members_by_id.select { |m_id, _| card.member_ids.include?(m_id) }
     end
   end
 
@@ -1190,20 +1217,10 @@ class TrelloHelper
   def card_members(card)
     members = @members_by_card[card.id]
     # If the list we get doesn't match the card, refresh
-    return members if members && members.size == card.member_ids.size
-    members = card.member_ids.map do |member_id|
-      # if not cached member, get member info from cached board member api endpoint
-      member = members_by_id[member_id] || board_members(boards[card.board_id]).select { |m| member_id == m.id }.first
-      if !member
-        # if not in the cached board member list, refresh the cached board members
-        $stderr.puts("Clearing @board_members cache for board id #{card.board_id}")
-        @board_members.delete(card.board_id)
-        member = board_members(boards[card.board_id]).select { |m| member_id == m.id }.first
-      end
-      add_member(member)
+    if members.size != card.member_ids.size
+      add_card(card)
+      members = @members_by_card[card.id]
     end
-    @members_by_card[card.id] = members if members
-    members.each { |member| add_member(member) }
     members
   end
 
