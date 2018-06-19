@@ -68,11 +68,11 @@ class LdapHelper
       begin
         email = email(name, login, false)
         if email
-          valid_user_names[login] = true
+          valid_user_names[login] = email
         else
           email = email(name, login, false, true)
           if email
-            valid_user_names[login + IMPERFECT_MATCH] = true
+            valid_user_names[login + IMPERFECT_MATCH] = email
           else
             invalid_user_names[login] = true
             puts "  #{login}: #{name}"
