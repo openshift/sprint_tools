@@ -57,6 +57,10 @@ class LdapHelper
     users
   end
 
+  def formatted_email(email, name)
+    "#{name} <#{email}>"
+  end
+
   def print_invalid_members(members, valid_user_names, invalid_user_names = nil)
     invalid_user_names = {} unless invalid_user_names
     members.each do |member|
@@ -68,11 +72,11 @@ class LdapHelper
       begin
         email = email(name, login, false)
         if email
-          valid_user_names[login] = true
+          valid_user_names[login] = formatted_email(email, name)
         else
           email = email(name, login, false, true)
           if email
-            valid_user_names[login + IMPERFECT_MATCH] = true
+            valid_user_names[login + IMPERFECT_MATCH] = formatted_email(email, name)
           else
             invalid_user_names[login] = true
             puts "  #{login}: #{name}"
