@@ -489,7 +489,7 @@ command :list_invalid_users do |c|
       end
     end
     puts "\n\nValid Logins:"
-    puts valid_user_names.keys
+    puts valid_user_names.map {|k, v| "%-35s %s" % [k, v]}
   end
 end
 
