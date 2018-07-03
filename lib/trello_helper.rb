@@ -142,6 +142,7 @@ class TrelloHelper
     @label_by_id = {}
     @list_by_card = {}
     @members_by_card = {}
+    @comment_actions_by_card = {}
     @checklists_by_card = {}
     @sprint_lists_by_board = {}
     @all_lists_by_board = {}
@@ -1212,6 +1213,16 @@ class TrelloHelper
     end
     @list_by_card[card.id] = list if list
     list
+  end
+
+  def card_comment_actions(card)
+    if @comment_actions_by_card.include?(card.id)
+      actions = @comment_actions_by_card[card.id]
+    else
+      actions = card.actions(options={filter: 'commentCard'})
+      @comment_actions_by_card[card.id] = actions
+    end
+    actions
   end
 
   def card_members(card)

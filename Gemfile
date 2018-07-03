@@ -10,5 +10,6 @@ gem 'i18n'
 gem 'ruby-bugzilla'
 gem 'ruby-ldap'#, '<= 1.12.1'
 gem 'simplecov', :require => false, :group => :test
+gem 'fastercsv'
 
 gem 'commander'
