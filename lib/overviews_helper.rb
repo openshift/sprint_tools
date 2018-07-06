@@ -1,8 +1,9 @@
 require 'csv'
 require 'trello_helper'
+require 'uri'
 
 class OverviewsHelper
-  attr_accessor :trello, :bugzilla, :trello_id_to_ldap_uid
+  attr_accessor :trello, :bugzilla, :trello_id_to_ldap_uid, :valid_epics
 
   CSV_HEADER = [ "Product(s)",
                "Product:Release",
@@ -20,6 +21,7 @@ class OverviewsHelper
                "Card ID" ]
 
   JIRA_DATE_FMT='%FT%TZ%z'
+  IMPORT_USER = "importer_tool"
 
   def initialize(opts = nil)
     if opts
@@ -78,8 +80,8 @@ class OverviewsHelper
         card_data[:epics] << label_name
       else
         TrelloHelper::RELEASE_LABEL_REGEX.match(label_name) do |fields|
-          if trello.valid_products.include?(fields[2])
-            product = fields[2]
+          product = fields[2].nil? ? trello.default_product : fields[2]
+          if trello.valid_products.include?(product)
             state = fields[1]
             release = fields[3]
             if status == 'Complete'
@@ -93,47 +95,70 @@ class OverviewsHelper
     card_data
   end
 
+  def jira_format_url(url_string)
+    "[#{url_string}|#{url_string}]"
+  end
+
   def jira_convert_time
     # New (non-exported) comments should have the same timestamp
     @jira_convert_time ||= Time.now.strftime(JIRA_DATE_FMT)
   end
 
   def jira_new_comment(text)
-    "#{jira_convert_time};trello_import;#{text}"
+    "#{jira_convert_time};#{IMPORT_USER};#{text}"
   end
 
-  def action_to_jira_comment(action)
-    # CSV Import Date Format needs to be:
-    #   "yyyy-MM-dd'T'HH:mm:ss'Z'Z"
-    fmt_date = action.date.strftime(JIRA_DATE_FMT)
-    author = action.member_creator_id
-    if trello_id_to_ldap_uid.include?(action.member_creator_id)
-      author = trello_id_to_ldap_uid[action.member_creator_id]
-    else
-      if trello.members_by_id.include?(action.member_creator_id)
-        author = member_to_uid(trello.members_by_id[action.member_creator_id])
-      end
-    end
-    text = action.data["text"]
-    "#{fmt_date};#{author};#{text}"
-  end
-
-  def card_checklists_to_comments(card)
-    checklists = trello.list_checklists(card)
-    comments = checklists.map do |cl|
-      comment = "Checklist: #{cl.name}\n----\n"
-      comment += cl.check_items.map{ |c| "[#{c['state'] == 'complete' ? 'X' : '_'}] #{c['name']}" }.join("\n")
-      jira_new_comment(comment)
-    end
-    comments
+  def member_to_plaintext(member)
+    "#{member.full_name} (#{member.username})"
   end
 
   def member_to_uid(member)
     if trello_id_to_ldap_uid.include? member.id
       trello_id_to_ldap_uid[member.id]
     else
-      "#{member.full_name} (#{member.username})"
+      member_to_plaintext(member)
     end
+  end
+
+  def member_id_to_comment_line(mid)
+    comment_line = ""
+    member = trello.members_by_id[mid] || trello.member(mid)
+    comment_line += " #{member_to_plaintext(member)}"
+    if trello_id_to_ldap_uid.include?(mid)
+      author = trello_id_to_ldap_uid[mid]
+      comment_line += " <[mailto:#{author}@redhat.com]>"
+    end
+    comment_line
+  end
+
+  def action_to_jira_comment(action)
+    # CSV Import Date Format needs to be:
+    #   "yyyy-MM-dd'T'HH:mm:ss'Z'Z"
+    fmt_date = action.date.strftime(JIRA_DATE_FMT)
+    author = nil
+    comment_header = "Trello comment by: " + member_id_to_comment_line(action.member_creator_id)
+    if !author
+      author = IMPORT_USER
+    end
+    comment_header += "\n----\n"
+    text = action.data["text"]
+    # format URLs in comment text with Jira links
+    urls = URI.extract(text, ['http', 'https']).uniq
+    urls.each do |u|
+      text.gsub!(u, jira_format_url(u))
+    end
+    text = comment_header + text
+    "#{fmt_date};#{author};#{text}"
+  end
+
+  def card_checklists_to_comments(card)
+    checklists = trello.list_checklists(card)
+    comments = checklists.select { |cl| cl.check_items.size > 0}.map do |cl|
+      comment = "Checklist: #{cl.name}\n----\n"
+      comment += cl.check_items.map{ |c| "[#{c['state'] == 'complete' ? 'X' : '_'}] #{c['name']}" }.join("\n")
+      jira_new_comment(comment)
+    end
+    comments
   end
 
   def jira_export_data_from_card(card)
@@ -145,39 +170,42 @@ class OverviewsHelper
     end
     card_comments = [] + trello.card_comment_actions(card).map{|a| action_to_jira_comment(a)}
     # card_members = trello.card_members(card).map { |m| "#{m.full_name} (#{m.username})" }
-    card_members = trello.card_members(card).map { |member| member_to_uid(member) }
+    card_members = trello.card_members(card)
     card_data = { id: card.id, # to comment
                   url: card.short_url, # to comment
-                  summary: card_name,
+                  summary: card_name.sub(TrelloHelper::EPIC_TAG_REGEX, '').strip,
                   description: card.desc,
                   story_points: card_size,
                   members: card_members,
                   comments: card_comments
                 }
     card_data[:comments] += card_checklists_to_comments(card)
-    card_data[:products] = []
     card_data[:epics] = []
+    card_data[:labels] = []
     labels = trello.card_labels(card)
     label_names = labels.map { |label| label.name }
     label_names.each do |label_name|
       if label_name.start_with?('epic-')
-        card_data[:epics] << label_name
+        card_data[:epics] << label_name.sub(/^epic-/, '')
       else
         TrelloHelper::RELEASE_LABEL_REGEX.match(label_name) do |fields|
-          if trello.valid_products.include?(fields[2])
-            product = fields[2]
+          product = fields[2].nil? ? trello.default_product : fields[2]
+          if trello.valid_products.include?(product)
             state = fields[1]
             release = fields[3]
             # if status == 'Complete'
             #   state = 'committed'
             # end
-            card_data[:committment] = state
+            card_data[:committment] ||= state # only keep 1 committment state
             p_r_tuple = product ? "#{product}-#{release}" : release
-            card_data[:products] << p_r_tuple
+            card_data[:labels] << p_r_tuple
           end
         end
       end
     end
+    card_data[:labels] << card_data[:committment] # store committment state as label
+    card_tags = card_name.scan(TrelloHelper::EPIC_TAG_REGEX).map{ |tag| tag.downcase.sub(/^epic-/, '') }
+    card_data[:epics] += card_tags.select { |tag| valid_epics.include? tag }
     card_data
   end
 
@@ -195,17 +223,29 @@ class OverviewsHelper
     ] + max_labels.times.map { "Label" } + max_epics.times.map { "Epic Link" } + max_members.times.map { "Watcher" } + max_comments.times.map { "Comment Body" }
   end
 
-  def jira_board_row(card_data, max_comments, max_members, max_epics, max_labels)
+  def jira_card_members_to_list_comment(members)
+    members.map { |m| "* #{member_id_to_comment_line(m.id)}" }.join("\n")
+  end
+
+  def jira_add_generated_comments(card_data)
     comments = [
       jira_new_comment("Trello Card ID: #{card_data[:id]}"),
-      jira_new_comment("Trello URL: #{card_data[:url]}"),
+      jira_new_comment("Trello URL: #{jira_format_url(card_data[:url])}"),
     ]
-    comments += card_data[:comments]
+    if card_data[:members] and !card_data[:members].empty?
+      comments << jira_new_comment("Trello Card Members:\n#{jira_card_members_to_list_comment(card_data[:members])}")
+    end
+    card_data[:comments] = comments + card_data[:comments]
+  end
+
+  def jira_board_row(card_data, max_comments, max_members, max_epics, max_labels)
     # Pad comments, members, epics, labels columns to match header
+    comments = card_data[:comments]
     comments += (max_comments - comments.size).times.map{nil}
-    members = card_data[:members] + (max_members - card_data[:members].size).times.map{nil}
+    members = card_data[:members].map { |member| member_to_uid(member) }
+    members += (max_members - members.size).times.map{nil}
     epics = card_data[:epics] + (max_epics - card_data[:epics].size).times.map{nil}
-    labels = [card_data[:committment]] + card_data[:products]
+    labels = card_data[:labels]
     labels += (max_labels - labels.size).times.map{nil}
     row = [
       card_data[:summary],
@@ -253,15 +293,17 @@ class OverviewsHelper
         if lists_to_in_progress.include?(list.name)
           new_card[:status] = 'In Progress'
         end
+        if private
+          new_card[:labels] << 'private'
+        end
+        jira_add_generated_comments(new_card)
         max_comments = imax(new_card[:comments].size, max_comments)
         max_members = imax(new_card[:members].size, max_members)
         max_epics = imax(new_card[:epics].size, max_epics)
-        max_labels = imax(new_card[:products].size, max_labels)
+        max_labels = imax(new_card[:labels].size, max_labels)
         cards_data << new_card
       end
     end
-    max_comments += 2
-    max_labels += 1
     header = jira_board_header(max_comments, max_members, max_epics, max_labels)
     CSV.open(out, "wb") do |csv|
       csv << header

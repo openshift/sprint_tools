@@ -40,6 +40,8 @@ class TrelloHelper
 
   EPIC_REF_REGEX = /\[.*\]\(https?:\/\/trello\.com\/.+\) \([^\)]+\)/
 
+  EPIC_TAG_REGEX = /\[[^\]]+\]/
+
   ACCEPTED_STATES = {
     'Accepted' => 1,
     'Done' => 2
@@ -671,7 +673,7 @@ class TrelloHelper
               tag_to_epics[label.name] << epic_card
             end
           end
-          epic_card.name.scan(/\[[^\]]+\]/).each do |tag|
+          epic_card.name.scan(EPIC_TAG_REGEX).each do |tag|
             tag.downcase!
             if tag != FUTURE_TAG
               tag_to_epics[tag] = [] unless tag_to_epics[tag]
@@ -906,7 +908,7 @@ class TrelloHelper
               epic_tags[label.name] = true
             end
           end
-          epic_card.name.scan(/\[[^\]]+\]/).each do |tag|
+          epic_card.name.scan(EPIC_TAG_REGEX).each do |tag|
             tag.downcase!
             if tag != FUTURE_TAG
               tag_to_epic[tag] = epic_card
@@ -1042,7 +1044,7 @@ class TrelloHelper
                     end
                   end
 
-                  marker_card_tags = card.name.scan(/\[[^\]]+\]/)
+                  marker_card_tags = card.name.scan(EPIC_TAG_REGEX)
                   marker_card_tags.each { |tag| tag.downcase! }
                   marker_card_tags.delete_if { |tag| card_tags.include?("epic-#{tag[1..-2]}") }
                   checklist_name = (marker_card_tags.include?(FUTURE_TAG) || card_labels.map { |l| l.name }.include?(FUTURE_LABEL)) ? FUTURE_RELEASE : UNASSIGNED_RELEASE
@@ -1219,7 +1221,9 @@ class TrelloHelper
     if @comment_actions_by_card.include?(card.id)
       actions = @comment_actions_by_card[card.id]
     else
-      actions = card.actions(options={filter: 'commentCard'})
+      trello_do('card.actions(commentCard)') do
+        actions = card.actions(options={filter: 'commentCard'})
+      end
       @comment_actions_by_card[card.id] = actions
     end
     actions
@@ -1687,7 +1691,12 @@ class TrelloHelper
   end
 
   def member(member_name)
-    Trello::Member.find(member_name)
+    this_member = nil
+    trello_do('member') do
+      this_member = Trello::Member.find(member_name)
+    end
+    @members_by_id[this_member.id] = this_member
+    this_member
   end
 
   def member_emails(members)
