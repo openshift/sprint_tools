@@ -20,8 +20,13 @@ class OverviewsHelper
                "Members",
                "Card ID" ]
 
-  JIRA_DATE_FMT='%FT%TZ%z'
+  JIRA_DATE_FMT = '%FT%TZ%z'
   IMPORT_USER = "importer_tool"
+
+  LABELS_TO_EXPORT = [ "documentation", "tc-approved", "no-qe",
+                     "perf-scale", "security", "ux", "devcut",
+                     "grooming", "community", "design", "future",
+                     "blocked", "stage1-dep", "techdebt" ]
 
   def initialize(opts = nil)
     if opts
@@ -161,54 +166,6 @@ class OverviewsHelper
     comments
   end
 
-  def jira_export_data_from_card(card)
-    card_name = card.name
-    card_size = 0
-    TrelloHelper::CARD_NAME_REGEX.match(card.name) do |card_fields|
-      card_name = card_fields[3].strip
-      card_size = (card_fields[2] || "").strip
-    end
-    card_comments = [] + trello.card_comment_actions(card).map{|a| action_to_jira_comment(a)}
-    # card_members = trello.card_members(card).map { |m| "#{m.full_name} (#{m.username})" }
-    card_members = trello.card_members(card)
-    card_data = { id: card.id, # to comment
-                  url: card.short_url, # to comment
-                  summary: card_name.sub(TrelloHelper::EPIC_TAG_REGEX, '').strip,
-                  description: card.desc,
-                  story_points: card_size,
-                  members: card_members,
-                  comments: card_comments
-                }
-    card_data[:comments] += card_checklists_to_comments(card)
-    card_data[:epics] = []
-    card_data[:labels] = []
-    labels = trello.card_labels(card)
-    label_names = labels.map { |label| label.name }
-    label_names.each do |label_name|
-      if label_name.start_with?('epic-')
-        card_data[:epics] << label_name.sub(/^epic-/, '')
-      else
-        TrelloHelper::RELEASE_LABEL_REGEX.match(label_name) do |fields|
-          product = fields[2].nil? ? trello.default_product : fields[2]
-          if trello.valid_products.include?(product)
-            state = fields[1]
-            release = fields[3]
-            # if status == 'Complete'
-            #   state = 'committed'
-            # end
-            card_data[:committment] ||= state # only keep 1 committment state
-            p_r_tuple = product ? "#{product}-#{release}" : release
-            card_data[:labels] << p_r_tuple
-          end
-        end
-      end
-    end
-    card_data[:labels] << card_data[:committment] # store committment state as label
-    card_tags = card_name.scan(TrelloHelper::EPIC_TAG_REGEX).map{ |tag| tag.downcase.sub(/^epic-/, '') }
-    card_data[:epics] += card_tags.select { |tag| valid_epics.include? tag }
-    card_data
-  end
-
   # Faster than [x, y].max
   def imax(x, y)
     x>y ? x : y
@@ -257,12 +214,68 @@ class OverviewsHelper
     row
   end
 
-  def create_jira_board_dump(out, board_name, private=false)
+  def jira_export_data_from_card(card)
+    card_name = card.name
+    card_size = 0
+    TrelloHelper::CARD_NAME_REGEX.match(card.name) do |card_fields|
+      card_name = card_fields[3].strip
+      card_size = (card_fields[2] || "").strip
+    end
+    card_comments = [] + trello.card_comment_actions(card).map{|a| action_to_jira_comment(a)}
+    # card_members = trello.card_members(card).map { |m| "#{m.full_name} (#{m.username})" }
+    card_members = trello.card_members(card)
+    card_data = { id: card.id, # to comment
+                  url: card.short_url, # to comment
+                  summary: card_name.sub(TrelloHelper::EPIC_TAG_REGEX, '').strip,
+                  description: card.desc,
+                  story_points: card_size,
+                  members: card_members,
+                  comments: card_comments
+                }
+    card_data[:comments] += card_checklists_to_comments(card)
+    card_data[:epics] = []
+    card_data[:labels] = []
+    labels = trello.card_labels(card)
+    label_names = labels.map { |label| label.name }
+    label_names.each do |label_name|
+      if LABELS_TO_EXPORT.include? label_name
+        card_data[:labels] << label_name
+      elsif label_name.start_with?('epic-')
+        card_data[:epics] << label_name.sub(/^epic-/, '')
+      else
+        fields = TrelloHelper::RELEASE_LABEL_REGEX.match(label_name) do |fields|
+          product = fields[2].nil? ? trello.default_product : fields[2]
+          if trello.valid_products.include?(product)
+            state = fields[1]
+            release = fields[3]
+            # if status == 'Complete'
+            #   state = 'committed'
+            # end
+            card_data[:committment] ||= state # only keep 1 committment state
+            p_r_tuple = product ? "#{product}-#{release}" : release
+            card_data[:labels] << p_r_tuple
+          end
+        end
+      end
+    end
+    if card_data[:committment]
+      card_data[:labels] << card_data[:committment]  # store committment state as label
+    end
+    card_tags = card_name.scan(TrelloHelper::EPIC_TAG_REGEX).map{ |tag| tag.downcase.sub(/^epic-/, '') }
+    card_data[:epics] += card_tags.select { |tag| valid_epics.include? tag }
+    card_data
+  end
+
+  def create_jira_board_dump(out, board_name, add_lists=[], private=false)
     # Backlog
     # New
     # Stalled
     # Next
     lists_to_backlog = TrelloHelper::BACKLOG_STATES.merge(TrelloHelper::NEW_STATES).merge(TrelloHelper::NEXT_STATES)
+    # Make sure we export any other lists specified to To Do/Backlog
+    additional_lists_to_backlog = {}
+    add_lists.each_with_index { |l,i| additional_lists_to_backlog[l] = i }
+    lists_to_backlog.merge!(additional_lists_to_backlog)
     # Complete Upstream
     # Complete
     # Design
@@ -295,6 +308,9 @@ class OverviewsHelper
         end
         if private
           new_card[:labels] << 'private'
+        end
+        if additional_lists_to_backlog.include?(list.name)
+          new_card[:labels] << list.name.gsub(' ', '_')
         end
         jira_add_generated_comments(new_card)
         max_comments = imax(new_card[:comments].size, max_comments)

@@ -697,6 +697,7 @@ command :export_team_for_jira do |c|
   c.option "--out OUT_FILE", "The file to output Ex: /tmp/user_interface_export.csv"
   c.option '--board "BOARD NAME"', "The title of the board to export"
   c.option "--private", 'Include the "private" label on exported cards'
+  c.option '--add-lists "List 1 Name, List 2 Name, ..."', Array, 'Include specified lists in the CSV export - adds list name as a label to exported card(s)'
 
   c.description = "Generate a CSV-formatted file containing relevant data from the specified board, suitable to import into Jira"
   c.action do |args, options|
@@ -704,9 +705,10 @@ command :export_team_for_jira do |c|
       $stderr.puts "You must specify a board"
       exit 1
     end
+    options.add_lists.map! { |l| l.strip } # OptionParser sucks
     options.out ||= "/tmp/jira_export_#{options.board.sub(' ', '_')}.csv"
     overviews_helper = OverviewsHelper.new(trello: trello, trello_id_to_ldap_uid: CONFIG.uidmap, valid_epics: CONFIG.valid_epics)
-    overviews_helper.create_jira_board_dump(options.out, options.board, !!options.private)
+    overviews_helper.create_jira_board_dump(options.out, options.board, options.add_lists, !!options.private)
   end
 end
 
