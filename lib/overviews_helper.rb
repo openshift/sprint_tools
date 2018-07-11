@@ -100,6 +100,107 @@ class OverviewsHelper
     card_data
   end
 
+  def create_raw_overview_data(out)
+    cards_data = []
+    lists_for_team_boards = []
+    # Leave this for ease of testing
+    # ["clusterlifecycle","continuousinfra","customersuccess"].each do |team|
+    trello.teams.each do |team_name, team|
+      if !team[:exclude_from_releases_overview]
+        trello.team_boards(team_name).each do |board|
+          trello.board_lists(board).each do |list|
+            lists_for_team_boards << [team_name.to_s, board, list]
+          end
+        end
+      end
+    end
+    lists_for_team_boards.each do |team_name, board, list|
+      if trello.list_for_completed_work?(list.name)
+        status = 'Complete'
+      elsif trello.list_for_in_progress_work?(list.name)
+        status = 'In Progress'
+      end
+      trello.list_cards(list).each do |card|
+        cards_data << card_data_from_card(card, team_name, board, list, status)
+      end
+    end
+    CSV.open(out, "wb") do |csv|
+      csv << CSV_HEADER
+      cards_data.each do |card_data|
+        csv << card_data_to_csv_row_array(card_data)
+      end
+    end
+  end
+
+  def create_releases_overview(out)
+    extname = File.extname out
+    filename = File.basename out, extname
+    dirname = File.dirname out
+
+    ((trello.other_products ? trello.other_products : []) + [nil]).each do |product|
+      erb = ERB.new(File.open('templates/releases_overview.erb', "rb").read)
+      file = nil
+      if product
+        file = File.join(dirname, "#{filename}_#{product}#{extname}")
+      else
+        file = out
+      end
+      File.open(file, 'w') { |f| f.write(erb.result(binding)) }
+    end
+  end
+
+  def create_teams_overview(out)
+    extname = File.extname out
+    filename = File.basename out, extname
+    dirname = File.dirname out
+
+    (trello.teams.keys + [nil]).each do |team|
+      erb = ERB.new(File.open('templates/teams_overview.erb', "rb").read)
+      file = nil
+      if team
+        file = File.join(dirname, "#{filename}_#{team}#{extname}")
+      else
+        file = out
+      end
+      File.open(file, 'w') { |f| f.write(erb.result(binding)) }
+    end
+  end
+
+  def create_developers_overview(out)
+    extname = File.extname out
+    filename = File.basename out, extname
+    dirname = File.dirname out
+
+    (trello.teams.keys + [nil]).each do |team|
+      erb = ERB.new(File.open('templates/developers_overview.erb', "rb").read)
+      file = nil
+      if team
+        file = File.join(dirname, "#{filename}_#{team}#{extname}")
+      else
+        file = out
+      end
+      File.open(file, 'w') { |f| f.write(erb.result(binding)) }
+    end
+  end
+
+  def create_labels_overview(out)
+    erb = ERB.new(File.open('templates/labels_overview.erb', "rb").read)
+    File.open(out, 'w') { |f| f.write(erb.result(binding)) }
+  end
+
+  def create_roadmap_overview(out)
+    erb = ERB.new(File.open('templates/roadmap_overview.erb', "rb").read)
+    File.open(out, 'w') { |f| f.write(erb.result(binding)) }
+  end
+
+  ##################################
+  # ############################## #
+  # # ########################## # #
+  # # # BEGIN JIRA EXPORT CODE # # #
+  # # ########################## # #
+  # ############################## #
+  ##################################
+
   def jira_format_url(url_string)
     "[#{url_string}|#{url_string}]"
   end
@@ -266,7 +367,7 @@ class OverviewsHelper
     card_data
   end
 
-  def create_jira_board_dump(out, board_name, add_lists=[], private=false)
+  def create_jira_board_dump(out, board_name, add_lists=[], exclude_lists=[], private=false)
     # Backlog
     # New
     # Stalled
@@ -276,6 +377,7 @@ class OverviewsHelper
     additional_lists_to_backlog = {}
     add_lists.each_with_index { |l,i| additional_lists_to_backlog[l] = i }
     lists_to_backlog.merge!(additional_lists_to_backlog)
+
     # Complete Upstream
     # Complete
     # Design
@@ -283,6 +385,10 @@ class OverviewsHelper
     # Pending Upstream
     # Pending Merge
     lists_to_in_progress = TrelloHelper::IN_PROGRESS_STATES.merge(TrelloHelper::COMPLETE_STATES)
+
+    # delete lists we want to exclude
+    lists_to_backlog.delete_if { |k,_| exclude_lists.include? k }
+    lists_to_in_progress.delete_if { |k,_| exclude_lists.include? k }
     lists_to_export = lists_to_backlog.merge(lists_to_in_progress)
     lists = []
     cards_data = []
@@ -327,98 +433,5 @@ class OverviewsHelper
         csv << jira_board_row(card_data, max_comments, max_members, max_epics, max_labels)
       end
     end
-  end
-
-  def create_raw_overview_data(out)
-    cards_data = []
-    lists_for_team_boards = []
-    # Leave this for ease of testing
-    # ["clusterlifecycle","continuousinfra","customersuccess"].each do |team|
-    trello.teams.each do |team_name, team|
-      if !team[:exclude_from_releases_overview]
-        trello.team_boards(team_name).each do |board|
-          trello.board_lists(board).each do |list|
-            lists_for_team_boards << [team_name.to_s, board, list]
-          end
-        end
-      end
-    end
-    lists_for_team_boards.each do |team_name, board, list|
-      if trello.list_for_completed_work?(list.name)
-        status = 'Complete'
-      elsif trello.list_for_in_progress_work?(list.name)
-        status = 'In Progress'
-      end
-      trello.list_cards(list).each do |card|
-        cards_data << card_data_from_card(card, team_name, board, list, status)
-      end
-    end
-    CSV.open(out, "wb") do |csv|
-      csv << CSV_HEADER
-      cards_data.each do |card_data|
-        csv << card_data_to_csv_row_array(card_data)
-      end
-    end
-  end
-
-  def create_releases_overview(out)
-    extname = File.extname out
-    filename = File.basename out, extname
-    dirname = File.dirname out
-
-    ((trello.other_products ? trello.other_products : []) + [nil]).each do |product|
-      erb = ERB.new(File.open('templates/releases_overview.erb', "rb").read)
-      file = nil
-      if product
-        file = File.join(dirname, "#{filename}_#{product}#{extname}")
-      else
-        file = out
-      end
-      File.open(file, 'w') { |f| f.write(erb.result(binding)) }
-    end
-  end
-
-  def create_teams_overview(out)
-    extname = File.extname out
-    filename = File.basename out, extname
-    dirname = File.dirname out
-
-    (trello.teams.keys + [nil]).each do |team|
-      erb = ERB.new(File.open('templates/teams_overview.erb', "rb").read)
-      file = nil
-      if team
-        file = File.join(dirname, "#{filename}_#{team}#{extname}")
-      else
-        file = out
-      end
-      File.open(file, 'w') { |f| f.write(erb.result(binding)) }
-    end
-  end
-
-  def create_developers_overview(out)
-    extname = File.extname out
-    filename = File.basename out, extname
-    dirname = File.dirname out
-
-    (trello.teams.keys + [nil]).each do |team|
-      erb = ERB.new(File.open('templates/developers_overview.erb', "rb").read)
-      file = nil
-      if team
-        file = File.join(dirname, "#{filename}_#{team}#{extname}")
-      else
-        file = out
-      end
-      File.open(file, 'w') { |f| f.write(erb.result(binding)) }
-    end
-  end
-
-  def create_labels_overview(out)
-    erb = ERB.new(File.open('templates/labels_overview.erb', "rb").read)
-    File.open(out, 'w') { |f| f.write(erb.result(binding)) }
-  end
-
-  def create_roadmap_overview(out)
-    erb = ERB.new(File.open('templates/roadmap_overview.erb', "rb").read)
-    File.open(out, 'w') { |f| f.write(erb.result(binding)) }
   end
 end
