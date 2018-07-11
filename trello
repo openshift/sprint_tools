@@ -707,10 +707,13 @@ command :export_team_for_jira do |c|
       $stderr.puts "You must specify a board"
       exit 1
     end
+    options.add_lists ||= []
     options.add_lists.map! { |l| l.strip } # OptionParser sucks
+    options.exclude_lists ||= []
+    options.exclude_lists.map! { |l| l.strip }
     options.out ||= "/tmp/jira_export_#{options.board.sub(' ', '_')}.csv"
     overviews_helper = OverviewsHelper.new(trello: trello, trello_id_to_ldap_uid: CONFIG.uidmap, valid_epics: CONFIG.valid_epics)
-    overviews_helper.create_jira_board_dump(options.out, options.board, options.add_lists, options.exclude_lists, !!options.private, !!migration_run)
+    overviews_helper.create_jira_board_dump(options.out, options.board, options.add_lists, options.exclude_lists, !!options.private, !!options.migration_run)
   end
 end
 

@@ -28,6 +28,8 @@ class OverviewsHelper
                      "grooming", "community", "design", "future",
                      "blocked", "stage1-dep", "techdebt" ]
 
+  MIGRATED_LABEL = 'migrated'
+
   def initialize(opts = nil)
     if opts
       opts.each do |k, v|
@@ -398,10 +400,17 @@ class OverviewsHelper
     max_labels = 0
     board = trello.org_boards.select {|b| b.name == board_name}.first
     if !board
-      raise Exception("No board matching #{board_name} found")
+      raise Exception.new("No board matching #{board_name} found")
     end
-    board_labels = trello.board_labels(board)
-    migrated_label = board_labels.select {|l| l.name == 'migrated'}.first
+    board_labels = nil
+    trello.trello_do('board.labels') do
+      board_labels = board.labels(limit: 1000) #trello.board_labels(board)
+    end
+    # puts board_labels.map {|l| l.attributes.inspect}.join("\n")
+    migrated_label = board_labels.select {|l| l.name == MIGRATED_LABEL}.first
+    if !migrated_label
+      raise Exception.new("No label matching #{MIGRATED_LABEL} found in #{board_name}")
+    end
     team_map = trello.board_id_to_team_map[board.id]
     trello.board_lists(board).each do |list|
       lists << list
@@ -427,7 +436,15 @@ class OverviewsHelper
         max_labels = imax(new_card[:labels].size, max_labels)
         cards_data << new_card
         if migration_run
-          trello.add_label_to_card(card, migrated_label)
+          # This doesn't work?
+          # trello.add_label_to_card(card, migrated_label)
+
+          # Workaround: hit the REST endpoint directly:
+          trello.trello_do('post_label_to_card') do
+            if !card.labels.find { |l| l.name == MIGRATED_LABEL }
+              Trello::client.post("/cards/#{card.id}/idLabels", {value: migrated_label.id})
+            end
+          end
         end
       end
     end
