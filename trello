@@ -699,6 +699,7 @@ command :export_team_for_jira do |c|
   c.option "--private", 'Include the "private" label on exported cards'
   c.option '--add-lists "List 1 Name, List 2 Name, ..."', Array, 'Include specified lists in the CSV export - adds list name as a label to exported card(s)'
   c.option '--exclude-lists "List 1 Name, List 2 Name, ..."', Array, 'Guarantee specified lists are excluded from the CSV export'
+  c.option '--migration-run', 'Specify if exporting for an actual (non-testing) migration. Adds "migrated" label to exported cards'
 
   c.description = "Generate a CSV-formatted file containing relevant data from the specified board, suitable to import into Jira"
   c.action do |args, options|
@@ -709,7 +710,7 @@ command :export_team_for_jira do |c|
     options.add_lists.map! { |l| l.strip } # OptionParser sucks
     options.out ||= "/tmp/jira_export_#{options.board.sub(' ', '_')}.csv"
     overviews_helper = OverviewsHelper.new(trello: trello, trello_id_to_ldap_uid: CONFIG.uidmap, valid_epics: CONFIG.valid_epics)
-    overviews_helper.create_jira_board_dump(options.out, options.board, options.add_lists, options.exclude_lists, !!options.private)
+    overviews_helper.create_jira_board_dump(options.out, options.board, options.add_lists, options.exclude_lists, !!options.private, !!migration_run)
   end
 end
 

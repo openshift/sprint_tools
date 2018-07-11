@@ -367,7 +367,7 @@ class OverviewsHelper
     card_data
   end
 
-  def create_jira_board_dump(out, board_name, add_lists=[], exclude_lists=[], private=false)
+  def create_jira_board_dump(out, board_name, add_lists=[], exclude_lists=[], private=false, migration_run=false)
     # Backlog
     # New
     # Stalled
@@ -400,6 +400,8 @@ class OverviewsHelper
     if !board
       raise Exception("No board matching #{board_name} found")
     end
+    board_labels = trello.board_labels(board)
+    migrated_label = board_labels.select {|l| l.name == 'migrated'}.first
     team_map = trello.board_id_to_team_map[board.id]
     trello.board_lists(board).each do |list|
       lists << list
@@ -424,6 +426,9 @@ class OverviewsHelper
         max_epics = imax(new_card[:epics].size, max_epics)
         max_labels = imax(new_card[:labels].size, max_labels)
         cards_data << new_card
+        if migration_run
+          trello.add_label_to_card(card, migrated_label)
+        end
       end
     end
     header = jira_board_header(max_comments, max_members, max_epics, max_labels)
