@@ -1693,7 +1693,16 @@ class TrelloHelper
   def member(member_name)
     this_member = nil
     trello_do('member') do
-      this_member = Trello::Member.find(member_name)
+      begin
+        this_member = Trello::Member.find(member_name)
+      rescue Trello::Error => e
+        # Hack to avoid failing out when looking up deleted members
+        if e.message.downcase.match('resource was not found')
+          this_member = Trello::Member.new({'id' => '0', 'fullName' => 'Deleted User', 'username' => 'deleted_user'})
+        else
+          raise e
+        end
+      end
     end
     @members_by_id[this_member.id] = this_member
     this_member

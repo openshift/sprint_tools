@@ -317,6 +317,10 @@ class OverviewsHelper
     row
   end
 
+  def summary_tags_to_array(summary)
+    summary.scan(TrelloHelper::EPIC_TAG_REGEX).map{ |s| s.downcase.gsub(/[\[\]]/, '').sub(/^epic-/, '') }
+  end
+
   def jira_export_data_from_card(card)
     card_name = card.name
     card_size = 0
@@ -329,7 +333,7 @@ class OverviewsHelper
     card_members = trello.card_members(card)
     card_data = { id: card.id, # to comment
                   url: card.short_url, # to comment
-                  summary: card_name.sub(TrelloHelper::EPIC_TAG_REGEX, '').strip,
+                  summary: card_name.strip,
                   description: card.desc,
                   story_points: card_size,
                   members: card_members,
@@ -364,8 +368,9 @@ class OverviewsHelper
     if card_data[:committment]
       card_data[:labels] << card_data[:committment]  # store committment state as label
     end
-    card_tags = card_name.scan(TrelloHelper::EPIC_TAG_REGEX).map{ |tag| tag.downcase.sub(/^epic-/, '') }
-    card_data[:epics] += card_tags.select { |tag| valid_epics.include? tag }
+    card_tags = summary_tags_to_array(card_data[:summary])
+    card_data[:labels] += card_tags
+    card_data[:epics] += card_tags.select { |tag| valid_epics.include?(tag) and !card_data[:epics].include?(tag) }
     card_data
   end
 
@@ -380,18 +385,19 @@ class OverviewsHelper
     add_lists.each_with_index { |l,i| additional_lists_to_backlog[l] = i }
     lists_to_backlog.merge!(additional_lists_to_backlog)
 
-    # Complete Upstream
-    # Complete
-    # Design
-    # In Progress
-    # Pending Upstream
-    # Pending Merge
-    lists_to_in_progress = TrelloHelper::IN_PROGRESS_STATES.merge(TrelloHelper::COMPLETE_STATES)
+    # *** EXCLUDE in progress lists by default ***
+    # # Complete Upstream
+    # # Complete
+    # # Design
+    # # In Progress
+    # # Pending Upstream
+    # # Pending Merge
+    # lists_to_in_progress = TrelloHelper::IN_PROGRESS_STATES.merge(TrelloHelper::COMPLETE_STATES)
 
     # delete lists we want to exclude
     lists_to_backlog.delete_if { |k,_| exclude_lists.include? k }
-    lists_to_in_progress.delete_if { |k,_| exclude_lists.include? k }
-    lists_to_export = lists_to_backlog.merge(lists_to_in_progress)
+    # lists_to_in_progress.delete_if { |k,_| exclude_lists.include? k }
+    lists_to_export = lists_to_backlog # .merge(lists_to_in_progress)
     lists = []
     cards_data = []
     max_comments = 0
@@ -420,9 +426,9 @@ class OverviewsHelper
       trello.list_cards(list).each do |card|
         new_card = jira_export_data_from_card(card)
         new_card[:status] = 'To Do'
-        if lists_to_in_progress.include?(list.name)
-          new_card[:status] = 'In Progress'
-        end
+        # if lists_to_in_progress.include?(list.name)
+        #   new_card[:status] = 'In Progress'
+        # end
         if private
           new_card[:labels] << 'private'
         end
