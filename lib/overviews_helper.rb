@@ -386,18 +386,16 @@ class OverviewsHelper
     lists_to_backlog.merge!(additional_lists_to_backlog)
 
     # *** EXCLUDE in progress lists by default ***
-    # # Complete Upstream
-    # # Complete
     # # Design
     # # In Progress
     # # Pending Upstream
     # # Pending Merge
-    # lists_to_in_progress = TrelloHelper::IN_PROGRESS_STATES.merge(TrelloHelper::COMPLETE_STATES)
+    lists_to_in_progress = TrelloHelper::IN_PROGRESS_STATES
 
     # delete lists we want to exclude
     lists_to_backlog.delete_if { |k,_| exclude_lists.include? k }
-    # lists_to_in_progress.delete_if { |k,_| exclude_lists.include? k }
-    lists_to_export = lists_to_backlog # .merge(lists_to_in_progress)
+     lists_to_in_progress.delete_if { |k,_| exclude_lists.include? k }
+    lists_to_export = lists_to_backlog.merge(lists_to_in_progress)
     lists = []
     cards_data = []
     max_comments = 0
@@ -426,10 +424,10 @@ class OverviewsHelper
       trello.list_cards(list).each do |card|
         new_card = jira_export_data_from_card(card)
         new_card[:status] = 'To Do'
-        # if lists_to_in_progress.include?(list.name)
-        #   new_card[:status] = 'In Progress'
-        # end
-        if private
+        if lists_to_in_progress.include?(list.name)
+          new_card[:status] = 'In Progress'
+        end
+        if private and !new_card[:labels].include? 'private'
           new_card[:labels] << 'private'
         end
         if additional_lists_to_backlog.include?(list.name)
