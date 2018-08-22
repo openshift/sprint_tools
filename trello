@@ -695,6 +695,8 @@ command :generate_default_overviews do |c|
   c.syntax = "#{name} generate_default_overviews"
 
   c.option "--out-dir DIRECTORY", "The dir to output to Ex: /tmp"
+  c.option "--sprints NUM", "The number of sprints to show"
+  c.option "--offset NUM", "The number of sprints to offset from the latest"
 
   c.description = "Generate the default overviews"
   c.action do |args, options|
