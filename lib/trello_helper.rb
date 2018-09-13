@@ -140,6 +140,7 @@ class TrelloHelper
     @members_by_id = {}
     @board_members = {}
     @cards_by_list = {}
+    @cards_by_id = {}
     @labels_by_card = {}
     @label_by_id = {}
     @list_by_card = {}
@@ -402,6 +403,10 @@ class TrelloHelper
     @sprint_length_in_days ||= (@sprint_length_in_weeks * 7)
   end
 
+  def card_by_id(card_id)
+    @cards_by_id[card_id] ||= find_card(card_id)
+  end
+
   ##
   # Hits the Trello API directly to get the Members from a
   # +Trello::Card+ without having to hit the /members API endpoint
@@ -452,6 +457,10 @@ class TrelloHelper
   # doesn't match a cached label, +label+ is used to create a
   # +Trello::Label+ object which is then cached for that id
   def label_by_id(label_id, label=nil)
+    if label.is_a?(Symbol) || label.is_a?(String)
+      label_id = label.to_s
+      label = nil
+    end
     if @label_by_id.include?(label_id)
       @label_by_id[label_id]
     elsif label
@@ -501,6 +510,7 @@ class TrelloHelper
   # modifies +@labels_by_card+, +@cards_by_list+, and +@members_by_card+
   #
   def add_card(card)
+    @cards_by_id[card.id] = card
     if !card.closed
       @labels_by_card[card.id] ||= card.card_labels.map do |label|
         label_by_id(label['id'], label)
@@ -642,6 +652,7 @@ class TrelloHelper
       end
     rescue
     end
+    add_card(card)
     card
   end
 

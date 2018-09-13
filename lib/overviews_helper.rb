@@ -280,6 +280,7 @@ class OverviewsHelper
       "Description",
       "Story Points",
       "Status",
+      "Priority",
     ] + max_labels.times.map { "Label" } + max_epics.times.map { "Epic Link" } + max_members.times.map { "Watcher" } + max_comments.times.map { "Comment Body" }
   end
 
@@ -311,7 +312,8 @@ class OverviewsHelper
       card_data[:summary],
       card_data[:description],
       card_data[:story_points],
-      card_data[:status]
+      card_data[:status],
+      "Unprioritized"
     ] + labels + epics + members + comments
     # row.each {|s| s.sub!('\n', '\r\n') if !s.nil?}
     row
@@ -374,7 +376,7 @@ class OverviewsHelper
     card_data
   end
 
-  def create_jira_board_dump(out, board_name, add_lists=[], exclude_lists=[], private=false, migration_run=false)
+  def create_jira_board_dump(out, board_name, add_lists_to_backlog=[], add_lists_to_in_progress=[], add_lists_to_done=[], exclude_lists=[], private=false, migration_run=false)
     # Backlog
     # New
     # Stalled
@@ -382,8 +384,9 @@ class OverviewsHelper
     lists_to_backlog = TrelloHelper::BACKLOG_STATES.merge(TrelloHelper::NEW_STATES).merge(TrelloHelper::NEXT_STATES)
     # Make sure we export any other lists specified to To Do/Backlog
     additional_lists_to_backlog = {}
-    add_lists.each_with_index { |l,i| additional_lists_to_backlog[l] = i }
+    add_lists_to_backlog.each_with_index { |l,i| additional_lists_to_backlog[l] = i }
     lists_to_backlog.merge!(additional_lists_to_backlog)
+    exclude_from_backlog = exclude_lists + add_lists_to_in_progress + add_lists_to_done
 
     # *** EXCLUDE in progress lists by default ***
     # # Design
@@ -391,11 +394,22 @@ class OverviewsHelper
     # # Pending Upstream
     # # Pending Merge
     lists_to_in_progress = TrelloHelper::IN_PROGRESS_STATES
+    additional_lists_to_in_progress = {}
+    add_lists_to_in_progress.each_with_index { |l,i| additional_lists_to_in_progress[l] = i }
+    lists_to_in_progress.merge!(additional_lists_to_in_progress)
+    exclude_from_in_progress = exclude_lists + add_lists_to_backlog + add_lists_to_done
+
+    lists_to_done = {}
+    additional_lists_to_done = {}
+    add_lists_to_done.each_with_index { |l,i| additional_lists_to_done[l] = i }
+    lists_to_done.merge!(additional_lists_to_done)
+    exclude_from_done = exclude_lists + add_lists_to_backlog + add_lists_to_in_progress
 
     # delete lists we want to exclude
-    lists_to_backlog.delete_if { |k,_| exclude_lists.include? k }
-     lists_to_in_progress.delete_if { |k,_| exclude_lists.include? k }
-    lists_to_export = lists_to_backlog.merge(lists_to_in_progress)
+    lists_to_backlog.delete_if { |k,_| exclude_from_backlog.include? k }
+    lists_to_in_progress.delete_if { |k,_| exclude_from_in_progress.include? k }
+    lists_to_done.delete_if { |k,_| exclude_from_done.include? k }
+    lists_to_export = lists_to_backlog.merge(lists_to_in_progress).merge(lists_to_done)
     lists = []
     cards_data = []
     max_comments = 0
@@ -426,6 +440,8 @@ class OverviewsHelper
         new_card[:status] = 'To Do'
         if lists_to_in_progress.include?(list.name)
           new_card[:status] = 'In Progress'
+        elsif lists_to_done.include?(list.name)
+          new_card[:status] = 'Done'
         end
         if private and !new_card[:labels].include? 'private'
           new_card[:labels] << 'private'

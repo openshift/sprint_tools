@@ -697,7 +697,9 @@ command :export_team_for_jira do |c|
   c.option "--out OUT_FILE", "The file to output Ex: /tmp/user_interface_export.csv"
   c.option '--board "BOARD NAME"', "The title of the board to export"
   c.option "--private", 'Include the "private" label on exported cards'
-  c.option '--add-lists "List 1 Name, List 2 Name, ..."', Array, 'Include specified lists in the CSV export - adds list name as a label to exported card(s)'
+  c.option '--add-lists-to-backlog "List 1 Name, List 2 Name, ..."', '--add-lists', Array, 'Include specified lists in "Backlog" status in CSV export - adds list name as a label to exported card(s)'
+  c.option '--add-lists-to-in-progress "List 1 Name, List 2 Name, ..."', Array, 'Include specified lists in "In Progress" status in the CSV export - adds list name as a label to exported card(s)'
+  c.option '--add-lists-to-done "List 1 Name, List 2 Name, ..."', Array, 'Include specified lists in "Done" status in the CSV export - adds list name as a label to exported card(s)'
   c.option '--exclude-lists "List 1 Name, List 2 Name, ..."', Array, 'Guarantee specified lists are excluded from the CSV export'
   c.option '--migration-run', 'Specify if exporting for an actual (non-testing) migration. Adds "migrated" label to exported cards'
 
@@ -713,7 +715,7 @@ command :export_team_for_jira do |c|
     options.exclude_lists.map! { |l| l.strip }
     options.out ||= "/tmp/jira_export_#{options.board.sub(' ', '_')}.csv"
     overviews_helper = OverviewsHelper.new(trello: trello, trello_id_to_ldap_uid: CONFIG.uidmap, valid_epics: CONFIG.valid_epics)
-    overviews_helper.create_jira_board_dump(options.out, options.board, options.add_lists, options.exclude_lists, !!options.private, !!options.migration_run)
+    overviews_helper.create_jira_board_dump(options.out, options.board, options.add_lists, options.add_lists_to_in_progress, options.add_lists_to_done, options.exclude_lists, !!options.private, !!options.migration_run)
   end
 end
 
