@@ -14,45 +14,33 @@ class LdapHelper
 
   def ldap_user_by_uid(uid)
     user = nil
-    ldap = ldap_connect
-    ldap.bind do
-      ldap.search(base_dn, LDAP::LDAP_SCOPE_SUBTREE, "(uid=#{uid})", ATTRS) do |entry|
+    ldap.search(base_dn, LDAP::LDAP_SCOPE_SUBTREE, "(uid=#{uid})", ATTRS) do |entry|
         #email = entry.vals('mail')[0]
         user = entry
       end
-    end
     user
   end
 
   def ldap_user_by_email(email)
     user = nil
-    ldap = ldap_connect
-    ldap.bind do
-      ldap.search(base_dn, LDAP::LDAP_SCOPE_SUBTREE, "(mail=#{email})", ATTRS) do |entry|
-        user = entry
-      end
+    ldap.search(base_dn, LDAP::LDAP_SCOPE_SUBTREE, "(mail=#{email})", ATTRS) do |entry|
+      user = entry
     end
     user
   end
 
   def ldap_users_by_name(givenName, sn, perfect_match = false)
     users = []
-    ldap = ldap_connect
-    ldap.bind do
-      ldap.search(base_dn, LDAP::LDAP_SCOPE_SUBTREE, "(|(&(givenName=#{givenName}#{perfect_match ? '' : '*'})(sn=#{sn}))(cn=#{givenName}#{perfect_match ? ' ' : '*'}#{sn}))", ATTRS) do |entry|
-        users << entry
-      end
+    ldap.search(base_dn, LDAP::LDAP_SCOPE_SUBTREE, "(|(&(givenName=#{givenName}#{perfect_match ? '' : '*'})(sn=#{sn}))(cn=#{givenName}#{perfect_match ? ' ' : '*'}#{sn}))", ATTRS) do |entry|
+      users << entry
     end
     users
   end
 
   def ldap_users_by_last_name(sn)
     users = []
-    ldap = ldap_connect
-    ldap.bind do
-      ldap.search(base_dn, LDAP::LDAP_SCOPE_SUBTREE, "(sn=#{sn})", ATTRS) do |entry|
-        users << entry
-      end
+    ldap.search(base_dn, LDAP::LDAP_SCOPE_SUBTREE, "(sn=#{sn})", ATTRS) do |entry|
+      users << entry
     end
     users
   end
@@ -168,9 +156,14 @@ class LdapHelper
     [first_name, middle_name, last_name]
   end
 
-  def ldap_connect
-    ldap = LDAP::Conn.new(host, LDAP::LDAP_PORT.to_i)
-    ldap.set_option(LDAP::LDAP_OPT_PROTOCOL_VERSION, 3)
-    ldap
+  def ldap
+    if !@ldap
+      @ldap = LDAP::Conn.new(host, LDAP::LDAP_PORT.to_i)
+      @ldap.set_option(LDAP::LDAP_OPT_PROTOCOL_VERSION, 3)
+    end
+    if !@ldap.bound?
+      @ldap.bind
+    end
+    return @ldap
   end
 end
